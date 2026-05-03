@@ -129,7 +129,7 @@ export default function Members() {
         await supabase.from("user_roles").delete().eq("user_id", data.user_id);
         const { error: roleError } = await supabase
           .from("user_roles")
-          .insert({ user_id: data.user_id, role: form.role });
+          .insert({ user_id: data.user_id, role: form.role as any });
         if (roleError) throw new Error(`Failed to assign role: ${roleError.message}`);
       }
       
@@ -168,7 +168,7 @@ export default function Members() {
         if (editForm.role && editForm.role !== "none") {
           const { error: roleError } = await supabase
             .from("user_roles")
-            .upsert({ user_id: member.user_id, role: editForm.role });
+            .upsert({ user_id: member.user_id, role: editForm.role as any });
           if (roleError) throw new Error(`Failed to assign role: ${roleError.message}`);
         } else if (editForm.role === "none") {
           const { error: roleError } = await supabase
@@ -253,7 +253,7 @@ export default function Members() {
 
       const { error: insertError } = await supabase
         .from("user_roles")
-        .insert({ user_id: member.user_id, role });
+        .insert({ user_id: member.user_id, role: role as any });
       
       if (insertError) throw new Error(`Failed to assign role: ${insertError.message}`);
       
@@ -406,8 +406,8 @@ export default function Members() {
                     <TableCell>{m.member_id || "—"}</TableCell>
                     <TableCell>
                       {memberRole ? (
-                        <Badge className={`${getRoleColor(memberRole)} text-white`}>
-                          {getRoleLabel(memberRole)}
+                        <Badge className={`${getRoleColor(memberRole as any)} text-white`}>
+                          {getRoleLabel(memberRole as any)}
                         </Badge>
                       ) : (
                         <Badge variant="secondary">Member</Badge>
