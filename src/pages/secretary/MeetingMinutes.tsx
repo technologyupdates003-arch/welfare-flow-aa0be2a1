@@ -90,31 +90,29 @@ function MinutesForm({
     });
   };
 
-  const filteredMembers = (form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
+  const baseList = form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
     id: m.user_id,
     name: m.members?.name,
     phone: m.members?.phone,
-  })) : members).filter((m: any) =>
-    m.name.toLowerCase().includes(attendeeSearch.toLowerCase()) ||
-    m.phone.includes(attendeeSearch)
+  })) : members;
+
+  // Exclude already-categorized members from other lists
+  const filteredMembers = baseList.filter((m: any) =>
+    !form.absent_with_apology.includes(m.name) &&
+    !form.absent_without_apology.includes(m.name) &&
+    (m.name.toLowerCase().includes(attendeeSearch.toLowerCase()) || m.phone.includes(attendeeSearch))
   );
 
-  const filteredAbsentWithoutApologyMembers = (form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
-    id: m.user_id,
-    name: m.members?.name,
-    phone: m.members?.phone,
-  })) : members).filter((m: any) =>
-    m.name.toLowerCase().includes(absenceSearch.toLowerCase()) ||
-    m.phone.includes(absenceSearch)
+  const filteredAbsentWithoutApologyMembers = baseList.filter((m: any) =>
+    !selectedAttendees.includes(m.name) &&
+    !form.absent_with_apology.includes(m.name) &&
+    (m.name.toLowerCase().includes(absenceSearch.toLowerCase()) || m.phone.includes(absenceSearch))
   );
 
-  const filteredAbsentWithApologyMembers = (form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
-    id: m.user_id,
-    name: m.members?.name,
-    phone: m.members?.phone,
-  })) : members).filter((m: any) =>
-    m.name.toLowerCase().includes(absenceWithApologySearch.toLowerCase()) ||
-    m.phone.includes(absenceWithApologySearch)
+  const filteredAbsentWithApologyMembers = baseList.filter((m: any) =>
+    !selectedAttendees.includes(m.name) &&
+    !form.absent_without_apology.includes(m.name) &&
+    (m.name.toLowerCase().includes(absenceWithApologySearch.toLowerCase()) || m.phone.includes(absenceWithApologySearch))
   );
 
   const filteredVisibilityMembers = (form.meeting_type === "executive" ? executiveMembers : members).filter((m: any) =>
@@ -692,43 +690,37 @@ export default function MeetingMinutes() {
   const { data: executiveMembers = [] } = useQuery({
     queryKey: ["executive-members"],
     queryFn: async () => {
-      // Get all user_roles with the specified roles
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron"])
+        .in("role", ["chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron", "treasurer", "admin", "super_admin"])
         .order("role");
       
-      if (rolesError) {
-        console.error("Error fetching roles:", rolesError);
-        throw rolesError;
-      }
+      if (rolesError) throw rolesError;
+      if (!rolesData || rolesData.length === 0) return [];
 
-      if (!rolesData || rolesData.length === 0) {
-        return [];
-      }
-
-      // Get member info for these users
       const userIds = rolesData.map(r => r.user_id);
-      const { data: membersData, error: membersError } = await supabase
+      const { data: membersData } = await supabase
         .from("members")
         .select("id, user_id, name, phone")
         .in("user_id", userIds);
-      
-      if (membersError) {
-        console.error("Error fetching members:", membersError);
-        throw membersError;
-      }
 
-      // Create a map of user_id -> member info
       const memberMap = new Map(membersData?.map(m => [m.user_id, m]) || []);
 
-      // Combine roles with member info
-      return rolesData.map(role => ({
-        user_id: role.user_id,
-        role: role.role,
-        members: memberMap.get(role.user_id) || { name: "Unknown", phone: "" }
-      }));
+      // Deduplicate by user_id (a user might have multiple roles)
+      const seen = new Set<string>();
+      return rolesData
+        .filter(r => {
+          if (seen.has(r.user_id)) return false;
+          seen.add(r.user_id);
+          return true;
+        })
+        .map(role => ({
+          user_id: role.user_id,
+          role: role.role,
+          members: memberMap.get(role.user_id) || { name: "Unknown", phone: "" }
+        }))
+        .filter(r => r.members?.name && r.members.name !== "Unknown");
     },
   });
 

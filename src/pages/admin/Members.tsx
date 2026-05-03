@@ -410,9 +410,7 @@ export default function Members() {
                           {getRoleLabel(memberRole)}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-yellow-500 text-yellow-700">
-                          ⚠️ No Role
-                        </Badge>
+                        <Badge variant="secondary">Member</Badge>
                       )}
                     </TableCell>
                     <TableCell>KES {Number(m.total_contributions).toLocaleString()}</TableCell>
