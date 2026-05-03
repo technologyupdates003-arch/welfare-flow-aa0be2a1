@@ -8,7 +8,9 @@ export type UserRole =
   | "vice_secretary" 
   | "patron" 
   | "member" 
-  | "super_admin";
+  | "super_admin"
+  | "treasurer"
+  | "user";
 
 export interface RoleConfig {
   label: string;
