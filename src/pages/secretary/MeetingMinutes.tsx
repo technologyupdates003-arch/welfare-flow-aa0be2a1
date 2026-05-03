@@ -90,31 +90,29 @@ function MinutesForm({
     });
   };
 
-  const filteredMembers = (form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
+  const baseList = form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
     id: m.user_id,
     name: m.members?.name,
     phone: m.members?.phone,
-  })) : members).filter((m: any) =>
-    m.name.toLowerCase().includes(attendeeSearch.toLowerCase()) ||
-    m.phone.includes(attendeeSearch)
+  })) : members;
+
+  // Exclude already-categorized members from other lists
+  const filteredMembers = baseList.filter((m: any) =>
+    !form.absent_with_apology.includes(m.name) &&
+    !form.absent_without_apology.includes(m.name) &&
+    (m.name.toLowerCase().includes(attendeeSearch.toLowerCase()) || m.phone.includes(attendeeSearch))
   );
 
-  const filteredAbsentWithoutApologyMembers = (form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
-    id: m.user_id,
-    name: m.members?.name,
-    phone: m.members?.phone,
-  })) : members).filter((m: any) =>
-    m.name.toLowerCase().includes(absenceSearch.toLowerCase()) ||
-    m.phone.includes(absenceSearch)
+  const filteredAbsentWithoutApologyMembers = baseList.filter((m: any) =>
+    !selectedAttendees.includes(m.name) &&
+    !form.absent_with_apology.includes(m.name) &&
+    (m.name.toLowerCase().includes(absenceSearch.toLowerCase()) || m.phone.includes(absenceSearch))
   );
 
-  const filteredAbsentWithApologyMembers = (form.meeting_type === "executive" ? executiveMembers.map((m: any) => ({
-    id: m.user_id,
-    name: m.members?.name,
-    phone: m.members?.phone,
-  })) : members).filter((m: any) =>
-    m.name.toLowerCase().includes(absenceWithApologySearch.toLowerCase()) ||
-    m.phone.includes(absenceWithApologySearch)
+  const filteredAbsentWithApologyMembers = baseList.filter((m: any) =>
+    !selectedAttendees.includes(m.name) &&
+    !form.absent_without_apology.includes(m.name) &&
+    (m.name.toLowerCase().includes(absenceWithApologySearch.toLowerCase()) || m.phone.includes(absenceWithApologySearch))
   );
 
   const filteredVisibilityMembers = (form.meeting_type === "executive" ? executiveMembers : members).filter((m: any) =>
