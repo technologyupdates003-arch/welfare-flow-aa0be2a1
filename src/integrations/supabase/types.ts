@@ -14,6 +14,88 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_items: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          description: string
+          due_date: string | null
+          id: string
+          minutes_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          minutes_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          minutes_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_items_minutes_id_fkey"
+            columns: ["minutes_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_minutes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          super_admin_id: string
+          target_member_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          super_admin_id: string
+          target_member_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          super_admin_id?: string
+          target_member_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beneficiaries: {
         Row: {
           created_at: string
@@ -48,6 +130,75 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "beneficiaries_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beneficiary_requests: {
+        Row: {
+          admin_notes: string | null
+          beneficiary_id: string | null
+          beneficiary_id_number: string | null
+          beneficiary_name: string | null
+          beneficiary_phone: string | null
+          beneficiary_relationship: string | null
+          created_at: string | null
+          id: string
+          member_id: string
+          reason: string
+          request_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          beneficiary_id?: string | null
+          beneficiary_id_number?: string | null
+          beneficiary_name?: string | null
+          beneficiary_phone?: string | null
+          beneficiary_relationship?: string | null
+          created_at?: string | null
+          id?: string
+          member_id: string
+          reason: string
+          request_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          beneficiary_id?: string | null
+          beneficiary_id_number?: string | null
+          beneficiary_name?: string | null
+          beneficiary_phone?: string | null
+          beneficiary_relationship?: string | null
+          created_at?: string | null
+          id?: string
+          member_id?: string
+          reason?: string
+          request_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficiary_requests_beneficiary_id_fkey"
+            columns: ["beneficiary_id"]
+            isOneToOne: false
+            referencedRelation: "beneficiaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beneficiary_requests_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
@@ -219,6 +370,9 @@ export type Database = {
           id: string
           related_member_id: string | null
           relationship: string | null
+          reschedule_reason: string | null
+          rescheduled_date: string | null
+          scheduled_date: string | null
           status: string
           title: string
           updated_at: string
@@ -233,6 +387,9 @@ export type Database = {
           id?: string
           related_member_id?: string | null
           relationship?: string | null
+          reschedule_reason?: string | null
+          rescheduled_date?: string | null
+          scheduled_date?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -247,6 +404,9 @@ export type Database = {
           id?: string
           related_member_id?: string | null
           relationship?: string | null
+          reschedule_reason?: string | null
+          rescheduled_date?: string | null
+          scheduled_date?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -255,6 +415,273 @@ export type Database = {
           {
             foreignKeyName: "events_related_member_id_fkey"
             columns: ["related_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          category: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          expense_type: string
+          id: string
+          paid_at: string | null
+          paid_by: string | null
+          payment_method: string | null
+          recipient_member_id: string | null
+          recipient_name: string | null
+          reference_number: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          category: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          expense_type: string
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_method?: string | null
+          recipient_member_id?: string | null
+          recipient_name?: string | null
+          reference_number?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          expense_type?: string
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_method?: string | null
+          recipient_member_id?: string | null
+          recipient_name?: string | null
+          reference_number?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_recipient_member_id_fkey"
+            columns: ["recipient_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_reports: {
+        Row: {
+          generated_at: string | null
+          generated_by: string
+          id: string
+          net_balance: number | null
+          report_data: Json | null
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          total_contributions: number | null
+          total_expenses: number | null
+          total_payouts: number | null
+        }
+        Insert: {
+          generated_at?: string | null
+          generated_by: string
+          id?: string
+          net_balance?: number | null
+          report_data?: Json | null
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          total_contributions?: number | null
+          total_expenses?: number | null
+          total_payouts?: number | null
+        }
+        Update: {
+          generated_at?: string | null
+          generated_by?: string
+          id?: string
+          net_balance?: number | null
+          report_data?: Json | null
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          total_contributions?: number | null
+          total_expenses?: number | null
+          total_payouts?: number | null
+        }
+        Relationships: []
+      }
+      meeting_attendance: {
+        Row: {
+          created_at: string | null
+          id: string
+          meeting_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meeting_id: string
+          status: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meeting_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_attendance_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_minutes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_minutes: {
+        Row: {
+          absent_with_apology: string[] | null
+          absent_without_apology: string[] | null
+          action_items: string | null
+          agenda: string | null
+          attendees: string[] | null
+          chairperson_name: string | null
+          chairperson_signature_url: string | null
+          created_at: string | null
+          created_by: string
+          decisions: string | null
+          discussions: string | null
+          id: string
+          meeting_date: string
+          meeting_type: string
+          next_meeting_date: string | null
+          rejection_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          secretary_name: string | null
+          secretary_signature_url: string | null
+          status: string | null
+          submitted_at: string | null
+          submitted_by: string | null
+          title: string
+          updated_at: string | null
+          visible_to_members: string[] | null
+        }
+        Insert: {
+          absent_with_apology?: string[] | null
+          absent_without_apology?: string[] | null
+          action_items?: string | null
+          agenda?: string | null
+          attendees?: string[] | null
+          chairperson_name?: string | null
+          chairperson_signature_url?: string | null
+          created_at?: string | null
+          created_by: string
+          decisions?: string | null
+          discussions?: string | null
+          id?: string
+          meeting_date: string
+          meeting_type?: string
+          next_meeting_date?: string | null
+          rejection_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          secretary_name?: string | null
+          secretary_signature_url?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title: string
+          updated_at?: string | null
+          visible_to_members?: string[] | null
+        }
+        Update: {
+          absent_with_apology?: string[] | null
+          absent_without_apology?: string[] | null
+          action_items?: string | null
+          agenda?: string | null
+          attendees?: string[] | null
+          chairperson_name?: string | null
+          chairperson_signature_url?: string | null
+          created_at?: string | null
+          created_by?: string
+          decisions?: string | null
+          discussions?: string | null
+          id?: string
+          meeting_date?: string
+          meeting_type?: string
+          next_meeting_date?: string | null
+          rejection_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          secretary_name?: string | null
+          secretary_signature_url?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          title?: string
+          updated_at?: string | null
+          visible_to_members?: string[] | null
+        }
+        Relationships: []
+      }
+      member_access_logs: {
+        Row: {
+          access_type: string
+          created_at: string | null
+          id: string
+          member_id: string
+          reason: string | null
+          super_admin_id: string
+        }
+        Insert: {
+          access_type: string
+          created_at?: string | null
+          id?: string
+          member_id: string
+          reason?: string | null
+          super_admin_id: string
+        }
+        Update: {
+          access_type?: string
+          created_at?: string | null
+          id?: string
+          member_id?: string
+          reason?: string | null
+          super_admin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_access_logs_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
@@ -450,6 +877,9 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          reschedule_reason: string | null
+          rescheduled_date: string | null
+          scheduled_date: string | null
           title: string
           updated_at: string
         }
@@ -458,6 +888,9 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          reschedule_reason?: string | null
+          rescheduled_date?: string | null
+          scheduled_date?: string | null
           title: string
           updated_at?: string
         }
@@ -466,10 +899,42 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          reschedule_reason?: string | null
+          rescheduled_date?: string | null
+          scheduled_date?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      news_read: {
+        Row: {
+          id: string
+          news_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          news_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          news_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_read_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -497,6 +962,108 @@ export type Database = {
           message?: string
           title?: string
           type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      office_bearer_signatures: {
+        Row: {
+          id: string
+          role: string
+          signature_url: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          role: string
+          signature_url?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          role?: string
+          signature_url?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      organization_settings: {
+        Row: {
+          id: string
+          letterhead_template: string | null
+          logo_url: string | null
+          organization_address: string | null
+          organization_email: string | null
+          organization_name: string
+          organization_phone: string | null
+          payout_rules: Json | null
+          signature_url: string | null
+          stamp_url: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          letterhead_template?: string | null
+          logo_url?: string | null
+          organization_address?: string | null
+          organization_email?: string | null
+          organization_name?: string
+          organization_phone?: string | null
+          payout_rules?: Json | null
+          signature_url?: string | null
+          stamp_url?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          letterhead_template?: string | null
+          logo_url?: string | null
+          organization_address?: string | null
+          organization_email?: string | null
+          organization_name?: string
+          organization_phone?: string | null
+          payout_rules?: Json | null
+          signature_url?: string | null
+          stamp_url?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      password_resets: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          new_password_hash: string | null
+          reset_at: string | null
+          reset_by: string | null
+          reset_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          new_password_hash?: string | null
+          reset_at?: string | null
+          reset_by?: string | null
+          reset_token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          new_password_hash?: string | null
+          reset_at?: string | null
+          reset_by?: string | null
+          reset_token?: string
           user_id?: string
         }
         Relationships: []
@@ -538,6 +1105,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "payments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string
+          eligible_amount: number
+          id: string
+          member_id: string
+          paid_at: string | null
+          paid_by: string | null
+          payment_reference: string | null
+          payout_type: string
+          reason: string | null
+          rejection_reason: string | null
+          status: string | null
+          supporting_documents: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by: string
+          eligible_amount: number
+          id?: string
+          member_id: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_reference?: string | null
+          payout_type: string
+          reason?: string | null
+          rejection_reason?: string | null
+          status?: string | null
+          supporting_documents?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string
+          eligible_amount?: number
+          id?: string
+          member_id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_reference?: string | null
+          payout_type?: string
+          reason?: string | null
+          rejection_reason?: string | null
+          status?: string | null
+          supporting_documents?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
@@ -617,6 +1252,78 @@ export type Database = {
         }
         Relationships: []
       }
+      system_health: {
+        Row: {
+          checked_at: string | null
+          details: Json | null
+          id: string
+          metric_name: string
+          metric_value: number | null
+          status: string | null
+        }
+        Insert: {
+          checked_at?: string | null
+          details?: Json | null
+          id?: string
+          metric_name: string
+          metric_value?: number | null
+          status?: string | null
+        }
+        Update: {
+          checked_at?: string | null
+          details?: Json | null
+          id?: string
+          metric_name?: string
+          metric_value?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      system_logs: {
+        Row: {
+          component: string | null
+          created_at: string | null
+          error_details: Json | null
+          id: string
+          log_level: string
+          message: string
+          request_path: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status_code: number | null
+          user_id: string | null
+        }
+        Insert: {
+          component?: string | null
+          created_at?: string | null
+          error_details?: Json | null
+          id?: string
+          log_level: string
+          message: string
+          request_path?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          component?: string | null
+          created_at?: string | null
+          error_details?: Json | null
+          id?: string
+          log_level?: string
+          message?: string
+          request_path?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       unmatched_payments: {
         Row: {
           created_at: string
@@ -685,16 +1392,19 @@ export type Database = {
       user_roles: {
         Row: {
           id: string
+          is_active: boolean | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           id?: string
+          is_active?: boolean | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           id?: string
+          is_active?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -835,6 +1545,24 @@ export type Database = {
         }
         Returns: string
       }
+      assign_user_role: {
+        Args: {
+          role_param: Database["public"]["Enums"]["app_role"]
+          user_id_param: string
+        }
+        Returns: undefined
+      }
+      get_members_with_roles: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       get_user_conversation_ids: {
         Args: { _user_id: string }
         Returns: string[]
@@ -848,7 +1576,17 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "member" | "chairperson" | "vice_chairperson" | "secretary" | "vice_secretary" | "patron"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "member"
+        | "user"
+        | "chairperson"
+        | "vice_chairperson"
+        | "secretary"
+        | "vice_secretary"
+        | "patron"
+        | "treasurer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -976,7 +1714,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "member", "chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "member",
+        "user",
+        "chairperson",
+        "vice_chairperson",
+        "secretary",
+        "vice_secretary",
+        "patron",
+        "treasurer",
+      ],
     },
   },
 } as const
