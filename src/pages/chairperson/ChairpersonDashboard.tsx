@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Users, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
-import { StatsCards } from "@/components/admin/StatsCards";
+import StatsCards from "@/components/admin/StatsCards";
 
 export default function ChairpersonDashboard() {
   const { data: stats } = useQuery({
