@@ -8,7 +8,9 @@ export type UserRole =
   | "vice_secretary" 
   | "patron" 
   | "member" 
-  | "super_admin";
+  | "super_admin"
+  | "treasurer"
+  | "user";
 
 export interface RoleConfig {
   label: string;
@@ -140,6 +142,31 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
       "view_own_profile",
       "view_own_contributions",
     ],
+  },
+  treasurer: {
+    label: "Treasurer",
+    color: "bg-orange-600",
+    dashboardItems: [
+      "dashboard",
+      "contributions",
+      "expenses",
+      "memos",
+      "reports",
+      "documents",
+      "settings",
+    ],
+    permissions: [
+      "manage_contributions",
+      "manage_expenses",
+      "manage_memos",
+      "view_reports",
+    ],
+  },
+  user: {
+    label: "User",
+    color: "bg-gray-400",
+    dashboardItems: ["dashboard"],
+    permissions: [],
   },
 };
 

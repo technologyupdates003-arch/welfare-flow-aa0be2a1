@@ -29,7 +29,6 @@ export default function NewsPopup() {
       const { data: allNews } = await supabase
         .from("news")
         .select("*")
-        .eq("is_published", true)
         .order("created_at", { ascending: false });
 
       if (!allNews) return [];
@@ -79,7 +78,7 @@ export default function NewsPopup() {
 
   return (
     <Dialog open={hasUnreadNews} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[500px]" hideClose>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -108,9 +107,9 @@ export default function NewsPopup() {
               <p className="whitespace-pre-wrap">{currentNews.content}</p>
             </div>
 
-            {currentNews.image_url && (
+            {(currentNews as any).image_url && (
               <img 
-                src={currentNews.image_url} 
+                src={(currentNews as any).image_url} 
                 alt={currentNews.title}
                 className="w-full rounded-lg object-cover max-h-64"
               />

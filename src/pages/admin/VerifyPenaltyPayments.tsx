@@ -113,10 +113,10 @@ export default function VerifyPenaltyPayments() {
     }
   };
 
-  const totalPending = pendingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+  const totalPending = pendingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
   const totalVerified = allPayments
     .filter(p => p.status === "verified")
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
     <div className="space-y-6">

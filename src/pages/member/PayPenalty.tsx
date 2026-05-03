@@ -59,7 +59,7 @@ export default function PayPenalty() {
         throw new Error("Please fill in all required fields");
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("penalty_payments")
         .insert({
           member_id: memberInfo.id,
@@ -116,11 +116,11 @@ export default function PayPenalty() {
 
   const totalPending = penaltyPayments
     .filter(p => p.status === "pending")
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
   const totalVerified = penaltyPayments
     .filter(p => p.status === "verified")
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
     <div className="space-y-6">

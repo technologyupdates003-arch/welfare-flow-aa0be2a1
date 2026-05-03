@@ -110,7 +110,7 @@ export default function Settings() {
       // Assign the role
       const { error } = await supabase
         .from("user_roles")
-        .upsert({ user_id: member.user_id, role });
+        .upsert({ user_id: member.user_id, role: role as any });
       
       if (error) throw error;
     },
@@ -250,13 +250,13 @@ export default function Settings() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {membersWithRoles?.map((member) => (
+                    {membersWithRoles?.map((member: any) => (
                       <TableRow key={member.id}>
                         <TableCell className="font-medium">{member.name}</TableCell>
                         <TableCell>{member.phone}</TableCell>
                         <TableCell>
                           <Badge variant="default">
-                            {roleLabels[member.user_roles.role as keyof typeof roleLabels] || member.user_roles.role}
+                            {roleLabels[member.user_roles?.role as keyof typeof roleLabels] || member.user_roles?.role}
                           </Badge>
                         </TableCell>
                         <TableCell>

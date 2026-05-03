@@ -126,7 +126,7 @@ export default function BeneficiaryRequests() {
               name: request.beneficiary_name,
               relationship: request.beneficiary_relationship,
               phone: request.beneficiary_phone,
-              id_number: request.beneficiary_id_number,
+              id_number: (request as any).beneficiary_id_number,
             });
 
           if (insertError) throw new Error(`Failed to add beneficiary: ${insertError.message}`);
