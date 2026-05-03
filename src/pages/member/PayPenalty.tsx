@@ -59,7 +59,7 @@ export default function PayPenalty() {
         throw new Error("Please fill in all required fields");
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("penalty_payments")
         .insert({
           member_id: memberInfo.id,
