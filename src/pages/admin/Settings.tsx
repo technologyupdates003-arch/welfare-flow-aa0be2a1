@@ -110,7 +110,7 @@ export default function Settings() {
       // Assign the role
       const { error } = await supabase
         .from("user_roles")
-        .upsert({ user_id: member.user_id, role });
+        .upsert({ user_id: member.user_id, role: role as any });
       
       if (error) throw error;
     },
