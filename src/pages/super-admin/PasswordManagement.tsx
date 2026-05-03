@@ -107,7 +107,7 @@ export default function PasswordManagement() {
   const filteredMembers = members.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.phone.includes(searchTerm) ||
-    m.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    (m as any).email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -240,8 +240,8 @@ export default function PasswordManagement() {
                                 <div>
                                   <h3 className="font-semibold text-foreground">{member.name}</h3>
                                   <p className="text-sm text-muted-foreground">{member.phone}</p>
-                                  {member.email && (
-                                    <p className="text-xs text-muted-foreground">{member.email}</p>
+                                  {(member as any).email && (
+                                    <p className="text-xs text-muted-foreground">{(member as any).email}</p>
                                   )}
                                 </div>
                               </div>

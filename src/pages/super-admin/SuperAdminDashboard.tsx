@@ -104,7 +104,7 @@ export default function SuperAdminDashboard() {
   const filteredMembers = members.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.phone.includes(searchTerm) ||
-    m.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    (m as any).email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate statistics
@@ -320,10 +320,10 @@ export default function SuperAdminDashboard() {
                                       <Phone className="h-3 w-3" />
                                       <span className="text-sm">{member.phone}</span>
                                     </div>
-                                    {member.email && (
+                                    {(member as any).email && (
                                       <div className="flex items-center gap-1 text-muted-foreground">
                                         <Mail className="h-3 w-3" />
-                                        <span className="text-sm">{member.email}</span>
+                                        <span className="text-sm">{(member as any).email}</span>
                                       </div>
                                     )}
                                   </div>

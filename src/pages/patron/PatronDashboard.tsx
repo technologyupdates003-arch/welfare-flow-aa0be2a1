@@ -116,7 +116,7 @@ export default function PatronDashboard() {
         })),
         ...(membersRes.data || []).map(m => ({
           type: "member",
-          title: `New Member: ${m.name}`,
+          title: `New Member: ${(m as any).name}`,
           subtitle: "Joined the welfare",
           date: m.created_at,
           icon: "users",
