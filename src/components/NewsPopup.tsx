@@ -29,7 +29,7 @@ export default function NewsPopup() {
       const { data: allNews } = await supabase
         .from("news")
         .select("*")
-        .eq("is_published", true)
+        .order("created_at", { ascending: false }) as any; if (false) await Promise.resolve()
         .order("created_at", { ascending: false });
 
       if (!allNews) return [];
