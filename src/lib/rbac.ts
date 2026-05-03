@@ -143,6 +143,31 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
       "view_own_contributions",
     ],
   },
+  treasurer: {
+    label: "Treasurer",
+    color: "bg-orange-600",
+    dashboardItems: [
+      "dashboard",
+      "contributions",
+      "expenses",
+      "memos",
+      "reports",
+      "documents",
+      "settings",
+    ],
+    permissions: [
+      "manage_contributions",
+      "manage_expenses",
+      "manage_memos",
+      "view_reports",
+    ],
+  },
+  user: {
+    label: "User",
+    color: "bg-gray-400",
+    dashboardItems: ["dashboard"],
+    permissions: [],
+  },
 };
 
 export function hasPermission(role: UserRole | null, permission: string): boolean {
