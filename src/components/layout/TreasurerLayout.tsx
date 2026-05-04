@@ -7,6 +7,9 @@ import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, 
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface TreasurerLayoutProps {
   children: ReactNode;
