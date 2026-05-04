@@ -317,6 +317,7 @@ export default function MemoHistory() {
                               size="sm"
                               variant="ghost"
                               title="Download PDF"
+                              onClick={() => downloadMemoPDF(memo)}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
