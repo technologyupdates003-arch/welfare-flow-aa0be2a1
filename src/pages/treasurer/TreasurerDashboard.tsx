@@ -15,46 +15,41 @@ export default function TreasurerDashboard() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  // Fetch financial summary
+  // Fetch financial summary — aligned with Admin Dashboard StatsCards
   const { data: financialSummary } = useQuery({
     queryKey: ["treasurer-financial-summary"],
     queryFn: async () => {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
+      const monthStart = `${currentYear}-${currentMonth.toString().padStart(2, "0")}-01`;
 
-      // Get total balance (sum of all contributions minus expenses)
-      const { data: contributions } = await supabase
-        .from("contributions")
-        .select("amount")
-        .eq("status", "paid");
+      // Same source as Admin StatsCards: contributions + penalties tables
+      const [allContribsRes, monthContribsRes, penaltiesRes] = await Promise.all([
+        supabase.from("contributions").select("amount, status"),
+        supabase.from("contributions").select("amount, status").gte("created_at", monthStart),
+        supabase.from("penalties").select("amount, is_paid"),
+      ]);
 
-      const { data: expenses } = await supabase
-        .from("expenses")
-        .select("amount")
-        .eq("status", "paid");
+      const allContribs = allContribsRes.data || [];
+      const monthContribs = monthContribsRes.data || [];
+      const penalties = penaltiesRes.data || [];
 
-      const { data: monthlyContributions } = await supabase
-        .from("contributions")
-        .select("amount")
-        .eq("status", "paid")
-        .gte("created_at", `${currentYear}-${currentMonth.toString().padStart(2, "0")}-01`);
-
-      const { data: monthlyExpenses } = await supabase
-        .from("expenses")
-        .select("amount")
-        .eq("status", "paid")
-        .gte("created_at", `${currentYear}-${currentMonth.toString().padStart(2, "0")}-01`);
-
-      const totalContributions = contributions?.reduce((sum, c) => sum + parseFloat(c.amount), 0) || 0;
-      const totalExpenses = expenses?.reduce((sum, e) => sum + parseFloat(e.amount), 0) || 0;
-      const monthContributions = monthlyContributions?.reduce((sum, c) => sum + parseFloat(c.amount), 0) || 0;
-      const monthExpenses = monthlyExpenses?.reduce((sum, e) => sum + parseFloat(e.amount), 0) || 0;
+      const totalCollected = allContribs.filter((c: any) => c.status === "paid").reduce((s, c: any) => s + Number(c.amount), 0);
+      const totalExpected = allContribs.reduce((s, c: any) => s + Number(c.amount), 0);
+      const outstanding = totalExpected - totalCollected;
+      const monthCollected = monthContribs.filter((c: any) => c.status === "paid").reduce((s, c: any) => s + Number(c.amount), 0);
+      const totalPenalties = penalties.reduce((s, p: any) => s + Number(p.amount), 0);
+      const collectedPenalties = penalties.filter((p: any) => p.is_paid).reduce((s, p: any) => s + Number(p.amount), 0);
 
       return {
-        totalBalance: totalContributions - totalExpenses,
-        monthlyContributions: monthContributions,
-        monthlyExpenses: monthExpenses,
-        netBalance: monthContributions - monthExpenses,
+        totalBalance: totalCollected + collectedPenalties, // money in
+        totalCollected,
+        totalExpected,
+        outstanding,
+        monthlyContributions: monthCollected,
+        monthlyExpenses: 0,
+        netBalance: monthCollected,
+        totalPenalties,
       };
     },
   });
