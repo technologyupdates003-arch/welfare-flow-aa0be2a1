@@ -7,6 +7,9 @@ import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, 
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface TreasurerLayoutProps {
   children: ReactNode;
@@ -18,6 +21,28 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
   const { user, signOut, roles } = useAuth();
   const { theme, setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const { data: notifications = [], refetch: refetchNotifs } = useQuery({
+    queryKey: ["treasurer-bell-notifications", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("notifications")
+        .select("id, title, message, is_read, created_at, type")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(15);
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+
+  const markAllRead = async () => {
+    if (!user || unreadCount === 0) return;
+    await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+    refetchNotifs();
+  };
 
   const menuItems = [
     { to: "/treasurer", icon: LayoutDashboard, label: "Dashboard", exact: true },
@@ -182,10 +207,41 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
             </div>
 
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-orange-500 rounded-full"></span>
-            </Button>
+            <Popover onOpenChange={(open) => { if (open) markAllRead(); }}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0">
+                <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllRead} className="text-xs text-orange-600 hover:underline">
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="text-center text-xs text-muted-foreground py-6">No notifications</p>
+                  ) : (
+                    notifications.map((n: any) => (
+                      <div key={n.id} className={cn("px-3 py-2 border-b border-border last:border-0 text-sm", !n.is_read && "bg-orange-50")}>
+                        <p className="font-medium text-xs text-[#111827]">{n.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Theme Toggle */}
             <Button

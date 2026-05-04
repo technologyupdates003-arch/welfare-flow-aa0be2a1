@@ -100,29 +100,38 @@ export default function CreateMemo() {
     retry: 1,
   });
 
-  // Fetch executives for quick selection - use all active members as fallback
+  // Fetch executives - STRICT: only users with an assigned role in user_roles
   const { data: executives = [], isLoading: executivesLoading, error: executivesError } = useQuery({
     queryKey: ["memo-executives-list"],
     queryFn: async () => {
       try {
-        console.log("Fetching executives...");
-        
-        // Just return all active members for now
-        // The executives-only filter can be refined later
-        const { data: allMembers, error } = await supabase
-          .from("members")
-          .select("id, name, phone, is_active, user_id")
-          .eq("is_active", true)
-          .order("name");
-        
-        if (error) {
-          console.error("Error fetching members:", error);
+        // 1) Get all user_ids that have an assigned role (any role counts as "executive")
+        const { data: roleRows, error: rolesErr } = await supabase
+          .from("user_roles")
+          .select("user_id");
+
+        if (rolesErr) {
+          console.error("Error fetching user_roles:", rolesErr);
           return [];
         }
-        
-        console.log(`All active members found: ${allMembers?.length || 0}`);
-        
-        return allMembers || [];
+
+        const userIds = Array.from(new Set((roleRows || []).map((r: any) => r.user_id).filter(Boolean)));
+        if (userIds.length === 0) return [];
+
+        // 2) Map them to active members
+        const { data: roleMembers, error: memErr } = await supabase
+          .from("members")
+          .select("id, name, phone, is_active, user_id")
+          .in("user_id", userIds)
+          .eq("is_active", true)
+          .order("name");
+
+        if (memErr) {
+          console.error("Error fetching role members:", memErr);
+          return [];
+        }
+
+        return roleMembers || [];
       } catch (err: any) {
         console.error("Exception fetching executives:", err);
         return [];
@@ -226,42 +235,35 @@ export default function CreateMemo() {
     },
   });
 
-  // Download PDF function
-  const downloadPDF = () => {
+  // Download PDF function — uses html2pdf for proper PDF generation (not just print)
+  const downloadPDF = async () => {
     if (!previewRef.current) {
       toast.error("Preview not available");
       return;
     }
-
-    const element = previewRef.current.querySelector(".bg-white");
+    const element = previewRef.current.querySelector(".bg-white") as HTMLElement | null;
     if (!element) {
       toast.error("Could not generate PDF");
       return;
     }
-
-    // Create a new window for printing
-    const printWindow = window.open("", "", "height=600,width=800");
-    if (!printWindow) {
-      toast.error("Could not open print window");
-      return;
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const fileName = `${referenceNumber || "memo"}.pdf`;
+      await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: fileName,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        })
+        .from(element)
+        .save();
+      toast.success("PDF downloaded");
+    } catch (err: any) {
+      toast.error(`Failed to download PDF: ${err.message}`);
     }
-
-    printWindow.document.write("<html><head><title>" + referenceNumber + "</title>");
-    printWindow.document.write("<style>");
-    printWindow.document.write("body { font-family: 'Times New Roman', Times, serif; margin: 20px; }");
-    printWindow.document.write(".bg-white { background: white; padding: 20px; }");
-    printWindow.document.write("</style>");
-    printWindow.document.write("</head><body>");
-    printWindow.document.write(element.innerHTML);
-    printWindow.document.write("</body></html>");
-    printWindow.document.close();
-
-    // Trigger print dialog
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-      toast.success("PDF ready to download");
-    }, 250);
   };
 
   // Send notification function

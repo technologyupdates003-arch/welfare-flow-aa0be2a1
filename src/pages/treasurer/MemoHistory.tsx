@@ -79,6 +79,59 @@ export default function MemoHistory() {
     },
   });
 
+  // Download memo as PDF
+  const downloadMemoPDF = async (memo: any) => {
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const orgName = "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
+      const container = document.createElement("div");
+      container.style.padding = "24px";
+      container.style.fontFamily = "'Times New Roman', Times, serif";
+      container.style.background = "#ffffff";
+      container.innerHTML = `
+        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;">
+          <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
+          <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">P.O.BOX 24-10300 KERUGOYA · Email: Khcww2020@gmail.com</p>
+        </div>
+        <p style="text-align:center;font-size:11px;font-weight:bold;color:#f97316;letter-spacing:3px;margin:0 0 16px;">KHCWW OFFICIAL MEMO</p>
+        <h2 style="font-size:15px;font-weight:bold;color:#111827;margin:0 0 6px;">${memo.title || ""}</h2>
+        <div style="font-size:11px;color:#6b7280;margin-bottom:14px;">
+          <p style="margin:2px 0;">Date: ${memo.sent_at ? new Date(memo.sent_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : new Date(memo.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+          <p style="margin:2px 0;">Reference: ${memo.reference_number || ""}</p>
+          <p style="margin:2px 0;">Category: ${getCategoryLabel(memo.category)}</p>
+        </div>
+        <div style="font-size:13px;color:#111827;line-height:1.6;white-space:pre-wrap;">${(memo.content || "").replace(/</g, "&lt;")}</div>
+        <div style="margin-top:48px;padding-top:14px;border-top:2px solid #111827;width:240px;">
+          <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
+          <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+        </div>
+      `;
+      document.body.appendChild(container);
+      await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: `${memo.reference_number || memo.id}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(container)
+        .save();
+      document.body.removeChild(container);
+
+      // Mark recipients as downloaded (best-effort)
+      await supabase
+        .from("memo_recipients")
+        .update({ downloaded_at: new Date().toISOString() })
+        .eq("memo_id", memo.id)
+        .is("downloaded_at", null);
+      toast.success("PDF downloaded");
+    } catch (err: any) {
+      toast.error(`Failed to download PDF: ${err.message}`);
+    }
+  };
+
+
   const getCategoryLabel = (cat: string) => {
     const labels: Record<string, string> = {
       financial_notice: "Financial Notice",
@@ -264,6 +317,7 @@ export default function MemoHistory() {
                               size="sm"
                               variant="ghost"
                               title="Download PDF"
+                              onClick={() => downloadMemoPDF(memo)}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -360,7 +414,7 @@ export default function MemoHistory() {
                 >
                   Close
                 </Button>
-                <Button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
+                <Button onClick={() => selectedMemo && downloadMemoPDF(selectedMemo)} className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>

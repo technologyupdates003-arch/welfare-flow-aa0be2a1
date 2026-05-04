@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import InstallBanner from "@/components/InstallBanner";
+import { useNotifications } from "@/hooks/useNotifications";
 import Login from "@/pages/Login";
 import AdminLayout from "@/components/layout/AdminLayout";
 import SuperAdminLayout from "@/components/layout/SuperAdminLayout";
@@ -72,6 +73,7 @@ const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { user, role, roles, loading } = useAuth();
+  useNotifications();
 
   if (loading) {
     return (
