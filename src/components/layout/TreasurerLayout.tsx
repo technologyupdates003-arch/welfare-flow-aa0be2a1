@@ -22,6 +22,28 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
   const { theme, setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const { data: notifications = [], refetch: refetchNotifs } = useQuery({
+    queryKey: ["treasurer-bell-notifications", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("notifications")
+        .select("id, title, message, is_read, created_at, type")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(15);
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+
+  const markAllRead = async () => {
+    if (!user || unreadCount === 0) return;
+    await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+    refetchNotifs();
+  };
+
   const menuItems = [
     { to: "/treasurer", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/treasurer/contributions", icon: CreditCard, label: "Contributions" },
