@@ -100,29 +100,38 @@ export default function CreateMemo() {
     retry: 1,
   });
 
-  // Fetch executives for quick selection - use all active members as fallback
+  // Fetch executives - STRICT: only users with an assigned role in user_roles
   const { data: executives = [], isLoading: executivesLoading, error: executivesError } = useQuery({
     queryKey: ["memo-executives-list"],
     queryFn: async () => {
       try {
-        console.log("Fetching executives...");
-        
-        // Just return all active members for now
-        // The executives-only filter can be refined later
-        const { data: allMembers, error } = await supabase
-          .from("members")
-          .select("id, name, phone, is_active, user_id")
-          .eq("is_active", true)
-          .order("name");
-        
-        if (error) {
-          console.error("Error fetching members:", error);
+        // 1) Get all user_ids that have an assigned role (any role counts as "executive")
+        const { data: roleRows, error: rolesErr } = await supabase
+          .from("user_roles")
+          .select("user_id");
+
+        if (rolesErr) {
+          console.error("Error fetching user_roles:", rolesErr);
           return [];
         }
-        
-        console.log(`All active members found: ${allMembers?.length || 0}`);
-        
-        return allMembers || [];
+
+        const userIds = Array.from(new Set((roleRows || []).map((r: any) => r.user_id).filter(Boolean)));
+        if (userIds.length === 0) return [];
+
+        // 2) Map them to active members
+        const { data: roleMembers, error: memErr } = await supabase
+          .from("members")
+          .select("id, name, phone, is_active, user_id")
+          .in("user_id", userIds)
+          .eq("is_active", true)
+          .order("name");
+
+        if (memErr) {
+          console.error("Error fetching role members:", memErr);
+          return [];
+        }
+
+        return roleMembers || [];
       } catch (err: any) {
         console.error("Exception fetching executives:", err);
         return [];
