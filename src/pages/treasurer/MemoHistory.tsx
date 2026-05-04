@@ -414,7 +414,7 @@ export default function MemoHistory() {
                 >
                   Close
                 </Button>
-                <Button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
+                <Button onClick={() => selectedMemo && downloadMemoPDF(selectedMemo)} className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>
