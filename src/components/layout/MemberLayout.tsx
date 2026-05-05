@@ -96,7 +96,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto pb-20 lg:pb-3">
-          {navItems.map(({ to, icon: Icon, label, showBadge, divider }) => (
+          {navItems.map((item: any) => { const { to, icon: Icon, label, showBadge, divider } = item; return (
             <div key={to}>
               {divider && (
                 <div className="my-3 border-t border-sidebar-border">
@@ -148,7 +148,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
 
       {/* Bottom Navigation (Mobile Only) */}
       <nav className="fixed bottom-0 inset-x-0 bg-card border-t border-border flex justify-around py-2 z-40 lg:hidden">
-        {navItems.slice(0, 4).map(({ to, icon: Icon, label, showBadge }) => (
+        {navItems.slice(0, 4).map((item: any) => { const { to, icon: Icon, label, showBadge } = item; return (
           <Link
             key={to}
             to={to}
