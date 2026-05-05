@@ -276,7 +276,7 @@ export default function PatronDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 border rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                {overallStats?.membersList?.filter(m => m.total_penalties === 0).length || 0}
+                {(overallStats as any)?.membersList?.filter(m => m.total_penalties === 0).length || 0}
               </div>
               <div className="text-sm text-muted-foreground">Members with No Penalties</div>
             </div>
@@ -288,13 +288,13 @@ export default function PatronDashboard() {
             </div>
             <div className="text-center p-4 border rounded-lg">
               <div className="text-2xl font-bold text-orange-600">
-                {overallStats?.membersList?.filter(m => m.total_penalties > 0).length || 0}
+                {(overallStats as any)?.membersList?.filter(m => m.total_penalties > 0).length || 0}
               </div>
               <div className="text-sm text-muted-foreground">Members with Penalties</div>
             </div>
           </div>
           
-          {overallStats?.membersList?.filter(m => m.total_penalties > 0).length > 0 && (
+          {(overallStats as any)?.membersList?.filter(m => m.total_penalties > 0).length > 0 && (
             <div>
               <h4 className="font-medium mb-3 text-destructive">Members Requiring Attention</h4>
               <Table>
@@ -307,7 +307,7 @@ export default function PatronDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {overallStats?.membersList
+                  {(overallStats as any)?.membersList
                     ?.filter(m => m.total_penalties > 0)
                     .slice(0, 5)
                     .map((member) => (

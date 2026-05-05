@@ -261,18 +261,21 @@ export type Database = {
           conversation_id: string
           id: string
           joined_at: string
+          last_read_at: string
           user_id: string
         }
         Insert: {
           conversation_id: string
           id?: string
           joined_at?: string
+          last_read_at?: string
           user_id: string
         }
         Update: {
           conversation_id?: string
           id?: string
           joined_at?: string
+          last_read_at?: string
           user_id?: string
         }
         Relationships: [
@@ -767,6 +770,9 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           content: string
           conversation_id: string | null
           created_at: string
@@ -777,6 +783,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content: string
           conversation_id?: string | null
           created_at?: string
@@ -787,6 +796,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string
           conversation_id?: string | null
           created_at?: string
@@ -1182,6 +1194,7 @@ export type Database = {
           member_id: string
           notes: string | null
           payment_date: string
+          payment_message: string | null
           reference_number: string
           rejection_reason: string | null
           status: string
@@ -1196,6 +1209,7 @@ export type Database = {
           member_id: string
           notes?: string | null
           payment_date: string
+          payment_message?: string | null
           reference_number: string
           rejection_reason?: string | null
           status?: string
@@ -1210,6 +1224,7 @@ export type Database = {
           member_id?: string
           notes?: string | null
           payment_date?: string
+          payment_message?: string | null
           reference_number?: string
           rejection_reason?: string | null
           status?: string

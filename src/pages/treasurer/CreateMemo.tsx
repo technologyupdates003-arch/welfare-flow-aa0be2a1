@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
+const supabase: any = supabaseClient;
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -249,7 +250,7 @@ export default function CreateMemo() {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const fileName = `${referenceNumber || "memo"}.pdf`;
-      await html2pdf()
+      await (html2pdf as any)()
         .set({
           margin: [10, 10, 10, 10],
           filename: fileName,

@@ -298,11 +298,11 @@ export default function MinutesManagement() {
                     </div>
 
                     {/* Show rejection notes if any */}
-                    {(minute.secretary_notes || minute.rejection_notes) && (
+                    {((minute as any).secretary_notes || minute.rejection_notes) && (
                       <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm font-medium text-red-800 mb-1">Feedback:</p>
                         <p className="text-sm text-red-700">
-                          {minute.secretary_notes || minute.rejection_notes}
+                          {(minute as any).secretary_notes || minute.rejection_notes}
                         </p>
                       </div>
                     )}

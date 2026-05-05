@@ -338,7 +338,7 @@ export default function ApproveMinutes() {
                   <Badge variant="secondary">{minutes.meeting_type}</Badge>
                   <Badge variant={
                     minutes.status === "secretary_reviewed" ? "default" : 
-                    minutes.status === "submitted" ? "warning" : 
+                    minutes.status === "submitted" ? "secondary" : 
                     minutes.status === "draft" ? "secondary" : 
                     "outline"
                   }>

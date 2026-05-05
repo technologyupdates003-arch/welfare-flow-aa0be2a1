@@ -163,7 +163,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map(({ to, icon: Icon, label, divider }, index) => (
+          {navItems.map((item: any, index) => { const { to, icon: Icon, label, divider } = item; return (
             <div key={to}>
               {divider && (
                 <div className="my-3 border-t border-slate-700">
@@ -184,7 +184,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <span className="flex-1">{label}</span>
               </Link>
             </div>
-          ))}
+          ); })}
         </nav>
         <div className="p-3 border-t border-slate-700">
           <Button variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800" onClick={signOut}>
