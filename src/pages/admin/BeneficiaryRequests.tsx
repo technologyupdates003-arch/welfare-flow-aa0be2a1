@@ -38,7 +38,7 @@ export default function BeneficiaryRequests() {
           beneficiary_id,
           reason,
           created_at,
-          member:members(name, phone, id_number)
+          member:members(name, phone)
         `)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
