@@ -122,7 +122,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
                 )}
               </Link>
             </div>
-          ))}
+          ); })}
         </nav>
         <div className="p-3 border-t border-sidebar-border hidden lg:block">
           <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={signOut}>
@@ -167,7 +167,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
             </div>
             <span className="truncate max-w-[60px]">{label}</span>
           </Link>
-        ))}
+        ); })}
         <button
           onClick={signOut}
           className="flex flex-col items-center gap-1 px-2 py-1 text-xs text-muted-foreground transition-colors"
