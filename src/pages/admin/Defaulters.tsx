@@ -222,10 +222,10 @@ export default function Defaulters() {
                             <Phone className="h-3 w-3" />
                             {member.phone}
                           </div>
-                          {member.email && (
+                          {(member as any).email && (
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Mail className="h-3 w-3" />
-                              {member.email}
+                              {(member as any).email}
                             </div>
                           )}
                         </div>

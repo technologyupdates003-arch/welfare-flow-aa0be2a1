@@ -83,7 +83,7 @@ export default function MemberDetail() {
   };
 
   const copyBankDetails = () => {
-    const details = `Bank: ${settings?.bank_name || 'Co-operative Bank'}\nPaybill: ${settings?.paybill_number || '400200'}\nAccount: ${settings?.account_number || '40088588'}`;
+    const details = `Bank: ${(settings as any)?.bank_name || 'Co-operative Bank'}\nPaybill: ${(settings as any)?.paybill_number || '400200'}\nAccount: ${(settings as any)?.account_number || '40088588'}`;
     navigator.clipboard.writeText(details);
     toast.success("Bank details copied!");
   };
@@ -239,15 +239,15 @@ export default function MemberDetail() {
           <div className="grid grid-cols-2 gap-3 text-sm mb-3">
             <div>
               <p className="text-muted-foreground text-xs">Bank Name</p>
-              <p className="font-medium">{settings?.bank_name || 'Co-operative Bank'}</p>
+              <p className="font-medium">{(settings as any)?.bank_name || 'Co-operative Bank'}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Paybill Number</p>
-              <p className="font-medium">{settings?.paybill_number || '400200'}</p>
+              <p className="font-medium">{(settings as any)?.paybill_number || '400200'}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Account Number</p>
-              <p className="font-medium">{settings?.account_number || '40088588'}</p>
+              <p className="font-medium">{(settings as any)?.account_number || '40088588'}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Reference</p>

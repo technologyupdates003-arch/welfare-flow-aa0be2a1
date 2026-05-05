@@ -332,7 +332,7 @@ export default function SuperAdminDashboard() {
                                       {member.is_active ? "Active" : "Inactive"}
                                     </Badge>
                                     <Badge variant="outline" className="text-xs">
-                                      ID: {member.id_number || "N/A"}
+                                      ID: {(member as any).id_number || "N/A"}
                                     </Badge>
                                   </div>
                                 </div>

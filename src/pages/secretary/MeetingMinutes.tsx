@@ -1140,7 +1140,7 @@ export default function MeetingMinutes() {
                     <div className="flex items-center gap-2">
                       <Badge variant={
                         m.status === "approved" ? "default" : 
-                        m.status === "submitted" ? "warning" : 
+                        m.status === "submitted" ? "secondary" : 
                         m.status === "rejected" ? "destructive" : 
                         "secondary"
                       }>

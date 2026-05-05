@@ -256,7 +256,7 @@ export default function SuperAdminMemberDetail() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-sm font-medium text-blue-100">Member ID</CardTitle>
-                  <div className="text-lg font-bold mt-1">{member.id_number || "N/A"}</div>
+                  <div className="text-lg font-bold mt-1">{(member as any).id_number || "N/A"}</div>
                 </div>
                 <User className="h-8 w-8 text-foreground/70" />
               </div>
@@ -354,14 +354,14 @@ export default function SuperAdminMemberDetail() {
                       <Label className="text-muted-foreground text-sm">Email Address</Label>
                       <p className="font-semibold text-foreground text-lg mt-1 flex items-center gap-2">
                         <Mail className="h-4 w-4" />
-                        {member.email || "Not provided"}
+                        {(member as any).email || "Not provided"}
                       </p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div className="p-4 bg-muted/50 rounded-lg border border-border">
                       <Label className="text-muted-foreground text-sm">ID Number</Label>
-                      <p className="font-semibold text-foreground text-lg mt-1">{member.id_number || "Not provided"}</p>
+                      <p className="font-semibold text-foreground text-lg mt-1">{(member as any).id_number || "Not provided"}</p>
                     </div>
                     <div className="p-4 bg-muted/50 rounded-lg border border-border">
                       <Label className="text-muted-foreground text-sm">Account Status</Label>
@@ -398,12 +398,12 @@ export default function SuperAdminMemberDetail() {
                   </div>
                 </div>
 
-                {member.address && (
+                {(member as any).address && (
                   <div className="p-4 bg-muted/50 rounded-lg border border-border">
                     <Label className="text-muted-foreground text-sm">Address</Label>
                     <p className="font-semibold text-foreground text-lg mt-1 flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      {member.address}
+                      {(member as any).address}
                     </p>
                   </div>
                 )}
