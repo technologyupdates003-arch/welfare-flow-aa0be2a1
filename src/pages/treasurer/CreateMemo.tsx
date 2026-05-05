@@ -250,7 +250,7 @@ export default function CreateMemo() {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const fileName = `${referenceNumber || "memo"}.pdf`;
-      await html2pdf()
+      await (html2pdf as any)()
         .set({
           margin: [10, 10, 10, 10],
           filename: fileName,
