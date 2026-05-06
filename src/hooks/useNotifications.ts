@@ -19,7 +19,7 @@ export function useNotifications() {
 
     // Listen for new messages
     const channel = supabase
-      .channel('messages')
+      .channel(`notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
