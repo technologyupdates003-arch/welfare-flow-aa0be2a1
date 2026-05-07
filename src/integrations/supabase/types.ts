@@ -590,6 +590,9 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           secretary_name: string | null
+          secretary_notes: string | null
+          secretary_reviewed_at: string | null
+          secretary_reviewed_by: string | null
           secretary_signature_url: string | null
           status: string | null
           submitted_at: string | null
@@ -618,6 +621,9 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           secretary_name?: string | null
+          secretary_notes?: string | null
+          secretary_reviewed_at?: string | null
+          secretary_reviewed_by?: string | null
           secretary_signature_url?: string | null
           status?: string | null
           submitted_at?: string | null
@@ -646,6 +652,9 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           secretary_name?: string | null
+          secretary_notes?: string | null
+          secretary_reviewed_at?: string | null
+          secretary_reviewed_by?: string | null
           secretary_signature_url?: string | null
           status?: string | null
           submitted_at?: string | null
