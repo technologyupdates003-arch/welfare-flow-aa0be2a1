@@ -261,14 +261,13 @@ Deno.serve(async (req) => {
             payment_id: payment.id,
           }).eq("id", unpaidContrib.id);
 
-          // Update member total
-          await supabase.rpc("has_role", { _user_id: matchedMember.id, _role: "member" }); // dummy to keep alive
+          // Update member total contributions
           const { data: memberData } = await supabase
             .from("members")
             .select("total_contributions")
             .eq("id", matchedMember.id)
             .single();
-          
+
           if (memberData) {
             await supabase.from("members").update({
               total_contributions: (memberData.total_contributions || 0) + amount,
