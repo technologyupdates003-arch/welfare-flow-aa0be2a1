@@ -61,6 +61,7 @@ import MemoHistory from "@/pages/treasurer/MemoHistory";
 import TreasurerDocuments from "@/pages/treasurer/TreasurerDocuments";
 import TreasurerReports from "@/pages/treasurer/TreasurerReports";
 import TreasurerSettings from "@/pages/treasurer/TreasurerSettings";
+import BankSync from "@/pages/treasurer/BankSync";
 import SystemTroubleshooting from "@/pages/super-admin/SystemTroubleshooting";
 import AuditLogs from "@/pages/super-admin/AuditLogs";
 import SecuritySettings from "@/pages/super-admin/SecuritySettings";
@@ -130,6 +131,7 @@ function AppRoutes() {
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         
         {/* Member routes */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
@@ -190,6 +192,7 @@ function AppRoutes() {
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         
         {/* Member routes for super admin */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
@@ -236,6 +239,7 @@ function AppRoutes() {
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         
         {/* Super Admin routes if user has super_admin role */}
         {roles.includes("super_admin") && (
