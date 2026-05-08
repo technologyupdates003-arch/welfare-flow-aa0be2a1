@@ -22,6 +22,38 @@ import { toast } from "sonner";
 
 export default function MemberDashboard() {
   const { memberId } = useAuth();
+  const [payOpen, setPayOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payPhone, setPayPhone] = useState("");
+  const [paying, setPaying] = useState(false);
+
+  const handlePayNow = async () => {
+    const amt = Number(payAmount);
+    if (!amt || amt <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    setPaying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("coop-stk-push", {
+        body: { member_id: memberId, amount: amt, phone: payPhone || undefined },
+      });
+      if (error) throw error;
+      if ((data as any)?.setup_required) {
+        toast.error((data as any).error || "Bank STK Push not configured yet");
+      } else if ((data as any)?.ok) {
+        toast.success((data as any).message || "Check your phone for the M-Pesa prompt");
+        setPayOpen(false);
+        setPayAmount("");
+      } else {
+        toast.error((data as any)?.message || "Failed to initiate payment");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const { data: member } = useQuery({
     queryKey: ["my-member", memberId],
