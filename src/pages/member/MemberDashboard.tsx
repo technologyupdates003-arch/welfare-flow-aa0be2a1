@@ -330,7 +330,11 @@ export default function MemberDashboard() {
               <Copy className="h-4 w-4 mr-1" />
               Copy Details
             </Button>
-            <Button size="sm" className="flex-1 bg-primary">
+            <Button size="sm" className="flex-1 bg-primary" onClick={() => {
+              setPayAmount(String(unpaidAmount > 0 ? unpaidAmount : ""));
+              setPayPhone(member?.phone || "");
+              setPayOpen(true);
+            }}>
               <CreditCard className="h-4 w-4 mr-1" />
               Pay Now
             </Button>
@@ -342,6 +346,42 @@ export default function MemberDashboard() {
           </p>
         </CardContent>
       </Card>
+
+      <Dialog open={payOpen} onOpenChange={setPayOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Pay via M-Pesa
+            </DialogTitle>
+            <DialogDescription>
+              You'll receive an M-Pesa prompt on your phone. Enter your PIN to complete the payment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="pay-amount">Amount (KES)</Label>
+              <Input id="pay-amount" type="number" inputMode="numeric" min={1}
+                value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
+                placeholder="e.g. 1000" />
+            </div>
+            <div>
+              <Label htmlFor="pay-phone">M-Pesa Phone</Label>
+              <Input id="pay-phone" type="tel" value={payPhone}
+                onChange={(e) => setPayPhone(e.target.value)}
+                placeholder="07XXXXXXXX or 2547XXXXXXXX" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayOpen(false)} disabled={paying}>
+              Cancel
+            </Button>
+            <Button onClick={handlePayNow} disabled={paying}>
+              {paying ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</> : "Send Prompt"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
