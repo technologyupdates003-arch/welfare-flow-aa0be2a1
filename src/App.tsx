@@ -61,6 +61,7 @@ import MemoHistory from "@/pages/treasurer/MemoHistory";
 import TreasurerDocuments from "@/pages/treasurer/TreasurerDocuments";
 import TreasurerReports from "@/pages/treasurer/TreasurerReports";
 import TreasurerSettings from "@/pages/treasurer/TreasurerSettings";
+import BankSync from "@/pages/treasurer/BankSync";
 import SystemTroubleshooting from "@/pages/super-admin/SystemTroubleshooting";
 import AuditLogs from "@/pages/super-admin/AuditLogs";
 import SecuritySettings from "@/pages/super-admin/SecuritySettings";
