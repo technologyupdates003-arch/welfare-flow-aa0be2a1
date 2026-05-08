@@ -47,6 +47,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
   const menuItems = [
     { to: "/treasurer", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/treasurer/contributions", icon: CreditCard, label: "Contributions" },
+    { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
     { to: "/treasurer/memos", icon: FileText, label: "Memos" },
     { to: "/treasurer/documents", icon: FileText, label: "Documents" },
