@@ -60,18 +60,40 @@ export default function MinutesReview() {
     },
   });
 
-  // Approve and forward to chairperson
+  // Approve and forward to chairperson — auto-prefill secretary signature & name
   const approveMutation = useMutation({
     mutationFn: async ({ minuteId, notes }: { minuteId: string; notes: string }) => {
+      // Look up the secretary's stored signature
+      const { data: sigRow } = await supabase
+        .from("office_bearer_signatures")
+        .select("signature_url")
+        .eq("role", "secretary")
+        .maybeSingle();
+
+      // Look up the secretary's display name from members
+      let secretaryName: string | null = null;
+      if (user?.id) {
+        const { data: memberRow } = await supabase
+          .from("members")
+          .select("name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        secretaryName = memberRow?.name || user.email || null;
+      }
+
+      const updatePayload: any = {
+        status: "secretary_reviewed",
+        secretary_reviewed_by: user?.id,
+        secretary_reviewed_at: new Date().toISOString(),
+        secretary_notes: notes,
+        updated_at: new Date().toISOString(),
+      };
+      if (sigRow?.signature_url) updatePayload.secretary_signature_url = sigRow.signature_url;
+      if (secretaryName) updatePayload.secretary_name = secretaryName;
+
       const { error } = await supabase
         .from("meeting_minutes")
-        .update({
-          status: "secretary_reviewed",
-          secretary_reviewed_by: user?.id,
-          secretary_reviewed_at: new Date().toISOString(),
-          secretary_notes: notes,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq("id", minuteId);
 
       if (error) throw error;
