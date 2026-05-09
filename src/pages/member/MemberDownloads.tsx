@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Download, Eye, FileText, ScrollText } from "lucide-react";
+import { Download, Eye, FileText, ScrollText, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MemberDownloads() {
@@ -15,6 +15,61 @@ export default function MemberDownloads() {
   const [showMinute, setShowMinute] = useState(false);
   const [selectedMinute, setSelectedMinute] = useState<any>(null);
   const [statementHtml, setStatementHtml] = useState("");
+  const [showMemo, setShowMemo] = useState(false);
+  const [selectedMemo, setSelectedMemo] = useState<any>(null);
+
+  const { data: memos = [], refetch: refetchMemos } = useQuery({
+    queryKey: ["my-memos", memberId],
+    queryFn: async () => {
+      if (!memberId) return [];
+      const { data } = await supabase
+        .from("memo_recipients")
+        .select("id, seen_at, downloaded_at, memos(*)")
+        .eq("member_id", memberId)
+        .order("created_at", { ascending: false });
+      return (data || []).filter((r: any) => r.memos && r.memos.status === "sent");
+    },
+    enabled: !!memberId,
+  });
+
+  const generateMemoHtml = (memo: any) => `<!DOCTYPE html><html><head><title>${memo.title}</title>
+    <style>body{font-family:Arial,sans-serif;margin:40px;line-height:1.7;max-width:800px;margin:0 auto;padding:30px}
+    .header{text-align:center;border-bottom:3px solid #16a34a;padding-bottom:20px;margin-bottom:30px}
+    .header h1{margin:0;color:#16a34a}.ref{color:#666;font-size:13px;margin-top:8px}
+    .meta{background:#f9fafb;padding:15px;border-radius:8px;margin-bottom:20px;font-size:14px}
+    .content{white-space:pre-wrap;line-height:1.8}
+    .cat{display:inline-block;background:#16a34a;color:white;padding:4px 10px;border-radius:12px;font-size:12px}
+    </style></head><body>
+    <div class="header"><h1>KIRINYAGA HCWW</h1><h2>${memo.title}</h2>
+    <div class="ref">Ref: ${memo.reference_number || '—'}</div></div>
+    <div class="meta"><span class="cat">${(memo.category || '').replace(/_/g,' ').toUpperCase()}</span>
+    &nbsp;&nbsp;Date: ${new Date(memo.sent_at || memo.created_at).toLocaleDateString()}</div>
+    <div class="content">${memo.content}</div>
+    </body></html>`;
+
+  const viewMemo = async (recipient: any) => {
+    setSelectedMemo(recipient.memos);
+    setShowMemo(true);
+    if (!recipient.seen_at) {
+      await supabase.from("memo_recipients").update({ seen_at: new Date().toISOString() }).eq("id", recipient.id);
+      refetchMemos();
+    }
+  };
+
+  const downloadMemo = async (recipient: any) => {
+    const memo = recipient.memos;
+    const blob = new Blob([generateMemoHtml(memo)], { type: 'text/html' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `memo-${(memo.reference_number || memo.title).replace(/\s+/g,'-')}.html`;
+    document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+    if (!recipient.downloaded_at) {
+      await supabase.from("memo_recipients").update({ downloaded_at: new Date().toISOString(), seen_at: recipient.seen_at || new Date().toISOString() }).eq("id", recipient.id);
+      refetchMemos();
+    }
+    toast.success("Memo downloaded!");
+  };
 
   const { data: member } = useQuery({
     queryKey: ["my-profile", user?.id],
@@ -430,6 +485,56 @@ ol,ul{padding-left:25px}li{margin-bottom:6px}
           </CardContent>
         </Card>
       )}
+
+      {/* Memos */}
+      {memos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Memos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Official memos sent to you</p>
+            <div className="space-y-2">
+              {memos.map((r: any) => (
+                <div key={r.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-accent/50 transition">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm flex items-center gap-2">
+                      {r.memos.title}
+                      {!r.seen_at && <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">NEW</span>}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.memos.reference_number} • {new Date(r.memos.sent_at || r.memos.created_at).toLocaleDateString()} • {(r.memos.category || '').replace(/_/g, ' ')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => viewMemo(r)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => downloadMemo(r)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Memo Preview Dialog */}
+      <Dialog open={showMemo} onOpenChange={setShowMemo}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedMemo?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedMemo?.reference_number} • {selectedMemo && new Date(selectedMemo.sent_at || selectedMemo.created_at).toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMemo && <div dangerouslySetInnerHTML={{ __html: generateMemoHtml(selectedMemo) }} />}
+        </DialogContent>
+      </Dialog>
 
       {/* Statement Preview Dialog */}
       <Dialog open={showStatement} onOpenChange={setShowStatement}>
