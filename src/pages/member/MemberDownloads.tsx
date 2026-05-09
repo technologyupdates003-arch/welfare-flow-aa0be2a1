@@ -486,6 +486,56 @@ ol,ul{padding-left:25px}li{margin-bottom:6px}
         </Card>
       )}
 
+      {/* Memos */}
+      {memos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Memos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Official memos sent to you</p>
+            <div className="space-y-2">
+              {memos.map((r: any) => (
+                <div key={r.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-accent/50 transition">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm flex items-center gap-2">
+                      {r.memos.title}
+                      {!r.seen_at && <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">NEW</span>}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.memos.reference_number} • {new Date(r.memos.sent_at || r.memos.created_at).toLocaleDateString()} • {(r.memos.category || '').replace(/_/g, ' ')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => viewMemo(r)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => downloadMemo(r)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Memo Preview Dialog */}
+      <Dialog open={showMemo} onOpenChange={setShowMemo}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedMemo?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedMemo?.reference_number} • {selectedMemo && new Date(selectedMemo.sent_at || selectedMemo.created_at).toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMemo && <div dangerouslySetInnerHTML={{ __html: generateMemoHtml(selectedMemo) }} />}
+        </DialogContent>
+      </Dialog>
+
       {/* Statement Preview Dialog */}
       <Dialog open={showStatement} onOpenChange={setShowStatement}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
