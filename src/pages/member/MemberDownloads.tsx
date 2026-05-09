@@ -32,20 +32,81 @@ export default function MemberDownloads() {
     enabled: !!memberId,
   });
 
-  const generateMemoHtml = (memo: any) => `<!DOCTYPE html><html><head><title>${memo.title}</title>
-    <style>body{font-family:Arial,sans-serif;margin:40px;line-height:1.7;max-width:800px;margin:0 auto;padding:30px}
-    .header{text-align:center;border-bottom:3px solid #16a34a;padding-bottom:20px;margin-bottom:30px}
-    .header h1{margin:0;color:#16a34a}.ref{color:#666;font-size:13px;margin-top:8px}
-    .meta{background:#f9fafb;padding:15px;border-radius:8px;margin-bottom:20px;font-size:14px}
-    .content{white-space:pre-wrap;line-height:1.8}
-    .cat{display:inline-block;background:#16a34a;color:white;padding:4px 10px;border-radius:12px;font-size:12px}
-    </style></head><body>
-    <div class="header"><h1>KIRINYAGA HCWW</h1><h2>${memo.title}</h2>
-    <div class="ref">Ref: ${memo.reference_number || '—'}</div></div>
-    <div class="meta"><span class="cat">${(memo.category || '').replace(/_/g,' ').toUpperCase()}</span>
-    &nbsp;&nbsp;Date: ${new Date(memo.sent_at || memo.created_at).toLocaleDateString()}</div>
-    <div class="content">${memo.content}</div>
-    </body></html>`;
+  const { data: orgSettings } = useQuery({
+    queryKey: ["org-settings-memo"],
+    queryFn: async () => {
+      const { data } = await supabase.from("organization_settings").select("*").maybeSingle();
+      return data;
+    },
+  });
+
+  const generateMemoHtml = (memo: any) => {
+    const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
+    const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
+    const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
+    const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
+    const logo = orgSettings?.logo_url || "";
+    const signature = orgSettings?.signature_url || "";
+    const stamp = orgSettings?.stamp_url || "";
+    const dateStr = new Date(memo.sent_at || memo.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${memo.title}</title>
+<style>
+  body{font-family:'Times New Roman',Times,serif;margin:0;padding:40px;background:#fff;color:#111827;max-width:850px;margin:0 auto}
+  .header{border-bottom:4px solid #f97316;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+  .logo{height:80px;width:80px;object-fit:contain}
+  .org{text-align:right;flex:1}
+  .org h1{font-size:18px;margin:0 0 4px;color:#111827}
+  .org p{margin:2px 0;font-size:12px;color:#6B7280}
+  .org .email{color:#ea580c;font-weight:500}
+  .watermark{text-align:center;margin-bottom:16px;font-size:12px;font-weight:bold;color:#f97316;letter-spacing:3px}
+  .title{font-size:16px;font-weight:bold;margin:0 0 8px}
+  .meta{font-size:12px;color:#6B7280;margin-bottom:24px}
+  .meta p{margin:2px 0}
+  .content{font-size:14px;line-height:1.7;white-space:pre-wrap;margin-bottom:48px}
+  .footer{margin-top:48px;padding-top:24px;border-top:2px solid #E5E7EB;display:flex;justify-content:space-between;align-items:flex-end}
+  .sig img{height:64px;object-fit:contain;display:block;margin-bottom:4px}
+  .sig .line{border-top:2px solid #111827;padding-top:4px;width:220px}
+  .sig .role{font-size:12px;font-weight:bold;margin:0}
+  .sig .auth{font-size:11px;color:#6B7280;margin:4px 0 0}
+  .stamp{height:96px;width:96px;object-fit:contain;opacity:0.9}
+  .contact{margin-top:32px;padding-top:16px;border-top:1px solid #E5E7EB;text-align:center;font-size:11px;color:#6B7280}
+  .contact .name{font-weight:600}
+  @media print{body{padding:20px}}
+</style></head><body>
+  <div class="header">
+    ${logo ? `<img class="logo" src="${logo}" alt="Logo">` : '<div class="logo"></div>'}
+    <div class="org">
+      <h1>${orgName}</h1>
+      <p>${orgAddress}</p>
+      <p class="email">Email: ${orgEmail}</p>
+      <p>Tel: ${orgPhone}</p>
+    </div>
+  </div>
+  <div class="watermark">KHCWW OFFICIAL MEMO</div>
+  <h2 class="title">${memo.title}</h2>
+  <div class="meta">
+    <p>Date: ${dateStr}</p>
+    <p>Reference: ${memo.reference_number || '—'}</p>
+  </div>
+  <div class="content">${memo.content}</div>
+  <div class="footer">
+    <div class="sig">
+      ${signature ? `<img src="${signature}" alt="Signature">` : ''}
+      <div class="line">
+        <p class="role">Treasurer</p>
+        <p class="auth">Authorized by Treasurer</p>
+      </div>
+    </div>
+    ${stamp ? `<img class="stamp" src="${stamp}" alt="Stamp">` : ''}
+  </div>
+  <div class="contact">
+    <p class="name">${orgName}</p>
+    <p>${orgAddress}</p>
+    <p>Email: ${orgEmail} | Tel: ${orgPhone}</p>
+  </div>
+</body></html>`;
+  };
 
   const viewMemo = async (recipient: any) => {
     setSelectedMemo(recipient.memos);
