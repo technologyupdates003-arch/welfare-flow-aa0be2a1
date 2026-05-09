@@ -745,6 +745,129 @@ export type Database = {
         }
         Relationships: []
       }
+      memo_recipients: {
+        Row: {
+          created_at: string | null
+          delivered_at: string | null
+          downloaded_at: string | null
+          id: string
+          member_id: string
+          memo_id: string
+          seen_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivered_at?: string | null
+          downloaded_at?: string | null
+          id?: string
+          member_id: string
+          memo_id: string
+          seen_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivered_at?: string | null
+          downloaded_at?: string | null
+          id?: string
+          member_id?: string
+          memo_id?: string
+          seen_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memo_recipients_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memo_recipients_memo_id_fkey"
+            columns: ["memo_id"]
+            isOneToOne: false
+            referencedRelation: "memos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memo_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string
+          id: string
+          name: string
+          template_content: string
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          name: string
+          template_content: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          name?: string
+          template_content?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: []
+      }
+      memos: {
+        Row: {
+          attachments: string[] | null
+          category: string
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          recipient_type: string
+          reference_number: string | null
+          sent_at: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          category: string
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          recipient_type: string
+          reference_number?: string | null
+          sent_at?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: string[] | null
+          category?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          recipient_type?: string
+          reference_number?: string | null
+          sent_at?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -1489,6 +1612,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_memo_reference: { Args: never; Returns: string }
       get_members_with_roles: {
         Args: never
         Returns: {
