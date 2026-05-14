@@ -2120,6 +2120,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment: {
+        Args: {
+          amount: number
+          field_name: string
+          row_id: string
+          table_name: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
