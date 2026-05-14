@@ -80,6 +80,9 @@ Deno.serve(async (req) => {
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
     const status = resp.ok ? "sent" : "failed";
+    const providerError = !resp.ok ? (data?.error || data?.provider?.error || "SMS provider error") : null;
+    const insufficientBalance = typeof providerError === "string" && /insufficient.*balance/i.test(providerError);
+
     const logs = recipients.map((phone) => ({
       recipient_phone: phone,
       message,
@@ -88,12 +91,16 @@ Deno.serve(async (req) => {
     }));
     await supabase.from("sms_logs").insert(logs);
 
+    // Always return 200 so the frontend can show a friendly toast instead of crashing.
     return new Response(
-      JSON.stringify({ status, count: recipients.length, provider: data }),
-      {
-        status: resp.ok ? 200 : 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({
+        status,
+        count: recipients.length,
+        provider: data,
+        error: providerError,
+        insufficient_balance: insufficientBalance,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Bulk SMS error:", error);
