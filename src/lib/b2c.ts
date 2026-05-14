@@ -11,6 +11,7 @@ interface B2CPayload {
   phoneNumber: string;
   reason: string;
   adminName: string;
+  walletType?: 'penalty' | 'donation';
 }
 
 interface B2CResponse {
