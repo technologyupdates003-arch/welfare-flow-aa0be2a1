@@ -55,6 +55,7 @@ const getNavItems = (role: string) => {
         { to: "/admin/donations", icon: DollarSign, label: "Donation Wallet" },
         { to: "/admin/donation-campaigns", icon: Target, label: "Donation Campaigns" },
         { to: "/admin/withdrawal-approval", icon: FileSignature, label: "Withdrawal Approvals" },
+        { to: "/admin/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" },
         { to: "/admin/sms", icon: Send, label: "Bulk SMS" },
         { to: "/admin/events", icon: Calendar, label: "Events" },
         { to: "/admin/documents", icon: FileText, label: "Documents" },
