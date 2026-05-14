@@ -46,7 +46,6 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
   const dashboardOptions = [
     { to: "/super-admin", label: "Super Admin", icon: Shield, show: true },
     { to: "/admin", label: "Admin", icon: LayoutDashboard, show: roles.includes("admin") },
-    { to: "/treasurer", label: "Treasurer", icon: Database, show: roles.includes("treasurer") },
     { to: "/secretary", label: "Secretary", icon: FileText, show: roles.includes("secretary") },
     { to: "/chairperson", label: "Chairperson", icon: Users, show: roles.includes("chairperson") },
     { to: "/vice-chairperson", label: "Vice Chairperson", icon: Users, show: roles.includes("vice_chairperson") },
