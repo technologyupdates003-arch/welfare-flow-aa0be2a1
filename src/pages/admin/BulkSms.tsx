@@ -70,7 +70,16 @@ export default function BulkSms() {
         body: { phones: recipients.map(m => m.phone), message: message.trim() },
       });
       if (error) throw error;
-      toast.success(`SMS sent to ${(data as any)?.count ?? recipients.length} recipients`);
+      const res: any = data;
+      if (res?.status === "failed") {
+        if (res.insufficient_balance) {
+          toast.error("SMS provider has insufficient balance. Please top up the ABANCOOL account.");
+        } else {
+          toast.error(res.error || "SMS provider rejected the request");
+        }
+        return;
+      }
+      toast.success(`SMS sent to ${res?.count ?? recipients.length} recipients`);
       setMessage("");
       setSelected(new Set());
     } catch (e: any) {
