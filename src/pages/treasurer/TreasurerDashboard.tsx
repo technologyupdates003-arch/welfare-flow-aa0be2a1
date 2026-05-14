@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2, Banknote } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -417,12 +419,19 @@ NEXT STEPS:
   };
 
   return (
-    <div className="space-y-2 md:space-y-3">
+    <div className="space-y-6">
+      <DashboardHeader
+        title="Treasurer Dashboard"
+        subtitle="Financial oversight, contributions, and approvals"
+        icon={Banknote}
+        badge="Financial Control"
+      />
+
       {/* AI Assistant Button */}
       <div className="flex justify-end">
         <Dialog open={aiOpen} onOpenChange={setAiOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white text-sm md:text-base">
+            <Button className="gradient-brand text-primary-foreground shadow-brand text-sm md:text-base">
               <Sparkles className="h-4 w-4 mr-2" />
               AI Financial Advisor
             </Button>
@@ -444,13 +453,13 @@ NEXT STEPS:
               <Button
                 onClick={generateAIResponse}
                 disabled={aiLoading}
-                className="w-full bg-gradient-to-r from-purple-500 to-purple-600"
+                className="w-full gradient-brand text-primary-foreground"
               >
                 {aiLoading ? "Analyzing..." : "Get Insights"}
               </Button>
               {aiResponse && (
-                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                  <p className="text-sm text-purple-900 whitespace-pre-wrap">{aiResponse}</p>
+                <div className="glass-brand p-4 rounded-lg border border-primary/30">
+                  <p className="text-sm whitespace-pre-wrap">{aiResponse}</p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -468,92 +477,17 @@ NEXT STEPS:
           </DialogContent>
         </Dialog>
       </div>
-      {/* KPI Cards - Top Row - More compact grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-        {/* Total Balance */}
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
-          <CardContent className="p-2 md:p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm text-[#6B7280] font-medium">Total Balance</p>
-                <h3 className="text-lg md:text-2xl font-bold text-[#111827] mt-1 md:mt-2 break-words">
-                  Ksh {financialSummary?.totalBalance.toLocaleString() || "0"}
-                </h3>
-                <p className="text-xs text-[#6B7280] mt-1">Updated today</p>
-              </div>
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                <Wallet className="h-5 w-5 md:h-6 md:w-6 text-[#2563EB]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Contributions This Month */}
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
-          <CardContent className="p-2 md:p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm text-[#6B7280] font-medium">Contributions (This Month)</p>
-                <h3 className="text-lg md:text-2xl font-bold text-[#111827] mt-1 md:mt-2 break-words">
-                  Ksh {financialSummary?.monthlyContributions.toLocaleString() || "0"}
-                </h3>
-                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Income
-                </p>
-              </div>
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Expenses This Month */}
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
-          <CardContent className="p-2 md:p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm text-[#6B7280] font-medium">Expenses (This Month)</p>
-                <h3 className="text-lg md:text-2xl font-bold text-[#111827] mt-1 md:mt-2 break-words">
-                  Ksh {financialSummary?.monthlyExpenses.toLocaleString() || "0"}
-                </h3>
-                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                  <TrendingDown className="h-3 w-3" />
-                  Outflow
-                </p>
-              </div>
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                <TrendingDown className="h-5 w-5 md:h-6 md:w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Net Balance */}
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
-          <CardContent className="p-2 md:p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm text-[#6B7280] font-medium">Net Balance</p>
-                <h3 className={`text-lg md:text-2xl font-bold mt-1 md:mt-2 break-words ${
-                  (financialSummary?.netBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
-                }`}>
-                  Ksh {financialSummary?.netBalance.toLocaleString() || "0"}
-                </h3>
-                <p className="text-xs text-[#6B7280] mt-1">This month</p>
-              </div>
-              <div className={`h-10 w-10 md:h-12 md:w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                (financialSummary?.netBalance || 0) >= 0 ? "bg-green-50" : "bg-red-50"
-              }`}>
-                <DollarSign className={`h-5 w-5 md:h-6 md:w-6 ${
-                  (financialSummary?.netBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
-                }`} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* KPI Cards */}
+      <GlassStatsGrid
+        cols="grid-cols-2 lg:grid-cols-4"
+        stats={[
+          { label: "Total Balance", value: `Ksh ${(financialSummary?.totalBalance || 0).toLocaleString()}`, icon: Wallet, sub: "Updated today", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Contributions (Month)", value: `Ksh ${(financialSummary?.monthlyContributions || 0).toLocaleString()}`, icon: TrendingUp, sub: "Income", accent: "from-success/30 to-success/5", subIcon: TrendingUp },
+          { label: "Expenses (Month)", value: `Ksh ${(financialSummary?.monthlyExpenses || 0).toLocaleString()}`, icon: TrendingDown, sub: "Outflow", accent: "from-destructive/30 to-destructive/5", subIcon: TrendingDown },
+          { label: "Net Balance", value: `Ksh ${(financialSummary?.netBalance || 0).toLocaleString()}`, icon: DollarSign, sub: "This month", accent: (financialSummary?.netBalance || 0) >= 0 ? "from-success/30 to-success/5" : "from-destructive/30 to-destructive/5" },
+        ]}
+      />
 
       {/* Chart and Alerts Row - More compact */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-3">

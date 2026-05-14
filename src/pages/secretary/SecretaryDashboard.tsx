@@ -329,59 +329,30 @@ export default function SecretaryDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Secretary Dashboard</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={openMinuteTemplate}>
-            <FileText className="h-4 w-4 mr-2" />
-            Meeting Minutes
-          </Button>
-          <Badge variant="default" className="text-sm self-center">Event Management</Badge>
-        </div>
+      <DashboardHeader
+        title="Secretary Dashboard"
+        subtitle="Events, members, and documentation"
+        icon={ClipboardList}
+        badge="Event Management"
+      />
+
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={openMinuteTemplate}>
+          <FileText className="h-4 w-4 mr-2" />
+          Meeting Minutes
+        </Button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalEvents || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats?.activeEvents || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalMembers || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalDocuments || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <GlassStatsGrid
+        cols="grid-cols-2 lg:grid-cols-4"
+        stats={[
+          { label: "Total Events", value: stats?.totalEvents || 0, icon: Calendar, sub: "All time", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Active Events", value: stats?.activeEvents || 0, icon: Calendar, sub: "Currently open", accent: "from-success/30 to-success/5" },
+          { label: "Total Members", value: stats?.totalMembers || 0, icon: Users, sub: "Registered", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Documents", value: stats?.totalDocuments || 0, icon: FileText, sub: "Uploaded", accent: "from-secondary/30 to-secondary/5" },
+        ]}
+      />
 
       {/* Events Management */}
       <Card>

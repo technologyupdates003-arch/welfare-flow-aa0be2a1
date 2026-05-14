@@ -103,72 +103,24 @@ export default function ViceSecretaryDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Vice Secretary Dashboard</h1>
-        <Badge variant="secondary" className="text-sm">Records & Documentation</Badge>
-      </div>
+      <DashboardHeader
+        title="Vice Secretary Dashboard"
+        subtitle="Records, documentation, and member support"
+        icon={ClipboardList}
+        badge="Records & Documentation"
+      />
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalEvents || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.activeEvents || 0} active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalDocuments || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.pendingDocuments || 0} pending
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalMembers || 0}</div>
-            <p className="text-xs text-muted-foreground">Active members</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Messages</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.recentMessages || 0}</div>
-            <p className="text-xs text-muted-foreground">Recent activity</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Notifications</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.unreadNotifications || 0}</div>
-            <p className="text-xs text-muted-foreground">Unread</p>
-          </CardContent>
-        </Card>
-      </div>
+      <GlassStatsGrid
+        cols="grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        stats={[
+          { label: "Total Events", value: stats?.totalEvents || 0, icon: Calendar, sub: `${stats?.activeEvents || 0} active`, accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Documents", value: stats?.totalDocuments || 0, icon: FileText, sub: `${stats?.pendingDocuments || 0} pending`, accent: "from-secondary/30 to-secondary/5" },
+          { label: "Members", value: stats?.totalMembers || 0, icon: Users, sub: "Active members", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Messages", value: stats?.recentMessages || 0, icon: MessageSquare, sub: "Recent activity", accent: "from-success/30 to-success/5" },
+          { label: "Notifications", value: stats?.unreadNotifications || 0, icon: Bell, sub: "Unread", accent: "from-warning/30 to-warning/5" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Events by Type */}
