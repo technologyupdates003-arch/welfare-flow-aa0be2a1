@@ -27,70 +27,71 @@ export default function TreasurerDashboard() {
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  // Fetch pending withdrawal approvals for treasurer
-  useEffect(() => {
-    const fetchWithdrawals = async () => {
-      if (!user) return;
-
-      try {
-        const { data: withdrawalsData, error: withdrawalsError } = await supabase
+  // Fetch pending withdrawal approvals (penalty + donation)
+  const fetchWithdrawals = async () => {
+    if (!user) return;
+    try {
+      const [penaltyRes, donationRes] = await Promise.all([
+        supabase
           .from('penalty_withdrawals')
           .select(`
-            id,
-            amount,
-            reason,
-            status,
-            requested_by,
-            submitted_at,
-            created_at,
-            phone_number,
-            withdrawal_signatories (
-              id,
-              signatory_role,
-              status,
-              signature_url,
-              approved_at,
-              rejected_at,
-              signatory_user_id
-            )
+            id, amount, reason, status, requested_by, submitted_at, created_at, phone_number,
+            withdrawal_signatories ( id, signatory_role, status, signature_url, approved_at, rejected_at, signatory_user_id )
           `)
           .eq('withdrawal_signatories.signatory_role', 'treasurer')
           .eq('withdrawal_signatories.status', 'pending')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('donation_withdrawals')
+          .select(`
+            id, amount, reason, status, requested_by, submitted_at, created_at, phone_number,
+            donation_withdrawal_signatories ( id, signatory_role, status, signature_url, approved_at, rejected_at, signatory_user_id )
+          `)
+          .eq('donation_withdrawal_signatories.signatory_role', 'treasurer')
+          .eq('donation_withdrawal_signatories.status', 'pending')
+          .order('created_at', { ascending: false }),
+      ]);
 
-        if (withdrawalsError) throw withdrawalsError;
+      if (penaltyRes.error) throw penaltyRes.error;
+      if (donationRes.error) throw donationRes.error;
 
-        const { data: signaturesData } = await supabase
-          .from('signatory_signatures')
-          .select('user_id, signatory_role, signature_url, full_name');
+      const { data: signaturesData } = await supabase
+        .from('signatory_signatures')
+        .select('user_id, signatory_role, signature_url, full_name');
 
-        const signaturesMap = new Map();
-        signaturesData?.forEach((sig: any) => {
-          signaturesMap.set(`${sig.user_id}-${sig.signatory_role}`, sig);
-          signaturesMap.set(`${sig.signatory_role}`, sig);
-        });
+      const signaturesMap = new Map();
+      signaturesData?.forEach((sig: any) => {
+        signaturesMap.set(`${sig.user_id}-${sig.signatory_role}`, sig);
+        signaturesMap.set(`${sig.signatory_role}`, sig);
+      });
 
-        const getSignatureInfo = (s: any) =>
-          signaturesMap.get(
-            s.signatory_user_id
-              ? `${s.signatory_user_id}-${s.signatory_role}`
-              : s.signatory_role
-          ) || signaturesMap.get(s.signatory_role);
+      const getSignatureInfo = (s: any) =>
+        signaturesMap.get(
+          s.signatory_user_id
+            ? `${s.signatory_user_id}-${s.signatory_role}`
+            : s.signatory_role
+        ) || signaturesMap.get(s.signatory_role);
 
-        setWithdrawals(
-          (withdrawalsData || []).map((w: any) => ({
-            ...w,
-            signatories: w.withdrawal_signatories?.map((s: any) => ({
-              ...s,
-              signatureInfo: getSignatureInfo(s),
-            })),
-          }))
-        );
-      } catch (error) {
-        console.error('Error fetching withdrawals:', error);
-      }
-    };
+      const combined = [
+        ...(penaltyRes.data || []).map((w: any) => ({
+          ...w,
+          _type: 'penalty' as const,
+          signatories: w.withdrawal_signatories?.map((s: any) => ({ ...s, signatureInfo: getSignatureInfo(s) })),
+        })),
+        ...(donationRes.data || []).map((w: any) => ({
+          ...w,
+          _type: 'donation' as const,
+          withdrawal_signatories: w.donation_withdrawal_signatories,
+          signatories: w.donation_withdrawal_signatories?.map((s: any) => ({ ...s, signatureInfo: getSignatureInfo(s) })),
+        })),
+      ];
+      setWithdrawals(combined);
+    } catch (error) {
+      console.error('Error fetching withdrawals:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchWithdrawals();
   }, [user]);
 
@@ -114,26 +115,46 @@ export default function TreasurerDashboard() {
     try {
       setProcessing(true);
 
+      const isDonation = selectedWithdrawal._type === 'donation';
+      const sigTable = isDonation ? 'donation_withdrawal_signatories' : 'withdrawal_signatories';
+      const wTable = isDonation ? 'donation_withdrawals' : 'penalty_withdrawals';
+
+      let mySignatureUrl: string | null = null;
+      try {
+        const { data: mySig } = await supabase
+          .from('signatory_signatures')
+          .select('signature_url')
+          .eq('user_id', user.id)
+          .eq('signatory_role', 'treasurer')
+          .maybeSingle();
+        mySignatureUrl = (mySig as any)?.signature_url || null;
+      } catch (_) { /* ignore */ }
+
+      const updatePayload: any = {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
+        rejection_reason: action === 'reject' ? rejectionReason : null,
+        signatory_user_id: user.id,
+      };
+      if (action === 'approve' && mySignatureUrl) {
+        updatePayload.signature_url = mySignatureUrl;
+      }
+
       const { error: updateError } = await supabase
-        .from('withdrawal_signatories')
-        .update({
-          status: action === 'approve' ? 'approved' : 'rejected',
-          [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
-          rejection_reason: action === 'reject' ? rejectionReason : null,
-        })
+        .from(sigTable)
+        .update(updatePayload)
         .eq('withdrawal_id', selectedWithdrawal.id)
-        .eq('signatory_role', 'treasurer')
-        .or(`signatory_user_id.eq.${user.id},signatory_user_id.is.null`);
+        .eq('signatory_role', 'treasurer');
 
       if (updateError) throw updateError;
 
       const { data: allSignatories } = await supabase
-        .from('withdrawal_signatories')
+        .from(sigTable)
         .select('status')
         .eq('withdrawal_id', selectedWithdrawal.id);
 
-      const allApproved = allSignatories?.every((s) => s.status === 'approved');
-      const anyRejected = allSignatories?.some((s) => s.status === 'rejected');
+      const allApproved = allSignatories?.every((s: any) => s.status === 'approved');
+      const anyRejected = allSignatories?.some((s: any) => s.status === 'rejected');
 
       if (allApproved) {
         toast.loading('Processing B2C transfer...');
@@ -144,15 +165,13 @@ export default function TreasurerDashboard() {
           phoneNumber: selectedWithdrawal.phone_number || '',
           reason: selectedWithdrawal.reason,
           adminName: user.email || 'Admin',
-        });
+          walletType: isDonation ? 'donation' : 'penalty',
+        } as any);
 
         if (b2cResult.success) {
           await supabase
-            .from('penalty_withdrawals')
-            .update({
-              status: 'completed',
-              submitted_at: new Date().toISOString(),
-            })
+            .from(wTable)
+            .update({ status: 'completed', submitted_at: new Date().toISOString() })
             .eq('id', selectedWithdrawal.id);
 
           toast.success(
@@ -160,21 +179,16 @@ export default function TreasurerDashboard() {
           );
         } else {
           await supabase
-            .from('penalty_withdrawals')
-            .update({
-              status: 'approved',
-              submitted_at: new Date().toISOString(),
-            })
+            .from(wTable)
+            .update({ status: 'approved', submitted_at: new Date().toISOString() })
             .eq('id', selectedWithdrawal.id);
 
           toast.error(`Approval complete but transfer failed: ${b2cResult.error}`);
         }
       } else if (anyRejected) {
         await supabase
-          .from('penalty_withdrawals')
-          .update({
-            status: 'rejected',
-          })
+          .from(wTable)
+          .update({ status: 'rejected' })
           .eq('id', selectedWithdrawal.id);
 
         toast.error('Withdrawal rejected');
@@ -186,60 +200,7 @@ export default function TreasurerDashboard() {
       setSelectedWithdrawal(null);
       setRejectionReason('');
 
-      // Refresh withdrawals
-      const { data: updatedWithdrawalsData, error: updatedError } = await supabase
-        .from('penalty_withdrawals')
-        .select(`
-          id,
-          amount,
-          reason,
-          status,
-          requested_by,
-          submitted_at,
-          created_at,
-          phone_number,
-          withdrawal_signatories (
-            id,
-            signatory_role,
-            status,
-            signature_url,
-            approved_at,
-            rejected_at,
-            signatory_user_id
-          )
-        `)
-        .eq('withdrawal_signatories.signatory_role', 'treasurer')
-        .eq('withdrawal_signatories.status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (updatedError) throw updatedError;
-
-      const { data: signaturesData } = await supabase
-        .from('signatory_signatures')
-        .select('user_id, signatory_role, signature_url, full_name');
-
-      const signaturesMap = new Map();
-      signaturesData?.forEach((sig: any) => {
-        signaturesMap.set(`${sig.user_id}-${sig.signatory_role}`, sig);
-        signaturesMap.set(`${sig.signatory_role}`, sig);
-      });
-
-      const getSignatureInfo = (s: any) =>
-        signaturesMap.get(
-          s.signatory_user_id
-            ? `${s.signatory_user_id}-${s.signatory_role}`
-            : s.signatory_role
-        ) || signaturesMap.get(s.signatory_role);
-
-      setWithdrawals(
-        (updatedWithdrawalsData || []).map((w: any) => ({
-          ...w,
-          signatories: w.withdrawal_signatories?.map((s: any) => ({
-            ...s,
-            signatureInfo: getSignatureInfo(s),
-          })),
-        }))
-      );
+      await fetchWithdrawals();
     } catch (error) {
       console.error('Error processing approval:', error);
       toast.error('Failed to process approval');
