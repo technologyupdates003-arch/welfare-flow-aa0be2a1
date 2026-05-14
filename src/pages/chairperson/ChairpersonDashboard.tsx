@@ -85,8 +85,8 @@ export default function ChairpersonDashboard() {
     try {
       setProcessing(true);
 
-      const { error: updateError } = await supabase
-        .from('withdrawal_signatories')
+      const { error: updateError } = await (supabase
+        .from('withdrawal_signatories') as any)
         .update({
           status: action === 'approve' ? 'approved' : 'rejected',
           [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
