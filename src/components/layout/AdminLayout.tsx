@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
 import AIAssistant from "@/components/chat/AIAssistant";
 import EventPopup from "@/components/EventPopup";
+import DashboardSwitcher from "@/components/layout/DashboardSwitcher";
 
 const getNavItems = (role: string) => {
   const baseItems = [
@@ -244,34 +245,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               {navItems.find(n => n.to === location.pathname)?.label || "Dashboard"}
             </h2>
           </div>
-          {(roles.includes("admin") || roles.includes("super_admin")) && (
-            <div className="flex gap-2">
-              {roles.includes("super_admin") && (
-                <Link to="/super-admin">
-                  <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm">
-                    <Shield className="h-4 w-4 mr-1" />
-                    Super Admin
-                  </Button>
-                </Link>
-              )}
-              <Link to="/treasurer">
-                <Button variant={location.pathname.startsWith("/treasurer") ? "default" : "outline"} size="sm">
-                  <DollarSign className="h-4 w-4 mr-1" />
-                  Treasurer
-                </Button>
-              </Link>
-              <Link to="/admin">
-                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm">
-                  Admin Dashboard
-                </Button>
-              </Link>
-              <Link to="/member">
-                <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm">
-                  Member Dashboard
-                </Button>
-              </Link>
-            </div>
-          )}
+          <DashboardSwitcher />
         </header>
         <EventPopup />
         <div className="flex-1 p-4 lg:p-6 overflow-auto">
