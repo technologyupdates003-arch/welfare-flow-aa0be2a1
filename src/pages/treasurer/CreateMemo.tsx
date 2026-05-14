@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Save, Send, Download, Plus, X, Bold, List, FileUp, Bell } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Save, Send, Download, Plus, X, Bold, List, FileUp, Bell, Eye, FileText, Users, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
 
@@ -29,144 +30,71 @@ export default function CreateMemo() {
   });
   const [showMemberSelector, setShowMemberSelector] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
 
-  // Fetch organization settings for letterhead
   const { data: orgSettings } = useQuery({
     queryKey: ["organization-settings"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("organization_settings")
-        .select("*")
-        .single();
+      const { data } = await supabase.from("organization_settings").select("*").single();
       return data;
     },
   });
 
-  // Fetch memo templates
   const { data: templates = [] } = useQuery({
     queryKey: ["memo-templates"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("memo_templates")
-        .select("*")
-        .order("name");
+      const { data } = await supabase.from("memo_templates").select("*").order("name");
       return data || [];
     },
   });
 
-  // Fetch all members for custom selection - SIMPLE DIRECT QUERY
-  const { data: members = [], isLoading: membersLoading, error: membersError } = useQuery({
+  const { data: members = [], isLoading: membersLoading } = useQuery({
     queryKey: ["memo-members-list"],
     queryFn: async () => {
-      try {
-        console.log("Fetching members...");
-        // Simple direct query - select all columns
-        const { data, error, status } = await supabase
-          .from("members")
-          .select("*");
-        
-        console.log("Query status:", status);
-        console.log("Query error:", error);
-        console.log("Query data length:", data?.length);
-        
-        if (error) {
-          console.error("Supabase error:", error);
-          toast.error(`Failed to load members: ${error.message}`);
-          return [];
-        }
-        
-        if (!data) {
-          console.warn("No data returned from query");
-          return [];
-        }
-        
-        console.log(`Total members fetched: ${data.length}`);
-        console.log("Sample member:", data[0]);
-        
-        // Filter active members
-        const activeMembers = data.filter((m: any) => m.is_active === true);
-        console.log(`Active members: ${activeMembers.length}`);
-        
-        return activeMembers;
-      } catch (err: any) {
-        console.error("Exception:", err);
-        toast.error(`Exception loading members: ${err.message}`);
+      const { data, error } = await supabase.from("members").select("*");
+      if (error) {
+        toast.error(`Failed to load members: ${error.message}`);
         return [];
       }
-    },
-    staleTime: 0, // Always fresh
-    retry: 1,
-  });
-
-  // Fetch executives - STRICT: only users with an assigned role in user_roles
-  const { data: executives = [], isLoading: executivesLoading, error: executivesError } = useQuery({
-    queryKey: ["memo-executives-list"],
-    queryFn: async () => {
-      try {
-        // 1) Get all user_ids that have an assigned role (any role counts as "executive")
-        const { data: roleRows, error: rolesErr } = await supabase
-          .from("user_roles")
-          .select("user_id");
-
-        if (rolesErr) {
-          console.error("Error fetching user_roles:", rolesErr);
-          return [];
-        }
-
-        const userIds = Array.from(new Set((roleRows || []).map((r: any) => r.user_id).filter(Boolean)));
-        if (userIds.length === 0) return [];
-
-        // 2) Map them to active members
-        const { data: roleMembers, error: memErr } = await supabase
-          .from("members")
-          .select("id, name, phone, is_active, user_id")
-          .in("user_id", userIds)
-          .eq("is_active", true)
-          .order("name");
-
-        if (memErr) {
-          console.error("Error fetching role members:", memErr);
-          return [];
-        }
-
-        return roleMembers || [];
-      } catch (err: any) {
-        console.error("Exception fetching executives:", err);
-        return [];
-      }
+      return (data || []).filter((m: any) => m.is_active === true);
     },
     staleTime: 0,
-    retry: 1,
   });
 
-  // Generate reference number on mount
+  const { data: executives = [], isLoading: executivesLoading } = useQuery({
+    queryKey: ["memo-executives-list"],
+    queryFn: async () => {
+      const { data: roleRows } = await supabase.from("user_roles").select("user_id");
+      const userIds = Array.from(new Set((roleRows || []).map((r: any) => r.user_id).filter(Boolean)));
+      if (userIds.length === 0) return [];
+      const { data: roleMembers } = await supabase
+        .from("members")
+        .select("id, name, phone, is_active, user_id")
+        .in("user_id", userIds)
+        .eq("is_active", true)
+        .order("name");
+      return roleMembers || [];
+    },
+    staleTime: 0,
+  });
+
   useEffect(() => {
     const year = new Date().getFullYear();
-    const randomNum = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, "0");
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
     setReferenceNumber(`KHCWW-MEMO-${year}-${randomNum}`);
   }, []);
 
-  // Save memo mutation
   const saveMemo = useMutation({
     mutationFn: async (isDraft: boolean) => {
-      if (!formData.title.trim()) {
-        throw new Error("Memo title is required");
-      }
-      if (!formData.content.trim()) {
-        throw new Error("Memo content is required");
-      }
-      if (formData.recipientType === "custom_selection" && formData.selectedMembers.length === 0) {
+      if (!formData.title.trim()) throw new Error("Memo title is required");
+      if (!formData.content.trim()) throw new Error("Memo content is required");
+      if (formData.recipientType === "custom_selection" && formData.selectedMembers.length === 0)
         throw new Error("Please select at least one member");
-      }
 
       setSaving(true);
-
-      // Insert memo
       const { data: memoData, error: memoError } = await supabase
         .from("memos")
         .insert({
@@ -181,42 +109,28 @@ export default function CreateMemo() {
         })
         .select()
         .single();
-
       if (memoError) throw memoError;
 
-      // Add recipients based on type
       let recipientIds: string[] = [];
+      if (formData.recipientType === "all_members") recipientIds = members.map((m: any) => m.id);
+      else if (formData.recipientType === "executives_only") recipientIds = executives.map((e: any) => e.id);
+      else recipientIds = formData.selectedMembers;
 
-      if (formData.recipientType === "all_members") {
-        recipientIds = members.map((m) => m.id);
-      } else if (formData.recipientType === "executives_only") {
-        recipientIds = executives.map((e) => e.id);
-      } else {
-        recipientIds = formData.selectedMembers;
-      }
-
-      // Insert memo recipients
       if (recipientIds.length > 0) {
         const recipientRecords = recipientIds.map((memberId) => ({
           memo_id: memoData.id,
           member_id: memberId,
           delivered_at: isDraft ? null : new Date().toISOString(),
         }));
-
-        const { error: recipientError } = await supabase
-          .from("memo_recipients")
-          .insert(recipientRecords);
-
+        const { error: recipientError } = await supabase.from("memo_recipients").insert(recipientRecords);
         if (recipientError) throw recipientError;
       }
-
       setSaving(false);
       return memoData;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["memos"] });
       toast.success(data.status === "draft" ? "Memo saved as draft" : "Memo sent successfully");
-      // Reset form
       setFormData({
         title: "",
         category: "general_communication",
@@ -225,9 +139,7 @@ export default function CreateMemo() {
         selectedMembers: [],
       });
       const year = new Date().getFullYear();
-      const randomNum = Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, "0");
+      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
       setReferenceNumber(`KHCWW-MEMO-${year}-${randomNum}`);
     },
     onError: (error: any) => {
@@ -236,24 +148,16 @@ export default function CreateMemo() {
     },
   });
 
-  // Download PDF function — uses html2pdf for proper PDF generation (not just print)
   const downloadPDF = async () => {
-    if (!previewRef.current) {
-      toast.error("Preview not available");
-      return;
-    }
-    const element = previewRef.current.querySelector(".bg-white") as HTMLElement | null;
-    if (!element) {
-      toast.error("Could not generate PDF");
-      return;
-    }
+    if (!previewRef.current) return toast.error("Preview not available");
+    const element = previewRef.current.querySelector(".memo-printable") as HTMLElement | null;
+    if (!element) return toast.error("Could not generate PDF");
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      const fileName = `${referenceNumber || "memo"}.pdf`;
       await (html2pdf as any)()
         .set({
           margin: [10, 10, 10, 10],
-          filename: fileName,
+          filename: `${referenceNumber || "memo"}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
@@ -267,30 +171,16 @@ export default function CreateMemo() {
     }
   };
 
-  // Send notification function
   const sendNotification = async () => {
     try {
-      if (!formData.title.trim() || !formData.content.trim()) {
-        toast.error("Please fill in title and content");
-        return;
-      }
-
-      // Get recipient IDs
+      if (!formData.title.trim() || !formData.content.trim())
+        return toast.error("Please fill in title and content");
       let recipientIds: string[] = [];
-      if (formData.recipientType === "all_members") {
-        recipientIds = members.map((m) => m.id);
-      } else if (formData.recipientType === "executives_only") {
-        recipientIds = executives.map((e) => e.id);
-      } else {
-        recipientIds = formData.selectedMembers;
-      }
+      if (formData.recipientType === "all_members") recipientIds = members.map((m: any) => m.id);
+      else if (formData.recipientType === "executives_only") recipientIds = executives.map((e: any) => e.id);
+      else recipientIds = formData.selectedMembers;
+      if (recipientIds.length === 0) return toast.error("No recipients selected");
 
-      if (recipientIds.length === 0) {
-        toast.error("No recipients selected");
-        return;
-      }
-
-      // Create notifications for each recipient
       const notifications = recipientIds.map((memberId) => ({
         member_id: memberId,
         title: formData.title,
@@ -300,75 +190,38 @@ export default function CreateMemo() {
         read: false,
         created_at: new Date().toISOString(),
       }));
-
-      const { error } = await supabase
-        .from("notifications")
-        .insert(notifications);
-
+      const { error } = await supabase.from("notifications").insert(notifications);
       if (error) throw error;
-
       toast.success(`Notification sent to ${recipientIds.length} members`);
     } catch (error: any) {
-      toast.error(`Failed to send notification: ${error.message}`);
+      toast.error(`Failed: ${error.message}`);
     }
   };
 
-  // Share to welfare chat function
   const shareToWelfareChat = async () => {
     try {
-      if (!formData.title.trim() || !formData.content.trim()) {
-        toast.error("Please fill in title and content");
-        return;
-      }
-
-      // Find or create welfare chat
+      if (!formData.title.trim() || !formData.content.trim())
+        return toast.error("Please fill in title and content");
       const { data: chats, error: chatError } = await supabase
-        .from("chats")
-        .select("id")
-        .eq("name", "Welfare")
-        .single();
-
-      if (chatError && chatError.code !== "PGRST116") {
-        throw chatError;
-      }
-
+        .from("chats").select("id").eq("name", "Welfare").single();
+      if (chatError && chatError.code !== "PGRST116") throw chatError;
       let chatId = chats?.id;
-
-      // If welfare chat doesn't exist, create it
       if (!chatId) {
         const { data: newChat, error: createError } = await supabase
           .from("chats")
-          .insert({
-            name: "Welfare",
-            description: "Welfare and treasurer communications",
-            is_group: true,
-            created_by: user?.id,
-          })
-          .select()
-          .single();
-
+          .insert({ name: "Welfare", description: "Welfare and treasurer communications", is_group: true, created_by: user?.id })
+          .select().single();
         if (createError) throw createError;
         chatId = newChat.id;
       }
-
-      // Send memo as message to welfare chat
       const messageContent = `📋 **${formData.title}**\n\n${formData.content}\n\n_Reference: ${referenceNumber}_`;
-
       const { error: messageError } = await supabase
         .from("messages")
-        .insert({
-          chat_id: chatId,
-          user_id: user?.id,
-          content: messageContent,
-          message_type: "memo",
-          created_at: new Date().toISOString(),
-        });
-
+        .insert({ chat_id: chatId, user_id: user?.id, content: messageContent, message_type: "memo", created_at: new Date().toISOString() });
       if (messageError) throw messageError;
-
       toast.success("Memo shared to Welfare chat");
     } catch (error: any) {
-      toast.error(`Failed to share to chat: ${error.message}`);
+      toast.error(`Failed to share: ${error.message}`);
     }
   };
 
@@ -379,553 +232,415 @@ export default function CreateMemo() {
     const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
 
     return (
-      <div className="bg-white" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-        {/* Header */}
-        <div className="border-b-4 border-orange-500 pb-4 mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-shrink-0">
-              <img
-                src={orgSettings?.logo_url || logoImage}
-                alt="Organization Logo"
-                className="h-20 w-20 object-contain"
-              />
-            </div>
-            <div className="flex-1 text-right ml-4">
-              <h1 className="text-lg font-bold text-[#111827] mb-1">
-                {orgName}
-              </h1>
-              <div className="text-xs text-[#6B7280] space-y-0.5">
+      <div className="memo-printable bg-white text-[#111827]" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+        <div className="border-b-4 border-orange-500 pb-3 sm:pb-4 mb-4 sm:mb-6">
+          <div className="flex items-start justify-between gap-3">
+            <img src={orgSettings?.logo_url || logoImage} alt="Logo" className="h-14 w-14 sm:h-20 sm:w-20 object-contain shrink-0" />
+            <div className="flex-1 text-right">
+              <h1 className="text-sm sm:text-lg font-bold mb-1 leading-tight">{orgName}</h1>
+              <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-0.5">
                 <p>{orgAddress}</p>
-                <p className="text-orange-600 font-medium">Email: {orgEmail}</p>
+                <p className="text-orange-600 font-medium break-all">Email: {orgEmail}</p>
                 <p>Tel: {orgPhone}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Watermark */}
         <div className="text-center mb-4">
-          <p className="text-xs font-bold text-orange-500 tracking-widest">KHCWW OFFICIAL MEMO</p>
+          <p className="text-[10px] sm:text-xs font-bold text-orange-500 tracking-widest">KHCWW OFFICIAL MEMO</p>
         </div>
 
-        {/* Memo Content */}
-        <div className="mb-8">
-          <h2 className="text-base font-bold text-[#111827] mb-2">{formData.title || "Memo Title"}</h2>
-          <div className="text-xs text-[#6B7280] space-y-1 mb-4">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-sm sm:text-base font-bold mb-2">{formData.title || "Memo Title"}</h2>
+          <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-1 mb-4">
             <p>Date: {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
-            <p>Reference: {referenceNumber}</p>
+            <p className="break-all">Reference: {referenceNumber}</p>
           </div>
-
-          <div className="text-sm text-[#111827] leading-relaxed whitespace-pre-wrap mb-8">
+          <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
             {formData.content || "Memo content will appear here..."}
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-12 pt-6 border-t-2 border-[#E5E7EB]">
-          <div className="flex justify-between items-end">
+        <div className="mt-10 sm:mt-12 pt-4 sm:pt-6 border-t-2 border-[#E5E7EB]">
+          <div className="flex justify-between items-end gap-3">
             <div>
               {orgSettings?.signature_url && (
-                <div className="mb-2">
-                  <img
-                    src={orgSettings.signature_url}
-                    alt="Treasurer Signature"
-                    className="h-16 object-contain"
-                  />
-                </div>
+                <img src={orgSettings.signature_url} alt="Treasurer Signature" className="h-12 sm:h-16 object-contain mb-2" />
               )}
-              <div className="border-t-2 border-[#111827] pt-1 w-56">
-                <p className="text-xs font-bold">Treasurer</p>
-                <p className="text-xs text-[#6B7280] mt-1">Authorized by Treasurer</p>
+              <div className="border-t-2 border-[#111827] pt-1 w-40 sm:w-56">
+                <p className="text-[10px] sm:text-xs font-bold">Treasurer</p>
+                <p className="text-[10px] sm:text-xs text-[#6B7280] mt-1">Authorized by Treasurer</p>
               </div>
             </div>
-
             {orgSettings?.stamp_url && (
-              <div className="flex-shrink-0">
-                <img
-                  src={orgSettings.stamp_url}
-                  alt="Official Stamp"
-                  className="h-24 w-24 object-contain opacity-90"
-                />
-              </div>
+              <img src={orgSettings.stamp_url} alt="Stamp" className="h-16 w-16 sm:h-24 sm:w-24 object-contain opacity-90 shrink-0" />
             )}
           </div>
         </div>
 
-        {/* Footer Contact */}
-        <div className="mt-8 pt-4 border-t border-[#E5E7EB] text-center">
-          <div className="text-xs text-[#6B7280] space-y-0.5">
+        <div className="mt-6 sm:mt-8 pt-4 border-t border-[#E5E7EB] text-center">
+          <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-0.5">
             <p className="font-semibold">{orgName}</p>
             <p>{orgAddress}</p>
-            <p>Email: {orgEmail} | Tel: {orgPhone}</p>
+            <p className="break-all">Email: {orgEmail} | Tel: {orgPhone}</p>
           </div>
         </div>
       </div>
     );
   };
 
-  const getCategoryLabel = (cat: string) => {
-    const labels: Record<string, string> = {
-      financial_notice: "Financial Notice",
-      contribution_reminder: "Contribution Reminder",
-      penalty_notice: "Penalty Notice",
-      payout_notification: "Payout Notification",
-      general_communication: "General Communication",
-    };
-    return labels[cat] || cat;
-  };
+  const filteredMembersForSelector = members.filter((m: any) =>
+    m.name?.toLowerCase().includes(memberSearch.toLowerCase()) ||
+    m.phone?.includes(memberSearch)
+  );
 
-  const getRecipientCount = () => {
-    if (formData.recipientType === "all_members") return members.length;
-    if (formData.recipientType === "executives_only") return executives.length;
-    return formData.selectedMembers.length;
-  };
+  const recipientCount =
+    formData.recipientType === "all_members" ? members.length :
+    formData.recipientType === "executives_only" ? executives.length :
+    formData.selectedMembers.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-32 lg:pb-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-[#111827]">Create Memo</h2>
-        <p className="text-sm text-[#6B7280] mt-1">
-          Create and send official memos with branded letterhead
-        </p>
-        {membersError && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-            ❌ Error loading members: {membersError.message}
+      <div className="glass rounded-2xl p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl gradient-brand flex items-center justify-center shadow-brand shrink-0">
+            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
           </div>
-        )}
-        {membersLoading && (
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-            ⏳ Loading members...
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-gradient-brand truncate">Create Memo</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Branded letterhead with live preview</p>
           </div>
-        )}
-        {!membersLoading && !membersError && members.length === 0 && (
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700">
-            ⚠️ No members found. Check browser console for details.
-          </div>
-        )}
-        {!membersLoading && !membersError && members.length > 0 && (
-          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-            ✅ Loaded {members.length} active members
-          </div>
-        )}
-      </div>
-
-      {/* Main Content - Split Screen */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* LEFT SIDE - FORM */}
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] h-fit">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-[#111827]">Memo Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Reference Number (Read-only) */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Reference Number</Label>
-              <Input
-                value={referenceNumber}
-                disabled
-                className="bg-[#F9FAFB] text-[#6B7280]"
-              />
-              <p className="text-xs text-[#6B7280] mt-1">Auto-generated</p>
-            </div>
-
-            {/* Title */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Memo Title *</Label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Late Payment Reminder"
-                className="border-[#E5E7EB]"
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                <SelectTrigger className="border-[#E5E7EB]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="financial_notice">Financial Notice</SelectItem>
-                  <SelectItem value="contribution_reminder">Contribution Reminder</SelectItem>
-                  <SelectItem value="penalty_notice">Penalty Notice</SelectItem>
-                  <SelectItem value="payout_notification">Payout Notification</SelectItem>
-                  <SelectItem value="general_communication">General Communication</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Template Selection */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Use Template (Optional)</Label>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowTemplateSelector(true)}
-                className="w-full justify-start"
-              >
-                <Plus className="h-3 w-3 mr-2" />
-                Load Template
-              </Button>
-            </div>
-
-            {/* Content with Rich Text Toolbar */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Message Body *</Label>
-              <div className="border border-[#E5E7EB] rounded-lg overflow-hidden">
-                {/* Toolbar */}
-                <div className="bg-[#F9FAFB] border-b border-[#E5E7EB] p-2 flex gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      const textarea = document.getElementById("memo-content") as HTMLTextAreaElement;
-                      if (textarea) {
-                        const start = textarea.selectionStart;
-                        const end = textarea.selectionEnd;
-                        const selected = formData.content.substring(start, end);
-                        const before = formData.content.substring(0, start);
-                        const after = formData.content.substring(end);
-                        setFormData({
-                          ...formData,
-                          content: `${before}**${selected}**${after}`,
-                        });
-                      }
-                    }}
-                    title="Bold"
-                  >
-                    <Bold className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      const textarea = document.getElementById("memo-content") as HTMLTextAreaElement;
-                      if (textarea) {
-                        const start = textarea.selectionStart;
-                        const before = formData.content.substring(0, start);
-                        const after = formData.content.substring(start);
-                        setFormData({
-                          ...formData,
-                          content: `${before}\n• ${after}`,
-                        });
-                      }
-                    }}
-                    title="Bullet List"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                  <div className="flex-1" />
-                  <span className="text-xs text-[#6B7280] py-2 px-2">
-                    {formData.content.length} characters
-                  </span>
-                </div>
-                {/* Textarea */}
-                <Textarea
-                  id="memo-content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Enter memo content... Use **text** for bold, • for bullets"
-                  rows={10}
-                  className="border-0 font-['Times_New_Roman',_serif] rounded-none"
-                />
-              </div>
-              <p className="text-xs text-[#6B7280] mt-1">
-                Supports: **bold**, • bullets, clean formatting
-              </p>
-            </div>
-
-            {/* Attachments */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Attachments (Optional)</Label>
-              <div className="border-2 border-dashed border-[#E5E7EB] rounded-lg p-4 text-center hover:border-orange-500 transition-colors cursor-pointer">
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setAttachments(Array.from(e.target.files));
-                    }
-                  }}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <FileUp className="h-6 w-6 mx-auto mb-2 text-[#6B7280]" />
-                  <p className="text-sm text-[#6B7280]">Click to upload files</p>
-                  <p className="text-xs text-[#6B7280] mt-1">PDF, DOC, XLS supported</p>
-                </label>
-              </div>
-              {attachments.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {attachments.map((file, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-[#F9FAFB] p-2 rounded text-sm">
-                      <span className="text-[#111827]">{file.name}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setAttachments(attachments.filter((_, i) => i !== idx))}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Recipient Type */}
-            <div>
-              <Label className="text-xs font-semibold text-[#6B7280]">Recipients *</Label>
-              <Select
-                value={formData.recipientType}
-                onValueChange={(value) => setFormData({ ...formData, recipientType: value })}
-              >
-                <SelectTrigger className="border-[#E5E7EB]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all_members">
-                    All Members ({membersLoading ? "Loading..." : members.length})
-                  </SelectItem>
-                  <SelectItem value="executives_only">
-                    Executives Only ({executivesLoading ? "Loading..." : executives.length})
-                  </SelectItem>
-                  <SelectItem value="custom_selection">Custom Selection</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Custom Member Selection */}
-            {formData.recipientType === "custom_selection" && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-xs font-semibold text-[#6B7280]">
-                    Select Members ({formData.selectedMembers.length})
-                  </Label>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowMemberSelector(true)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {formData.selectedMembers.map((memberId) => {
-                    const member = members.find((m) => m.id === memberId);
-                    return (
-                      <div
-                        key={memberId}
-                        className="flex items-center justify-between bg-[#F9FAFB] p-2 rounded border border-[#E5E7EB]"
-                      >
-                        <span className="text-sm text-[#111827]">{member?.name}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            setFormData({
-                              ...formData,
-                              selectedMembers: formData.selectedMembers.filter((id) => id !== memberId),
-                            })
-                          }
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Recipient Summary */}
-            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-              <p className="text-xs font-semibold text-orange-900 mb-1">Recipients</p>
-              <p className="text-sm text-orange-800">
-                {formData.recipientType === "all_members"
-                  ? `All ${members.length} members`
-                  : formData.recipientType === "executives_only"
-                  ? `${executives.length} executives`
-                  : `${formData.selectedMembers.length} selected members`}
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => saveMemo.mutate(true)}
-                disabled={saving}
-                className="flex-1"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Draft
-              </Button>
-              <Button
-                onClick={() => saveMemo.mutate(false)}
-                disabled={saving || !formData.title || !formData.content}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {saving ? "Sending..." : "Send Memo"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* RIGHT SIDE - LIVE PREVIEW */}
-        <div>
-          <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] sticky top-8">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-[#111827]">Live Preview</CardTitle>
-              <p className="text-xs text-[#6B7280] mt-1">This is how your memo will look</p>
-            </CardHeader>
-            <CardContent>
-              <div ref={previewRef} className="bg-[#F9FAFB] p-6 rounded-lg overflow-auto max-h-[600px] border border-[#E5E7EB]">
-                <div className="bg-white p-8 rounded shadow-sm">
-                  {renderLetterhead()}
-                </div>
-              </div>
-              <div className="flex gap-2 mt-4">
-                <Button 
-                  onClick={downloadPDF}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-                <Button 
-                  onClick={sendNotification}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <Bell className="h-4 w-4 mr-2" />
-                  Send Notification
-                </Button>
-              </div>
-              <Button 
-                onClick={shareToWelfareChat}
-                variant="outline"
-                className="w-full mt-2"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Share to Welfare Chat
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
-      {/* Template Selector Dialog */}
+      {/* Mobile tabs / Desktop split */}
+      <Tabs defaultValue="form" className="lg:hidden">
+        <TabsList className="grid grid-cols-2 w-full glass">
+          <TabsTrigger value="form" className="data-[state=active]:gradient-brand data-[state=active]:text-primary-foreground">
+            <FileText className="h-4 w-4 mr-1.5" /> Editor
+          </TabsTrigger>
+          <TabsTrigger value="preview" className="data-[state=active]:gradient-brand data-[state=active]:text-primary-foreground">
+            <Eye className="h-4 w-4 mr-1.5" /> Preview
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="form" className="mt-4">
+          <FormCard
+            formData={formData} setFormData={setFormData}
+            referenceNumber={referenceNumber}
+            members={members} executives={executives}
+            membersLoading={membersLoading} executivesLoading={executivesLoading}
+            attachments={attachments} setAttachments={setAttachments}
+            onPickTemplate={() => setShowTemplateSelector(true)}
+            onPickMembers={() => setShowMemberSelector(true)}
+          />
+        </TabsContent>
+        <TabsContent value="preview" className="mt-4">
+          <PreviewCard previewRef={previewRef} renderLetterhead={renderLetterhead} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Desktop split */}
+      <div className="hidden lg:grid grid-cols-2 gap-6">
+        <FormCard
+          formData={formData} setFormData={setFormData}
+          referenceNumber={referenceNumber}
+          members={members} executives={executives}
+          membersLoading={membersLoading} executivesLoading={executivesLoading}
+          attachments={attachments} setAttachments={setAttachments}
+          onPickTemplate={() => setShowTemplateSelector(true)}
+          onPickMembers={() => setShowMemberSelector(true)}
+        />
+        <div>
+          <PreviewCard previewRef={previewRef} renderLetterhead={renderLetterhead} sticky />
+        </div>
+      </div>
+
+      {/* Sticky mobile action bar */}
+      <div className="fixed bottom-0 inset-x-0 lg:hidden z-40 glass-strong border-t border-border/60 px-3 py-3 pb-safe">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge className="glass-brand text-primary border-primary/30 text-[11px]">
+            <Users className="h-3 w-3 mr-1" /> {recipientCount} recipients
+          </Badge>
+          <Badge variant="outline" className="text-[11px] truncate max-w-[160px]">{referenceNumber}</Badge>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={() => saveMemo.mutate(true)} disabled={saving} size="sm">
+            <Save className="h-4 w-4 mr-1.5" /> Draft
+          </Button>
+          <Button onClick={() => saveMemo.mutate(false)} disabled={saving || !formData.title || !formData.content} size="sm" className="gradient-brand text-primary-foreground shadow-brand">
+            <Send className="h-4 w-4 mr-1.5" /> {saving ? "Sending…" : "Send"}
+          </Button>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          <Button onClick={downloadPDF} variant="ghost" size="sm" className="text-xs"><Download className="h-3.5 w-3.5 mr-1" /> PDF</Button>
+          <Button onClick={sendNotification} variant="ghost" size="sm" className="text-xs"><Bell className="h-3.5 w-3.5 mr-1" /> Notify</Button>
+          <Button onClick={shareToWelfareChat} variant="ghost" size="sm" className="text-xs"><Sparkles className="h-3.5 w-3.5 mr-1" /> Chat</Button>
+        </div>
+      </div>
+
+      {/* Desktop action bar */}
+      <div className="hidden lg:flex flex-wrap gap-2 justify-end">
+        <Button variant="outline" onClick={() => saveMemo.mutate(true)} disabled={saving}>
+          <Save className="h-4 w-4 mr-2" /> Save Draft
+        </Button>
+        <Button onClick={downloadPDF} variant="outline">
+          <Download className="h-4 w-4 mr-2" /> Download PDF
+        </Button>
+        <Button onClick={sendNotification} variant="outline">
+          <Bell className="h-4 w-4 mr-2" /> Notify
+        </Button>
+        <Button onClick={shareToWelfareChat} variant="outline">
+          <Sparkles className="h-4 w-4 mr-2" /> Share to Chat
+        </Button>
+        <Button onClick={() => saveMemo.mutate(false)} disabled={saving || !formData.title || !formData.content} className="gradient-brand text-primary-foreground shadow-brand">
+          <Send className="h-4 w-4 mr-2" /> {saving ? "Sending…" : "Send Memo"}
+        </Button>
+      </div>
+
+      {/* Template Selector */}
       <Dialog open={showTemplateSelector} onOpenChange={setShowTemplateSelector}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Select Memo Template</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto glass-strong">
+          <DialogHeader><DialogTitle>Select Memo Template</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {templates.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No templates available</p>}
             {templates.map((template: any) => (
-              <div
+              <button
                 key={template.id}
-                className="p-4 border border-[#E5E7EB] rounded-lg hover:bg-[#F9FAFB] cursor-pointer transition-colors"
+                className="w-full text-left p-3 sm:p-4 rounded-xl glass hover:glass-brand transition-all"
                 onClick={() => {
-                  setFormData({
-                    ...formData,
-                    title: template.name,
-                    category: template.category,
-                    content: template.template_content,
-                  });
+                  setFormData({ ...formData, title: template.name, category: template.category, content: template.template_content });
                   setShowTemplateSelector(false);
-                  toast.success("Template loaded successfully");
+                  toast.success("Template loaded");
                 }}
               >
-                <p className="text-sm font-medium text-[#111827]">{template.name}</p>
-                <p className="text-xs text-[#6B7280] mt-1">{template.template_content.substring(0, 100)}...</p>
-                {template.variables && template.variables.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {template.variables.map((v: string) => (
-                      <Badge key={v} variant="secondary" className="text-xs">
-                        {v}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
+                <p className="text-sm font-semibold">{template.name}</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{template.template_content}</p>
+              </button>
             ))}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowTemplateSelector(false)}
-            className="w-full"
-          >
-            Cancel
-          </Button>
         </DialogContent>
       </Dialog>
 
-      {/* Member Selector Dialog */}
+      {/* Member Selector */}
       <Dialog open={showMemberSelector} onOpenChange={setShowMemberSelector}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Select Members ({members.length} available)</DialogTitle>
-          </DialogHeader>
-          {membersLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : members.length === 0 ? (
-            <div className="text-center py-12 text-[#6B7280]">
-              <p>No active members found</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center gap-3 p-3 border border-[#E5E7EB] rounded-lg hover:bg-[#F9FAFB] cursor-pointer"
-                  onClick={() => {
-                    if (formData.selectedMembers.includes(member.id)) {
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col glass-strong">
+          <DialogHeader><DialogTitle>Select Members ({members.length} available)</DialogTitle></DialogHeader>
+          <Input placeholder="Search by name or phone…" value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} />
+          <div className="overflow-y-auto flex-1 space-y-1.5 -mx-1 px-1">
+            {membersLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            ) : filteredMembersForSelector.length === 0 ? (
+              <p className="text-center py-12 text-muted-foreground text-sm">No members</p>
+            ) : (
+              filteredMembersForSelector.map((member: any) => {
+                const checked = formData.selectedMembers.includes(member.id);
+                return (
+                  <div
+                    key={member.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${checked ? "glass-brand border-primary/30" : "glass-subtle hover:glass border-border/60"}`}
+                    onClick={() => {
                       setFormData({
                         ...formData,
-                        selectedMembers: formData.selectedMembers.filter((id) => id !== member.id),
+                        selectedMembers: checked
+                          ? formData.selectedMembers.filter((id) => id !== member.id)
+                          : [...formData.selectedMembers, member.id],
                       });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        selectedMembers: [...formData.selectedMembers, member.id],
-                      });
-                    }
-                  }}
-                >
-                  <Checkbox
-                    checked={formData.selectedMembers.includes(member.id)}
-                    onCheckedChange={() => {}}
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#111827]">{member.name}</p>
-                    <p className="text-xs text-[#6B7280]">{member.phone || member.user_id || "No contact"}</p>
+                    }}
+                  >
+                    <Checkbox checked={checked} onCheckedChange={() => {}} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{member.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
+                    </div>
                   </div>
+                );
+              })
+            )}
+          </div>
+          <Button onClick={() => setShowMemberSelector(false)} className="gradient-brand text-primary-foreground">
+            Done ({formData.selectedMembers.length} selected)
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ---------- Subcomponents ---------- */
+
+function FormCard({
+  formData, setFormData, referenceNumber, members, executives,
+  membersLoading, executivesLoading, attachments, setAttachments,
+  onPickTemplate, onPickMembers,
+}: any) {
+  return (
+    <Card className="glass-strong border-white/40 rounded-2xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg font-bold">Memo Details</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground">Reference Number</Label>
+          <Input value={referenceNumber} disabled className="bg-muted/40 mt-1" />
+        </div>
+
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground">Memo Title *</Label>
+          <Input
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="e.g., Late Payment Reminder"
+            className="mt-1"
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground">Category *</Label>
+          <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="financial_notice">Financial Notice</SelectItem>
+              <SelectItem value="contribution_reminder">Contribution Reminder</SelectItem>
+              <SelectItem value="penalty_notice">Penalty Notice</SelectItem>
+              <SelectItem value="payout_notification">Payout Notification</SelectItem>
+              <SelectItem value="general_communication">General Communication</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button size="sm" variant="outline" onClick={onPickTemplate} className="w-full">
+          <Plus className="h-3.5 w-3.5 mr-2" /> Load Template
+        </Button>
+
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground">Message Body *</Label>
+          <div className="border border-border rounded-xl overflow-hidden mt-1 bg-card">
+            <div className="bg-muted/40 border-b border-border p-1.5 flex gap-1 items-center">
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                const ta = document.getElementById("memo-content") as HTMLTextAreaElement;
+                if (!ta) return;
+                const start = ta.selectionStart, end = ta.selectionEnd;
+                const sel = formData.content.substring(start, end);
+                setFormData({ ...formData, content: formData.content.substring(0, start) + `**${sel}**` + formData.content.substring(end) });
+              }}>
+                <Bold className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                const ta = document.getElementById("memo-content") as HTMLTextAreaElement;
+                if (!ta) return;
+                const start = ta.selectionStart;
+                setFormData({ ...formData, content: formData.content.substring(0, start) + "\n• " + formData.content.substring(start) });
+              }}>
+                <List className="h-3.5 w-3.5" />
+              </Button>
+              <span className="ml-auto text-[10px] text-muted-foreground pr-2">{formData.content.length} chars</span>
+            </div>
+            <Textarea
+              id="memo-content"
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              placeholder="Use **text** for bold, • for bullets…"
+              rows={8}
+              className="border-0 rounded-none focus-visible:ring-0 resize-y"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground">Attachments</Label>
+          <label htmlFor="file-upload" className="block mt-1 cursor-pointer">
+            <div className="border-2 border-dashed border-border rounded-xl p-4 text-center hover:border-primary/60 hover:bg-primary/5 transition-all">
+              <FileUp className="h-5 w-5 mx-auto mb-1.5 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Tap to upload (PDF, DOC, XLS)</p>
+            </div>
+            <input id="file-upload" type="file" multiple onChange={(e) => e.target.files && setAttachments(Array.from(e.target.files))} className="hidden" />
+          </label>
+          {attachments.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {attachments.map((file: File, idx: number) => (
+                <div key={idx} className="flex items-center justify-between glass-subtle p-2 rounded-lg text-xs">
+                  <span className="truncate flex-1">{file.name}</span>
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setAttachments(attachments.filter((_: any, i: number) => i !== idx))}>
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </div>
           )}
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={() => setShowMemberSelector(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button
-              onClick={() => setShowMemberSelector(false)}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-            >
-              Done ({formData.selectedMembers.length} selected)
-            </Button>
+        </div>
+
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground">Recipients *</Label>
+          <Select value={formData.recipientType} onValueChange={(value) => setFormData({ ...formData, recipientType: value })}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_members">All Members ({membersLoading ? "…" : members.length})</SelectItem>
+              <SelectItem value="executives_only">Executives Only ({executivesLoading ? "…" : executives.length})</SelectItem>
+              <SelectItem value="custom_selection">Custom Selection</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {formData.recipientType === "custom_selection" && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs font-semibold text-muted-foreground">Selected ({formData.selectedMembers.length})</Label>
+              <Button size="sm" variant="outline" onClick={onPickMembers}>
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {formData.selectedMembers.map((memberId: string) => {
+                const member = members.find((m: any) => m.id === memberId);
+                return (
+                  <div key={memberId} className="flex items-center justify-between glass-subtle p-2 rounded-lg text-sm">
+                    <span className="truncate flex-1">{member?.name || "—"}</span>
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() =>
+                      setFormData({ ...formData, selectedMembers: formData.selectedMembers.filter((id: string) => id !== memberId) })
+                    }>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        )}
+
+        <div className="glass-brand rounded-xl p-3">
+          <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">Sending To</p>
+          <p className="text-sm font-medium mt-0.5">
+            {formData.recipientType === "all_members" ? `All ${members.length} members`
+              : formData.recipientType === "executives_only" ? `${executives.length} executives`
+              : `${formData.selectedMembers.length} selected`}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PreviewCard({ previewRef, renderLetterhead, sticky }: any) {
+  return (
+    <Card className={`glass-strong border-white/40 rounded-2xl ${sticky ? "sticky top-20" : ""}`}>
+      <CardHeader className="pb-3 flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-base sm:text-lg font-bold">Live Preview</CardTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">A4 letterhead view</p>
+        </div>
+        <Eye className="h-4 w-4 text-primary" />
+      </CardHeader>
+      <CardContent>
+        <div ref={previewRef} className="bg-muted/30 p-2 sm:p-4 rounded-xl overflow-auto max-h-[60vh] sm:max-h-[70vh] border border-border/60">
+          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
+            {renderLetterhead()}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
