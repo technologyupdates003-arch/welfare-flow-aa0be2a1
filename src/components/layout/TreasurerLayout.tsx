@@ -48,6 +48,8 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
     { to: "/treasurer", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/treasurer/contributions", icon: CreditCard, label: "Contributions" },
     { to: "/treasurer/withdrawal-approvals", icon: FileSignature, label: "Withdrawal Approvals" },
+    { to: "/treasurer/penalty-wallet", icon: Wallet, label: "Penalty Wallet" },
+    { to: "/treasurer/donation-wallet", icon: Wallet, label: "Donation Wallet" },
     { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
     { to: "/treasurer/memos", icon: FileText, label: "Memos" },
