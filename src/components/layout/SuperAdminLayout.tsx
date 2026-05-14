@@ -104,30 +104,30 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="flex items-center justify-between gap-3 border-b border-border/60 glass px-4 py-3 lg:px-6 sticky top-0 z-30">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 border-b border-border/60 glass px-3 py-2.5 sm:px-4 sm:py-3 lg:px-6 sticky top-0 z-30">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Button variant="ghost" size="icon" className="lg:hidden shrink-0 h-8 w-8" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
-            <h2 className="text-lg font-semibold truncate">
+            <h2 className="text-sm sm:text-lg font-semibold truncate">
               {navItems.find(n => n.to === location.pathname)?.label || "Super Admin Dashboard"}
             </h2>
           </div>
-          <div className="flex gap-1 sm:gap-2 shrink-0">
-            <Link to="/super-admin">
-              <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm" className="px-2 sm:px-3 text-xs sm:text-sm">
+          <div className="flex gap-1 sm:gap-2 shrink-0 w-full sm:w-auto">
+            <Link to="/super-admin" className="flex-1 sm:flex-none">
+              <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm" className="w-full px-2 sm:px-3 text-xs sm:text-sm h-8">
                 Super
               </Button>
             </Link>
             {roles.includes("admin") && (
-              <Link to="/admin">
-                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="px-2 sm:px-3 text-xs sm:text-sm">
+              <Link to="/admin" className="flex-1 sm:flex-none">
+                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="w-full px-2 sm:px-3 text-xs sm:text-sm h-8">
                   Admin
                 </Button>
               </Link>
             )}
-            <Link to="/member">
-              <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm" className="px-2 sm:px-3 text-xs sm:text-sm">
+            <Link to="/member" className="flex-1 sm:flex-none">
+              <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm" className="w-full px-2 sm:px-3 text-xs sm:text-sm h-8">
                 Member
               </Button>
             </Link>
