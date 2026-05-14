@@ -1,18 +1,19 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 export default function AdminNotifications() {
-  const queryClient = useQueryClient();
   const [target, setTarget] = useState("all");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [alsoSms, setAlsoSms] = useState(true);
 
   const { data: members } = useQuery({
     queryKey: ["all-members-notif"],
@@ -32,8 +33,18 @@ export default function AdminNotifications() {
         message,
         type: "info",
       }));
-      const { error } = await supabase.from("notifications").insert(notifs);
-      if (error) throw error;
+      if (notifs.length) {
+        const { error } = await supabase.from("notifications").insert(notifs);
+        if (error) throw error;
+      }
+      if (alsoSms) {
+        const phones = targets.map(m => m.phone).filter(Boolean);
+        if (phones.length) {
+          await supabase.functions.invoke("send-bulk-sms", {
+            body: { phones, message: `${title}: ${message}`.slice(0, 320) },
+          });
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Notifications sent");
@@ -56,6 +67,10 @@ export default function AdminNotifications() {
         </Select>
         <Input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
         <Textarea placeholder="Message" rows={3} value={message} onChange={e => setMessage(e.target.value)} />
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox checked={alsoSms} onCheckedChange={(v) => setAlsoSms(!!v)} />
+          Also send via SMS
+        </label>
         <Button onClick={() => sendNotification.mutate()} disabled={!title || !message || sendNotification.isPending}>
           {sendNotification.isPending ? "Sending..." : "Send Notification"}
         </Button>

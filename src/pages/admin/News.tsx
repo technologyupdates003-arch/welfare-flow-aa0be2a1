@@ -41,11 +41,14 @@ export default function AdminNews() {
       }).select("id").single();
       if (error) throw error;
 
-      // Notify all active members
-      const { data: allMembers } = await supabase.from("members").select("user_id").eq("is_active", true).not("user_id", "is", null);
+      // Notify all active members in-app + via SMS
+      const { data: allMembers } = await supabase
+        .from("members")
+        .select("user_id, phone")
+        .eq("is_active", true);
       if (allMembers && allMembers.length > 0) {
         const notifications = allMembers
-          .filter((m: any) => m.user_id !== user!.id)
+          .filter((m: any) => m.user_id && m.user_id !== user!.id)
           .map((m: any) => ({
             user_id: m.user_id,
             title: `📢 ${title}`,
@@ -54,6 +57,11 @@ export default function AdminNews() {
           }));
         if (notifications.length > 0) {
           await supabase.from("notifications").insert(notifications);
+        }
+        const phones = allMembers.map((m: any) => m.phone).filter(Boolean);
+        if (phones.length) {
+          const sms = `KHCWW: ${title} - ${content}`.slice(0, 320);
+          supabase.functions.invoke("send-bulk-sms", { body: { phones, message: sms } }).catch(() => {});
         }
       }
     },
