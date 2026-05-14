@@ -123,106 +123,47 @@ export default function SuperAdminDashboard() {
     <div className="space-y-6">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <BarChart3 className="h-7 w-7 text-foreground" />
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl gradient-brand flex items-center justify-center shadow-brand">
+                <BarChart3 className="h-6 w-6 text-primary-foreground" />
               </div>
-              Super Admin Dashboard
+              <span className="text-gradient-brand">Super Admin Dashboard</span>
             </h1>
-            <p className="text-muted-foreground mt-2">Complete system oversight and member management</p>
+            <p className="text-muted-foreground mt-2 text-sm">Complete system oversight and member management</p>
           </div>
-          <Badge variant="destructive" className="text-base px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600">
+          <Badge className="self-start sm:self-auto text-sm px-3 py-1.5 glass-brand text-primary border-primary/30">
             Enhanced Access
           </Badge>
         </div>
 
-        {/* Stats Cards Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Members Card */}
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-0 text-foreground">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-medium text-blue-100">Total Members</CardTitle>
-                  <div className="text-3xl font-bold mt-2">{members.length.toLocaleString()}</div>
+        {/* Stats Cards Row — glassmorphism */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[
+            { label: "Total Members", value: members.length.toLocaleString(), icon: Users, sub: `${activeMembers} active`, accent: "from-primary/30 to-primary-glow/10" },
+            { label: "Active Members", value: activeMembers.toLocaleString(), icon: UserCheck, sub: `${recentMembers} new this month`, accent: "from-success/30 to-success/5" },
+            { label: "Contributions", value: `KES ${totalContributions.toLocaleString()}`, icon: DollarSign, sub: `${contributions.length} txns`, accent: "from-primary/30 to-primary-glow/10" },
+            { label: "System Health", value: errorCount === 0 ? "Healthy" : `${errorCount} Issues`, icon: Activity, sub: `${memberAccessLogs.length} access logs`, accent: "from-secondary/30 to-secondary/5" },
+          ].map((s, i) => (
+            <Card key={i} className="glass border-white/40 overflow-hidden relative group hover:shadow-glass-lg transition-all">
+              <div className={`absolute inset-0 bg-gradient-to-br ${s.accent} opacity-60 pointer-events-none`} />
+              <CardContent className="relative p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                    <div className="text-lg sm:text-2xl font-bold mt-1.5 truncate">{s.value}</div>
+                  </div>
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl glass-brand flex items-center justify-center shrink-0">
+                    <s.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-foreground" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-blue-100">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">{activeMembers} active members</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Members Card */}
-          <Card className="bg-gradient-to-br from-green-600 to-green-700 border-0 text-foreground">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-medium text-green-100">Active Members</CardTitle>
-                  <div className="text-3xl font-bold mt-2">{activeMembers.toLocaleString()}</div>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                  <UserCheck className="h-6 w-6 text-foreground" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-green-100">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">{recentMembers} new this month</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Contributions Card */}
-          <Card className="bg-gradient-to-br from-orange-600 to-orange-700 border-0 text-foreground">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-medium text-orange-100">Total Contributions</CardTitle>
-                  <div className="text-3xl font-bold mt-2">KES {totalContributions.toLocaleString()}</div>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-foreground" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-orange-100">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">{contributions.length} transactions</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* System Health Card */}
-          <Card className="bg-gradient-to-br from-purple-600 to-purple-700 border-0 text-foreground">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-medium text-purple-100">System Health</CardTitle>
-                  <div className="text-3xl font-bold mt-2">{errorCount === 0 ? "Healthy" : `${errorCount} Issues`}</div>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Activity className="h-6 w-6 text-foreground" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 text-purple-100">
-                <Activity className="h-4 w-4" />
-                <span className="text-sm">{memberAccessLogs.length} access logs</span>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" /> {s.sub}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Main Content Tabs */}
