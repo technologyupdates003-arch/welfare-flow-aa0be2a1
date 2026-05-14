@@ -877,6 +877,65 @@ export default function MeetingMinutes() {
         return text.trim().replace(/[^\w\s\.\-]/g, '').substring(0, 255);
       };
 
+      // Fetch secretary signature and name if not already in form
+      let secretaryName = form.secretary_name;
+      let secretarySignatureUrl = form.secretary_signature_url;
+      
+      if (!secretarySignatureUrl) {
+        const { data: secretarySigRow } = await supabase
+          .from("office_bearer_signatures")
+          .select("signature_url")
+          .eq("role", "secretary")
+          .maybeSingle();
+        if (secretarySigRow?.signature_url) {
+          secretarySignatureUrl = secretarySigRow.signature_url;
+        }
+      }
+
+      if (!secretaryName && user?.id) {
+        const { data: memberRow } = await supabase
+          .from("members")
+          .select("name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (memberRow?.name) {
+          secretaryName = memberRow.name;
+        }
+      }
+
+      // Fetch chairperson signature and name if not already in form
+      let chairpersonName = form.chairperson_name;
+      let chairpersonSignatureUrl = form.chairperson_signature_url;
+      
+      if (!chairpersonSignatureUrl) {
+        const { data: chairpersonSigRow } = await supabase
+          .from("office_bearer_signatures")
+          .select("signature_url")
+          .eq("role", "chairperson")
+          .maybeSingle();
+        if (chairpersonSigRow?.signature_url) {
+          chairpersonSignatureUrl = chairpersonSigRow.signature_url;
+        }
+      }
+
+      if (!chairpersonName) {
+        const { data: chairpersonRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "chairperson")
+          .limit(1);
+        if (chairpersonRoles?.[0]?.user_id) {
+          const { data: chairpersonMember } = await supabase
+            .from("members")
+            .select("name")
+            .eq("user_id", chairpersonRoles[0].user_id)
+            .maybeSingle();
+          if (chairpersonMember?.name) {
+            chairpersonName = chairpersonMember.name;
+          }
+        }
+      }
+
       const sanitizedAttendees = selectedAttendees
         .map(name => sanitize(name))
         .filter(name => name !== null) as string[];
@@ -894,10 +953,10 @@ export default function MeetingMinutes() {
           action_items: form.action_items || null,
           next_meeting_date: form.next_meeting_date || null,
           status: form.status,
-          chairperson_name: sanitize(form.chairperson_name),
-          chairperson_signature_url: form.chairperson_signature_url || null,
-          secretary_name: sanitize(form.secretary_name),
-          secretary_signature_url: form.secretary_signature_url || null,
+          chairperson_name: sanitize(chairpersonName),
+          chairperson_signature_url: chairpersonSignatureUrl || null,
+          secretary_name: sanitize(secretaryName),
+          secretary_signature_url: secretarySignatureUrl || null,
           absent_with_apology: form.absent_with_apology.map(n => sanitize(n)).filter(Boolean) as string[],
           absent_without_apology: form.absent_without_apology.map(n => sanitize(n)).filter(Boolean) as string[],
           visible_to_members: form.visible_to_members.map(n => sanitize(n)).filter(Boolean) as string[],

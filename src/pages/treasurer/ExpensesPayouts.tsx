@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 const supabase: any = supabaseClient;
@@ -22,6 +22,9 @@ export default function ExpensesPayouts() {
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState("");
   const [payoutType, setPayoutType] = useState<"wedding" | "death" | "retirement" | "emergency">("wedding");
+  const [deathRelation, setDeathRelation] = useState<"member" | "child" | "parent" | "spouse">("member");
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutReason, setPayoutReason] = useState("");
   const [expenseForm, setExpenseForm] = useState({
     expenseType: "operational",
     category: "",
@@ -89,16 +92,31 @@ export default function ExpensesPayouts() {
     const rules = orgSettings?.payout_rules || {
       wedding: 25000,
       death: 50000,
+      death_member: 50000,
+      death_spouse: 50000,
+      death_child: 50000,
+      death_parent: 50000,
       retirement: 30000,
       emergency: 15000,
     };
-    return rules[type as keyof typeof rules] || 0;
+
+    if (type.startsWith("death_")) {
+      return rules[type as keyof typeof rules] ?? rules["death"] ?? 0;
+    }
+    if (type === "death") {
+      return rules["death_member"] ?? rules["death"] ?? 0;
+    }
+
+    return rules[type as keyof typeof rules] ?? 0;
   };
 
   // Create payout mutation
   const createPayout = useMutation({
     mutationFn: async (data: any) => {
-      const eligibleAmount = getEligibleAmount(data.payoutType);
+      const eligibleAmount = data.payoutType === "death"
+        ? getEligibleAmount(`death_${data.deathRelation}`)
+        : getEligibleAmount(data.payoutType);
+
       const { error } = await supabase
         .from("payouts")
         .insert({
@@ -193,7 +211,16 @@ export default function ExpensesPayouts() {
     }
   };
 
-  const eligibleAmount = getEligibleAmount(payoutType);
+  useEffect(() => {
+    const amount = payoutType === "death"
+      ? getEligibleAmount(`death_${deathRelation}`)
+      : getEligibleAmount(payoutType);
+    setPayoutAmount(amount.toString());
+  }, [payoutType, deathRelation, orgSettings]);
+
+  const eligibleAmount = payoutType === "death"
+    ? getEligibleAmount(`death_${deathRelation}`)
+    : getEligibleAmount(payoutType);
 
   return (
     <div className="space-y-6">
@@ -359,12 +386,29 @@ export default function ExpensesPayouts() {
                 </Select>
               </div>
 
+              {payoutType === "death" && (
+                <div>
+                  <Label>Death Relation *</Label>
+                  <Select value={deathRelation} onValueChange={(value: any) => setDeathRelation(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="spouse">Spouse</SelectItem>
+                      <SelectItem value="child">Child</SelectItem>
+                      <SelectItem value="parent">Parent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* Auto-calculated Eligible Amount */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-blue-900">Eligible Amount</p>
-                    <p className="text-xs text-blue-700 mt-1">Based on {payoutType} event</p>
+                    <p className="text-xs text-blue-700 mt-1">Based on {payoutType} {payoutType === "death" ? `(${deathRelation})` : "event"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-blue-900">
@@ -380,10 +424,11 @@ export default function ExpensesPayouts() {
                 <Input
                   type="number"
                   placeholder="Enter amount"
-                  defaultValue={eligibleAmount}
+                  value={payoutAmount}
+                  onChange={(e) => setPayoutAmount(e.target.value)}
                 />
                 <p className="text-xs text-[#6B7280] mt-1">
-                  Default amount is Ksh {eligibleAmount.toLocaleString()}
+                  Suggested amount is Ksh {eligibleAmount.toLocaleString()}
                 </p>
               </div>
 
@@ -391,6 +436,8 @@ export default function ExpensesPayouts() {
               <div>
                 <Label>Reason / Notes</Label>
                 <Textarea
+                  value={payoutReason}
+                  onChange={(e) => setPayoutReason(e.target.value)}
                   placeholder="Add any additional notes..."
                   rows={3}
                 />
@@ -407,10 +454,17 @@ export default function ExpensesPayouts() {
                 </Button>
                 <Button
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  disabled={!selectedMember}
+                  disabled={!selectedMember || !payoutAmount || createPayout.isPending}
+                  onClick={() => createPayout.mutate({
+                    memberId: selectedMember,
+                    payoutType,
+                    amount: parseFloat(payoutAmount),
+                    reason: payoutReason || `${payoutType === "death" ? `Death payout (${deathRelation})` : `${payoutType.charAt(0).toUpperCase() + payoutType.slice(1)} payout`} `,
+                    deathRelation,
+                  })}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Create Payout
+                  {createPayout.isPending ? "Creating..." : "Create Payout"}
                 </Button>
               </div>
             </div>

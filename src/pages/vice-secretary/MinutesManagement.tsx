@@ -151,6 +151,7 @@ export default function MinutesManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vice-secretary-minutes"] });
+      queryClient.invalidateQueries({ queryKey: ["secretary-pending-minutes"] });
       toast.success("Submitted to Secretary for review");
     },
     onError: (e: any) => toast.error(e.message),

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, Settings, CreditCard, Menu, X, Landmark } from "lucide-react";
+import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, Settings, CreditCard, Menu, X, Landmark, FileSignature } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
@@ -47,6 +47,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
   const menuItems = [
     { to: "/treasurer", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { to: "/treasurer/contributions", icon: CreditCard, label: "Contributions" },
+    { to: "/treasurer/withdrawal-approvals", icon: FileSignature, label: "Withdrawal Approvals" },
     { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
     { to: "/treasurer/memos", icon: FileText, label: "Memos" },

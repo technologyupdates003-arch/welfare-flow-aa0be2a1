@@ -1,16 +1,19 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, DollarSign, FileSpreadsheet,
   Newspaper, Bell, LogOut, Menu, X,
   AlertTriangle, CreditCard, Send, Calendar, FileText, Settings,
-  Shield, Award, Eye, UserCheck, FileSignature, Wrench, AlertCircle
+  Shield, Award, Eye, UserCheck, FileSignature, Wrench, AlertCircle, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
 import AIAssistant from "@/components/chat/AIAssistant";
+import EventPopup from "@/components/EventPopup";
 
 const getNavItems = (role: string) => {
   const baseItems = [
@@ -44,9 +47,14 @@ const getNavItems = (role: string) => {
         { to: "/admin/contributions", icon: DollarSign, label: "Contributions" },
         { to: "/admin/import", icon: FileSpreadsheet, label: "Excel Import" },
         { to: "/admin/beneficiary-import", icon: Users, label: "Beneficiary Import" },
+        { to: "/admin/beneficiaries", icon: UserCheck, label: "Beneficiary Dashboard" },
         { to: "/admin/payments", icon: CreditCard, label: "Payments" },
         { to: "/admin/unmatched", icon: AlertTriangle, label: "Unmatched" },
         { to: "/admin/penalty-payments", icon: AlertCircle, label: "Verify Penalties" },
+        { to: "/admin/penalty-wallet", icon: DollarSign, label: "Penalty Wallet" },
+        { to: "/admin/donations", icon: DollarSign, label: "Donation Wallet" },
+        { to: "/admin/donation-campaigns", icon: Target, label: "Donation Campaigns" },
+        { to: "/admin/withdrawal-approval", icon: FileSignature, label: "Withdrawal Approvals" },
         { to: "/admin/sms", icon: Send, label: "Bulk SMS" },
         { to: "/admin/events", icon: Calendar, label: "Events" },
         { to: "/admin/documents", icon: FileText, label: "Documents" },
@@ -135,6 +143,32 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const roleTitle = getRoleTitle("admin");
   const roleBadge = getRoleBadge("admin");
 
+  const { data: unseenEventCount = 0 } = useQuery({
+    queryKey: ["unseen-admin-event-count", role],
+    queryFn: async () => {
+      const lastSeenAt = typeof window !== "undefined" ? window.localStorage.getItem("member_last_seen_events_at") : null;
+      const { data: events } = await supabase
+        .from("events")
+        .select("id, created_at")
+        .order("created_at", { ascending: false });
+      if (!events) return 0;
+      return events.filter(event => {
+        if (!event.created_at) return false;
+        if (!lastSeenAt) return true;
+        return new Date(event.created_at) > new Date(lastSeenAt);
+      }).length;
+    },
+    enabled: !!role,
+    refetchInterval: 30000,
+  });
+
+  const navItemsWithBadges = navItems.map((item: any) => {
+    if (item.to.endsWith("/events")) {
+      return { ...item, showBadge: unseenEventCount > 0, badgeCount: unseenEventCount };
+    }
+    return item;
+  });
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Mobile overlay */}
@@ -163,7 +197,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item: any, index) => { const { to, icon: Icon, label, divider } = item; return (
+          {navItemsWithBadges.map((item: any, index) => { const { to, icon: Icon, label, showBadge, badgeCount, divider } = item; return (
             <div key={to}>
               {divider && (
                 <div className="my-3 border-t border-slate-700">
@@ -182,6 +216,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               >
                 <Icon className="h-4 w-4" />
                 <span className="flex-1">{label}</span>
+                {showBadge && badgeCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {badgeCount > 9 ? "9+" : badgeCount}
+                  </span>
+                )}
               </Link>
             </div>
           ); })}
@@ -233,6 +272,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           )}
         </header>
+        <EventPopup />
         <div className="flex-1 p-4 lg:p-6 overflow-auto">
           {children}
         </div>

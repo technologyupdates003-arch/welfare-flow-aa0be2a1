@@ -41,6 +41,17 @@ export default function MemoHistory() {
     },
   });
 
+  const { data: orgSettings } = useQuery({
+    queryKey: ["organization-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("organization_settings")
+        .select("*")
+        .single();
+      return data;
+    },
+  });
+
   // Delete memo mutation
   const deleteMemo = useMutation({
     mutationFn: async (memoId: string) => {
@@ -84,7 +95,13 @@ export default function MemoHistory() {
   const downloadMemoPDF = async (memo: any) => {
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      const orgName = "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
+      const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
+      const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
+      const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
+      const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
+      const signatureHtml = orgSettings?.signature_url ? `<div style="margin-top:16px;"><img src="${orgSettings.signature_url}" alt="Treasurer Signature" style="max-height:120px;display:block;"/></div>` : "";
+      const stampHtml = orgSettings?.stamp_url ? `<div style="margin-top:0;max-width:120px;"><img src="${orgSettings.stamp_url}" alt="Official Stamp" style="max-height:120px;display:block;"/></div>` : "";
+
       const container = document.createElement("div");
       container.style.padding = "24px";
       container.style.fontFamily = "'Times New Roman', Times, serif";
@@ -92,7 +109,8 @@ export default function MemoHistory() {
       container.innerHTML = `
         <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;">
           <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
-          <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">P.O.BOX 24-10300 KERUGOYA · Email: Khcww2020@gmail.com</p>
+          <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">${orgAddress}</p>
+          <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Email: ${orgEmail} | Tel: ${orgPhone}</p>
         </div>
         <p style="text-align:center;font-size:11px;font-weight:bold;color:#f97316;letter-spacing:3px;margin:0 0 16px;">KHCWW OFFICIAL MEMO</p>
         <h2 style="font-size:15px;font-weight:bold;color:#111827;margin:0 0 6px;">${memo.title || ""}</h2>
@@ -102,9 +120,13 @@ export default function MemoHistory() {
           <p style="margin:2px 0;">Category: ${getCategoryLabel(memo.category)}</p>
         </div>
         <div style="font-size:13px;color:#111827;line-height:1.6;white-space:pre-wrap;">${(memo.content || "").replace(/</g, "&lt;")}</div>
-        <div style="margin-top:48px;padding-top:14px;border-top:2px solid #111827;width:240px;">
-          <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
-          <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+        <div style="margin-top:48px;padding-top:14px;border-top:2px solid #111827;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;">
+          <div style="max-width:240px;">
+            <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
+            <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+            ${signatureHtml}
+          </div>
+          ${stampHtml}
         </div>
       `;
       document.body.appendChild(container);

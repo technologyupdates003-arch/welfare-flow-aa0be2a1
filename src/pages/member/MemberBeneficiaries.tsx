@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, UserPlus, UserMinus, Users, Loader2, AlertCircle, CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReadableStreamDefaultController } from "node:stream/web";
 
 export default function MemberBeneficiaries() {
   const { memberId } = useAuth();
@@ -105,12 +106,142 @@ export default function MemberBeneficiaries() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending": return "default";
-      case "approved": return "default";
+      case "pending": return "secondary";
+      case "approved": return "success";
       case "rejected": return "destructive";
-      default: return "secondary";
+      default: return "default";
     }
   };
+
+  const normalizeBeneficiaryName = (value: string) => {
+    return String(value || "")
+      .replace(/\b(yes|no|surname|other names|first name|name of|name)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const isPlaceholderBeneficiaryName = (value: string) => {
+    const normalized = normalizeBeneficiaryName(value).toLowerCase();
+    return normalized === "";
+  };
+
+  const formatBeneficiaryName = (beneficiary: any) => {
+    const cleanedName = normalizeBeneficiaryName(beneficiary.name);
+    if (!cleanedName) {
+      switch (beneficiary.relationship?.toLowerCase?.()) {
+        case "spouse":
+          return "Spouse";
+        case "child":
+        case "child 1":
+        case "child 2":
+        case "child 3":
+        case "child 4":
+        case "child 5":
+        case "child 6":
+          return "Child";
+        case "father":
+          return "Father";
+        case "mother":
+          return "Mother";
+        case "parent":
+          return "Parent";
+        case "spouse mother":
+          return "Spouse Mother";
+        case "spouse father":
+          return "Spouse Father";
+        case "next of kin":
+          return "Next of Kin";
+        default:
+          return beneficiary.relationship
+            ? beneficiary.relationship.charAt(0).toUpperCase() + beneficiary.relationship.slice(1)
+            : "Beneficiary";
+      }
+    }
+
+    return cleanedName;
+  };
+
+  const getRelationshipKey = (relationship: string) => {
+    return String(relationship || "").trim().toLowerCase();
+  };
+
+  const formatRelationshipLabel = (relationship: string) => {
+    const key = getRelationshipKey(relationship);
+
+    switch (key) {
+      case "spouse":
+        return "Spouse";
+      case "father":
+        return "Father";
+      case "mother":
+        return "Mother";
+      case "parent":
+        return "Parent";
+      case "spouse mother":
+        return "Spouse Mother";
+      case "spouse father":
+        return "Spouse Father";
+      case "next of kin":
+        return "Next of Kin";
+      default:
+        return relationship
+          ? relationship.charAt(0).toUpperCase() + relationship.slice(1)
+          : "Beneficiary";
+    }
+  };
+
+  const beneficiaryGroups = (beneficiaries || []).reduce(
+    (groups, beneficiary) => {
+      const key = getRelationshipKey(beneficiary.relationship);
+
+      if (key === "spouse") {
+        groups.spouse.push(beneficiary);
+      } else if (key.startsWith("child")) {
+        groups.children.push(beneficiary);
+      } else if (key === "father" || key === "mother" || key === "parent") {
+        groups.parents.push(beneficiary);
+      } else if (key === "spouse mother" || key === "spouse father") {
+        groups.spouseParents.push(beneficiary);
+      } else if (key === "next of kin") {
+        groups.nextOfKin.push(beneficiary);
+      } else {
+        groups.other.push(beneficiary);
+      }
+
+      return groups;
+    },
+    {
+      spouse: [] as any[],
+      children: [] as any[],
+      parents: [] as any[],
+      spouseParents: [] as any[],
+      nextOfKin: [] as any[],
+      other: [] as any[],
+    }
+  );
+
+  const renderBeneficiaryCard = (beneficiary: any, label: string) => (
+    <div key={beneficiary.id} className="p-4 border border-border rounded-lg bg-background">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="font-medium">{formatBeneficiaryName(beneficiary)}</p>
+          <p className="text-xs text-muted-foreground capitalize">{formatRelationshipLabel(beneficiary.relationship)}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive"
+          onClick={() => {
+            setSelectedBeneficiary(beneficiary);
+            setRemoveDialogOpen(true);
+          }}
+        >
+          <UserMinus className="h-4 w-4 mr-1" /> Request Removal
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -149,41 +280,60 @@ export default function MemberBeneficiaries() {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Relationship</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>ID Number</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {beneficiaries?.map(b => (
-                          <TableRow key={b.id}>
-                            <TableCell className="font-medium">{b.name}</TableCell>
-                            <TableCell className="capitalize">{b.relationship}</TableCell>
-                            <TableCell>{b.phone || "—"}</TableCell>
-                            <TableCell>{b.id_number || "—"}</TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive"
-                                onClick={() => {
-                                  setSelectedBeneficiary(b);
-                                  setRemoveDialogOpen(true);
-                                }}
-                              >
-                                <UserMinus className="h-4 w-4 mr-1" /> Request Removal
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  <div className="space-y-4">
+                    {beneficiaryGroups.spouse.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-lg font-semibold">Spouse</h3>
+                        <div className="grid gap-3">
+                          {beneficiaryGroups.spouse.map((b, index) => renderBeneficiaryCard(b, `Spouse${beneficiaryGroups.spouse.length > 1 ? ` ${index + 1}` : ""}`))}
+                        </div>
+                      </div>
+                    )}
+
+                    {beneficiaryGroups.children.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-lg font-semibold">Children</h3>
+                        <div className="grid gap-3">
+                          {beneficiaryGroups.children.map((b, index) => renderBeneficiaryCard(b, `Child ${index + 1}`))}
+                        </div>
+                      </div>
+                    )}
+
+                    {beneficiaryGroups.parents.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-lg font-semibold">Parents</h3>
+                        <div className="grid gap-3">
+                          {beneficiaryGroups.parents.map((b) => renderBeneficiaryCard(b, formatRelationshipLabel(b.relationship)))}
+                        </div>
+                      </div>
+                    )}
+
+                    {beneficiaryGroups.spouseParents.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-lg font-semibold">Spouse's Parents</h3>
+                        <div className="grid gap-3">
+                          {beneficiaryGroups.spouseParents.map((b) => renderBeneficiaryCard(b, formatRelationshipLabel(b.relationship)))}
+                        </div>
+                      </div>
+                    )}
+
+                    {beneficiaryGroups.nextOfKin.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-lg font-semibold">Next of Kin</h3>
+                        <div className="grid gap-3">
+                          {beneficiaryGroups.nextOfKin.map((b) => renderBeneficiaryCard(b, "Next of Kin"))}
+                        </div>
+                      </div>
+                    )}
+
+                    {beneficiaryGroups.other.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-lg font-semibold">Other Beneficiaries</h3>
+                        <div className="grid gap-3">
+                          {beneficiaryGroups.other.map((b) => renderBeneficiaryCard(b, formatRelationshipLabel(b.relationship)))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex justify-center pt-4">
                     <Button onClick={() => setAddDialogOpen(true)}>

@@ -28,10 +28,16 @@ import AdminNotifications from "@/pages/admin/Notifications";
 import AdminSettings from "@/pages/admin/Settings";
 import OfficeSignatures from "@/pages/admin/OfficeSignatures";
 import BeneficiaryRequests from "@/pages/admin/BeneficiaryRequests";
+import Beneficiaries from "@/pages/admin/Beneficiaries";
 import Defaulters from "@/pages/admin/Defaulters";
 import VerifyPenaltyPayments from "@/pages/admin/VerifyPenaltyPayments";
+import PenaltyWallet from "@/pages/admin/PenaltyWallet";
+import DonationWallet from "@/pages/admin/DonationWallet";
+import DonationCampaigns from "@/pages/admin/DonationCampaigns";
+import WithdrawalApproval from "@/pages/admin/WithdrawalApproval";
 import MemberDashboard from "@/pages/member/MemberDashboard";
 import PayPenalty from "@/pages/member/PayPenalty";
+import Donate from "@/pages/member/Donate";
 import MemberNews from "@/pages/member/MemberNews";
 import MemberEvents from "@/pages/member/MemberEvents";
 import MemberDocuments from "@/pages/member/MemberDocuments";
@@ -42,9 +48,11 @@ import MemberBeneficiaries from "@/pages/member/MemberBeneficiaries";
 import ChairpersonDashboard from "@/pages/chairperson/ChairpersonDashboard";
 import SignatureUpload from "@/pages/chairperson/SignatureUpload";
 import ApproveMinutes from "@/pages/chairperson/ApproveMinutes";
+import ChairpersonWithdrawalApprovals from "@/pages/chairperson/WithdrawalApprovals";
 import ViceChairpersonDashboard from "@/pages/vice-chairperson/ViceChairpersonDashboard";
 import SecretaryDashboard from "@/pages/secretary/SecretaryDashboard";
 import MeetingMinutes from "@/pages/secretary/MeetingMinutes";
+import SecretaryWithdrawalApprovals from "@/pages/secretary/WithdrawalApprovals";
 import SecretarySignatureUpload from "@/pages/secretary/SecretarySignatureUpload";
 import MinutesReview from "@/pages/secretary/MinutesReview";
 import ViceSecretaryDashboard from "@/pages/vice-secretary/ViceSecretaryDashboard";
@@ -54,6 +62,7 @@ import SuperAdminDashboard from "@/pages/super-admin/SuperAdminDashboard";
 import SuperAdminMemberDetail from "@/pages/super-admin/SuperAdminMemberDetail";
 import TreasurerLayout from "@/components/layout/TreasurerLayout";
 import TreasurerDashboard from "@/pages/treasurer/TreasurerDashboard";
+import TreasurerWithdrawalApprovals from "@/pages/treasurer/WithdrawalApprovals";
 import TreasurerContributions from "@/pages/treasurer/TreasurerContributions";
 import ExpensesPayouts from "@/pages/treasurer/ExpensesPayouts";
 import CreateMemo from "@/pages/treasurer/CreateMemo";
@@ -108,6 +117,7 @@ function AppRoutes() {
         <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
         <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
         <Route path="/admin/beneficiary-import" element={<AdminLayout><BeneficiaryImport /></AdminLayout>} />
+        <Route path="/admin/beneficiaries" element={<AdminLayout><Beneficiaries /></AdminLayout>} />
         <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
         <Route path="/admin/unmatched" element={<AdminLayout><UnmatchedPayments /></AdminLayout>} />
         <Route path="/admin/sms" element={<AdminLayout><BulkSms /></AdminLayout>} />
@@ -121,9 +131,14 @@ function AppRoutes() {
         <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
         <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
         <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+        <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+        <Route path="/admin/donations" element={<AdminLayout><DonationWallet /></AdminLayout>} />
+        <Route path="/admin/donation-campaigns" element={<AdminLayout><DonationCampaigns /></AdminLayout>} />
+        <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
+        <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
@@ -143,6 +158,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
@@ -180,11 +196,14 @@ function AppRoutes() {
             <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+            <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+            <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
           </>
         )}
         
         {/* Treasurer Routes - Accessible by admin and super_admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
+        <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
@@ -204,6 +223,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/super-admin" replace />} />
       </Routes>
     );
@@ -217,6 +237,7 @@ function AppRoutes() {
         <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
         <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
         <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
+        <Route path="/admin/beneficiaries" element={<AdminLayout><Beneficiaries /></AdminLayout>} />
         <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
         <Route path="/admin/unmatched" element={<AdminLayout><UnmatchedPayments /></AdminLayout>} />
         <Route path="/admin/sms" element={<AdminLayout><BulkSms /></AdminLayout>} />
@@ -229,9 +250,14 @@ function AppRoutes() {
         <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
         <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
         <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+        <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+        <Route path="/admin/donations" element={<AdminLayout><DonationWallet /></AdminLayout>} />
+        <Route path="/admin/donation-campaigns" element={<AdminLayout><DonationCampaigns /></AdminLayout>} />
+        <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
+        <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
@@ -265,6 +291,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
@@ -276,6 +303,7 @@ function AppRoutes() {
         <Route path="/chairperson" element={<OfficeLayout><ChairpersonDashboard /></OfficeLayout>} />
         <Route path="/chairperson/signature" element={<OfficeLayout><SignatureUpload /></OfficeLayout>} />
         <Route path="/chairperson/approve-minutes" element={<OfficeLayout><ApproveMinutes /></OfficeLayout>} />
+        <Route path="/chairperson/withdrawal-approvals" element={<OfficeLayout><ChairpersonWithdrawalApprovals /></OfficeLayout>} />
         {/* Member routes for chairperson */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
@@ -286,6 +314,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
@@ -306,6 +335,8 @@ function AppRoutes() {
             <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+            <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+            <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -335,6 +366,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
@@ -355,6 +387,8 @@ function AppRoutes() {
             <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+            <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+            <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -378,6 +412,7 @@ function AppRoutes() {
         <Route path="/secretary/minutes" element={<OfficeLayout><MeetingMinutes /></OfficeLayout>} />
         <Route path="/secretary/review" element={<OfficeLayout><MinutesReview /></OfficeLayout>} />
         <Route path="/secretary/signature" element={<OfficeLayout><SecretarySignatureUpload /></OfficeLayout>} />
+        <Route path="/secretary/withdrawal-approvals" element={<OfficeLayout><SecretaryWithdrawalApprovals /></OfficeLayout>} />
         {/* Member routes for secretary */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
@@ -388,6 +423,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
@@ -408,6 +444,8 @@ function AppRoutes() {
             <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+            <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+            <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -438,6 +476,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
@@ -458,6 +497,8 @@ function AppRoutes() {
             <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+            <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+            <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -487,6 +528,7 @@ function AppRoutes() {
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
@@ -507,6 +549,8 @@ function AppRoutes() {
             <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
             <Route path="/admin/signatures" element={<AdminLayout><OfficeSignatures /></AdminLayout>} />
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
+            <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
+            <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -555,3 +599,5 @@ const App = () => (
 );
 
 export default App;
+
+

@@ -6,16 +6,249 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { DollarSign, TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
+import { initiateB2CWithdrawal } from "@/lib/b2c";
 
 export default function TreasurerDashboard() {
+  const { user } = useAuth();
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<any>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+  // Fetch pending withdrawal approvals for treasurer
+  useEffect(() => {
+    const fetchWithdrawals = async () => {
+      if (!user) return;
+
+      try {
+        const { data: withdrawalsData, error: withdrawalsError } = await supabase
+          .from('penalty_withdrawals')
+          .select(`
+            id,
+            amount,
+            reason,
+            status,
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            withdrawal_signatories (
+              id,
+              signatory_role,
+              status,
+              signature_url,
+              approved_at,
+              rejected_at,
+              signatory_user_id
+            )
+          `)
+          .eq('withdrawal_signatories.signatory_role', 'treasurer')
+          .eq('withdrawal_signatories.status', 'pending')
+          .or(`withdrawal_signatories.signatory_user_id.eq.${user.id},withdrawal_signatories.signatory_user_id.is.null`)
+          .order('created_at', { ascending: false });
+
+        if (withdrawalsError) throw withdrawalsError;
+
+        const { data: signaturesData } = await supabase
+          .from('signatory_signatures')
+          .select('user_id, signatory_role, signature_url, full_name');
+
+        const signaturesMap = new Map();
+        signaturesData?.forEach((sig: any) => {
+          signaturesMap.set(`${sig.user_id}-${sig.signatory_role}`, sig);
+          signaturesMap.set(`${sig.signatory_role}`, sig);
+        });
+
+        const getSignatureInfo = (s: any) =>
+          signaturesMap.get(
+            s.signatory_user_id
+              ? `${s.signatory_user_id}-${s.signatory_role}`
+              : s.signatory_role
+          ) || signaturesMap.get(s.signatory_role);
+
+        setWithdrawals(
+          (withdrawalsData || []).map((w: any) => ({
+            ...w,
+            signatories: w.withdrawal_signatories?.map((s: any) => ({
+              ...s,
+              signatureInfo: getSignatureInfo(s),
+            })),
+          }))
+        );
+      } catch (error) {
+        console.error('Error fetching withdrawals:', error);
+      }
+    };
+
+    fetchWithdrawals();
+  }, [user]);
+
+  const getPendingWithdrawals = () => {
+    return withdrawals.filter((w) => {
+      const treasurerSignatory = w.signatories?.find(
+        (s: any) => s.signatory_role === 'treasurer' && s.status === 'pending'
+      );
+      return !!treasurerSignatory;
+    });
+  };
+
+  const handleApproval = async (action: 'approve' | 'reject') => {
+    if (!selectedWithdrawal || !user) return;
+
+    if (action === 'reject' && !rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+
+      const { error: updateError } = await supabase
+        .from('withdrawal_signatories')
+        .update({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
+          rejection_reason: action === 'reject' ? rejectionReason : null,
+        })
+        .eq('withdrawal_id', selectedWithdrawal.id)
+        .eq('signatory_role', 'treasurer')
+        .or(`signatory_user_id.eq.${user.id},signatory_user_id.is.null`);
+
+      if (updateError) throw updateError;
+
+      const { data: allSignatories } = await supabase
+        .from('withdrawal_signatories')
+        .select('status')
+        .eq('withdrawal_id', selectedWithdrawal.id);
+
+      const allApproved = allSignatories?.every((s) => s.status === 'approved');
+      const anyRejected = allSignatories?.some((s) => s.status === 'rejected');
+
+      if (allApproved) {
+        toast.loading('Processing B2C transfer...');
+
+        const b2cResult = await initiateB2CWithdrawal({
+          withdrawalId: selectedWithdrawal.id,
+          amount: selectedWithdrawal.amount,
+          phoneNumber: selectedWithdrawal.phone_number || '',
+          reason: selectedWithdrawal.reason,
+          adminName: user.email || 'Admin',
+        });
+
+        if (b2cResult.success) {
+          await supabase
+            .from('penalty_withdrawals')
+            .update({
+              status: 'completed',
+              submitted_at: new Date().toISOString(),
+            })
+            .eq('id', selectedWithdrawal.id);
+
+          toast.success(
+            `✅ Withdrawal completed! KES ${selectedWithdrawal.amount.toLocaleString()} transferred to ${selectedWithdrawal.phone_number}`
+          );
+        } else {
+          await supabase
+            .from('penalty_withdrawals')
+            .update({
+              status: 'approved',
+              submitted_at: new Date().toISOString(),
+            })
+            .eq('id', selectedWithdrawal.id);
+
+          toast.error(`Approval complete but transfer failed: ${b2cResult.error}`);
+        }
+      } else if (anyRejected) {
+        await supabase
+          .from('penalty_withdrawals')
+          .update({
+            status: 'rejected',
+          })
+          .eq('id', selectedWithdrawal.id);
+
+        toast.error('Withdrawal rejected');
+      } else {
+        toast.success(`Withdrawal ${action === 'approve' ? 'approved' : 'rejected'} by you`);
+      }
+
+      setShowApprovalDialog(false);
+      setSelectedWithdrawal(null);
+      setRejectionReason('');
+
+      // Refresh withdrawals
+      const { data: updatedWithdrawalsData, error: updatedError } = await supabase
+        .from('penalty_withdrawals')
+        .select(`
+          id,
+          amount,
+          reason,
+          status,
+          requested_by,
+          submitted_at,
+          created_at,
+          phone_number,
+          withdrawal_signatories (
+            id,
+            signatory_role,
+            status,
+            signature_url,
+            approved_at,
+            rejected_at,
+            signatory_user_id
+          )
+        `)
+        .eq('withdrawal_signatories.signatory_role', 'treasurer')
+        .eq('withdrawal_signatories.status', 'pending')
+        .or(`withdrawal_signatories.signatory_user_id.eq.${user.id},withdrawal_signatories.signatory_user_id.is.null`)
+        .order('created_at', { ascending: false });
+
+      if (updatedError) throw updatedError;
+
+      const { data: signaturesData } = await supabase
+        .from('signatory_signatures')
+        .select('user_id, signatory_role, signature_url, full_name');
+
+      const signaturesMap = new Map();
+      signaturesData?.forEach((sig: any) => {
+        signaturesMap.set(`${sig.user_id}-${sig.signatory_role}`, sig);
+        signaturesMap.set(`${sig.signatory_role}`, sig);
+      });
+
+      const getSignatureInfo = (s: any) =>
+        signaturesMap.get(
+          s.signatory_user_id
+            ? `${s.signatory_user_id}-${s.signatory_role}`
+            : s.signatory_role
+        ) || signaturesMap.get(s.signatory_role);
+
+      setWithdrawals(
+        (updatedWithdrawalsData || []).map((w: any) => ({
+          ...w,
+          signatories: w.withdrawal_signatories?.map((s: any) => ({
+            ...s,
+            signatureInfo: getSignatureInfo(s),
+          })),
+        }))
+      );
+    } catch (error) {
+      console.error('Error processing approval:', error);
+      toast.error('Failed to process approval');
+    } finally {
+      setProcessing(false);
+    }
+  };
   // Fetch financial summary — aligned with Admin Dashboard StatsCards
   const { data: financialSummary } = useQuery({
     queryKey: ["treasurer-financial-summary"],
@@ -501,6 +734,120 @@ NEXT STEPS:
           </div>
         </CardContent>
       </Card>
+
+      {/* Withdrawal Approvals Section */}
+      <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
+        <CardHeader className="p-2 md:p-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base md:text-lg font-bold text-[#111827] flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Withdrawal Approvals
+            </CardTitle>
+            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+              {getPendingWithdrawals().length} Pending
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-2 md:p-4 pt-0 md:pt-0">
+          {getPendingWithdrawals().length === 0 ? (
+            <p className="text-center text-gray-600 py-8">No pending approvals</p>
+          ) : (
+            <div className="space-y-3">
+              {getPendingWithdrawals().map((withdrawal) => (
+                <div key={withdrawal.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">KES {withdrawal.amount.toLocaleString()}</p>
+                      <p className="text-xs text-gray-600 mt-1">{withdrawal.reason}</p>
+                      {withdrawal.phone_number && (
+                        <p className="text-xs text-gray-600 mt-1">Transfer to: {withdrawal.phone_number}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => {
+                          setSelectedWithdrawal(withdrawal);
+                          setApprovalAction('approve');
+                          setShowApprovalDialog(true);
+                        }}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedWithdrawal(withdrawal);
+                          setApprovalAction('reject');
+                          setShowApprovalDialog(true);
+                        }}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Approval Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {approvalAction === 'approve' ? 'Approve' : 'Reject'} Withdrawal
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {approvalAction === 'reject' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Rejection Reason</label>
+                <Textarea
+                  placeholder="Explain why you are rejecting this withdrawal"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  disabled={processing}
+                  rows={4}
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowApprovalDialog(false)}
+                disabled={processing}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleApproval(approvalAction || 'approve')}
+                disabled={processing || (approvalAction === 'reject' && !rejectionReason)}
+                variant={approvalAction === 'reject' ? 'destructive' : 'default'}
+                className="flex-1"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  `${approvalAction === 'approve' ? 'Approve' : 'Reject'}`
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

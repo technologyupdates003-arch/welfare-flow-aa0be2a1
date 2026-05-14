@@ -6,11 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, Newspaper, Bell, LogOut, Calendar, Download, User, Users, 
-  Menu, X, FileText, Shield, AlertCircle
+  Menu, X, FileText, Shield, AlertCircle, DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
 import NewsPopup from "@/components/NewsPopup";
+import EventPopup from "@/components/EventPopup";
 
 const getMemberNavItems = (role: string | null) => {
   const memberItems = [
@@ -20,6 +21,7 @@ const getMemberNavItems = (role: string | null) => {
     { to: "/member/beneficiaries", icon: Users, label: "Beneficiaries" },
     { to: "/member/downloads", icon: Download, label: "Downloads" },
     { to: "/member/pay-penalty", icon: AlertCircle, label: "Pay Penalty" },
+    { to: "/member/donate", icon: DollarSign, label: "Donate" },
     { to: "/member/notifications", icon: Bell, label: "Alerts", showBadge: true },
     { to: "/member/profile", icon: User, label: "Profile" },
   ];
@@ -65,6 +67,55 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
     refetchInterval: 10000,
   });
 
+  const { data: unreadNewsCount = 0 } = useQuery({
+    queryKey: ["unread-news-count", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data: allNews } = await supabase.from("news").select("id");
+      const { data: readNews } = await supabase.from("news_read").select("news_id").eq("user_id", user.id);
+      const readIds = new Set(readNews?.map(r => r.news_id) || []);
+      return allNews?.filter(news => !readIds.has(news.id)).length || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const { data: unseenEventCount = 0 } = useQuery({
+    queryKey: ["unseen-event-count", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const lastSeenAt = typeof window !== "undefined" ? window.localStorage.getItem("member_last_seen_events_at") : null;
+      const { data: events } = await supabase
+        .from("events")
+        .select("id, created_at")
+        .order("created_at", { ascending: false });
+      if (!events) return 0;
+      return events.filter(event => {
+        if (!event.created_at) return false;
+        if (!lastSeenAt) return true;
+        return new Date(event.created_at) > new Date(lastSeenAt);
+      }).length;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const navItemsWithBadges = navItems.map((item: any) => {
+    if (item.to === "/member/events") {
+      return { ...item, showBadge: unseenEventCount > 0, badgeCount: unseenEventCount };
+    }
+
+    if (item.to === "/member/news") {
+      return { ...item, showBadge: unreadNewsCount > 0, badgeCount: unreadNewsCount };
+    }
+
+    if (item.to === "/member/notifications") {
+      return { ...item, showBadge: unreadNotifications > 0, badgeCount: unreadNotifications };
+    }
+
+    return item;
+  });
+
   return (
     <div className="flex min-h-screen">
       {/* Mobile overlay */}
@@ -96,7 +147,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto pb-20 lg:pb-3">
-          {navItems.map((item: any) => { const { to, icon: Icon, label, showBadge, divider } = item; return (
+          {navItemsWithBadges.map((item: any) => { const { to, icon: Icon, label, showBadge, badgeCount, divider } = item; return (
             <div key={to}>
               {divider && (
                 <div className="my-3 border-t border-sidebar-border">
@@ -115,9 +166,9 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
               >
                 <Icon className="h-4 w-4" />
                 <span className="flex-1">{label}</span>
-                {showBadge && unreadNotifications > 0 && (
+                {showBadge && badgeCount > 0 && (
                   <span className="bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    {badgeCount > 9 ? "9+" : badgeCount}
                   </span>
                 )}
               </Link>
@@ -148,7 +199,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
 
       {/* Bottom Navigation (Mobile Only) */}
       <nav className="fixed bottom-0 inset-x-0 bg-card border-t border-border flex justify-around py-2 z-40 lg:hidden">
-        {navItems.slice(0, 4).map((item: any) => { const { to, icon: Icon, label, showBadge } = item; return (
+        {navItemsWithBadges.slice(0, 4).map((item: any) => { const { to, icon: Icon, label, showBadge, badgeCount } = item; return (
           <Link
             key={to}
             to={to}
@@ -159,9 +210,9 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
           >
             <div className="relative">
               <Icon className="h-5 w-5" />
-              {showBadge && unreadNotifications > 0 && (
+              {showBadge && badgeCount > 0 && (
                 <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center min-w-[16px]">
-                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                  {badgeCount > 9 ? "9+" : badgeCount}
                 </span>
               )}
             </div>
@@ -179,6 +230,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
 
       <FloatingChatBubble />
       <NewsPopup />
+      <EventPopup />
     </div>
   );
 }

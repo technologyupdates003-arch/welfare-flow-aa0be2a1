@@ -1,329 +1,395 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, AlertCircle, CheckCircle, Phone } from 'lucide-react';
+import { toast } from 'sonner';
+import { initiatePenaltySTKPush, formatPhoneNumber } from '@/lib/stkpush';
+
+interface Penalty {
+  id: string;
+  amount: number;
+  reason: string;
+  is_paid: boolean;
+  created_at: string;
+  contribution_id?: string;
+}
+
+interface Member {
+  id: string;
+  phone: string;
+  name: string;
+}
 
 export default function PayPenalty() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [form, setForm] = useState({
-    amount: "",
-    reference_number: "",
-    payment_date: new Date().toISOString().split("T")[0],
-    payment_message: "",
-    notes: ""
-  });
+  const [member, setMember] = useState<Member | null>(null);
+  const [penalties, setPenalties] = useState<Penalty[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedPenalties, setSelectedPenalties] = useState<string[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'success' | 'error'>(
+    'idle'
+  );
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const { data: memberInfo } = useQuery({
-    queryKey: ["member-info"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("members")
-        .select("id, name, phone")
-        .eq("user_id", user?.id)
-        .single();
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+  // Fetch member and penalties
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
 
-  const { data: penaltyPayments = [] } = useQuery({
-    queryKey: ["penalty-payments"],
-    queryFn: async () => {
-      if (!memberInfo?.id) return [];
-      const { data } = await supabase
-        .from("penalty_payments")
-        .select("*")
-        .eq("member_id", memberInfo.id)
-        .order("created_at", { ascending: false });
-      return data || [];
-    },
-    enabled: !!memberInfo?.id,
-  });
+      try {
+        setLoading(true);
 
-  const submitPayment = useMutation({
-    mutationFn: async () => {
-      if (!memberInfo?.id) throw new Error("Member info not found");
-      if (!form.amount || !form.reference_number || !form.payment_date) {
-        throw new Error("Please fill in all required fields");
+        // Get member info
+        const { data: memberData, error: memberError } = await supabase
+          .from('members')
+          .select('id, phone, name')
+          .eq('user_id', user.id)
+          .single();
+
+        if (memberError) throw memberError;
+
+        setMember(memberData);
+        setPhoneNumber(memberData.phone);
+
+        // Get unpaid penalties
+        const { data: penaltiesData, error: penaltiesError } = await supabase
+          .from('penalties')
+          .select('*')
+          .eq('member_id', memberData.id)
+          .eq('is_paid', false)
+          .order('created_at', { ascending: false });
+
+        if (penaltiesError) throw penaltiesError;
+
+        setPenalties(penaltiesData || []);
+
+        // Auto-select all penalties
+        if (penaltiesData && penaltiesData.length > 0) {
+          setSelectedPenalties(penaltiesData.map((p) => p.id));
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load penalty information');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const { error } = await (supabase as any)
-        .from("penalty_payments")
-        .insert({
-          member_id: memberInfo.id,
-          amount: parseFloat(form.amount),
-          reference_number: form.reference_number,
-          payment_date: form.payment_date,
-          payment_message: form.payment_message || null,
-          notes: form.notes || null,
-          status: "pending"
-        });
+    fetchData();
+  }, [user]);
 
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["penalty-payments"] });
-      setPaymentDialogOpen(false);
-      setForm({
-        amount: "",
-        reference_number: "",
-        payment_date: new Date().toISOString().split("T")[0],
-        payment_message: "",
-        notes: ""
-      });
-      toast.success("Penalty payment submitted for verification");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  // Calculate total amount
+  const totalAmount = penalties
+    .filter((p) => selectedPenalties.includes(p.id))
+    .reduce((sum, p) => sum + p.amount, 0);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "verified":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "rejected":
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      default:
-        return null;
+  // Handle penalty selection
+  const togglePenalty = (penaltyId: string) => {
+    setSelectedPenalties((prev) =>
+      prev.includes(penaltyId) ? prev.filter((id) => id !== penaltyId) : [...prev, penaltyId]
+    );
+  };
+
+  // Handle select all
+  const selectAll = () => {
+    if (selectedPenalties.length === penalties.length) {
+      setSelectedPenalties([]);
+    } else {
+      setSelectedPenalties(penalties.map((p) => p.id));
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "verified":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Verified</Badge>;
-      case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
-      case "pending":
-        return <Badge variant="secondary">Pending Review</Badge>;
-      default:
-        return null;
+  // Handle STK Push payment
+  const handleSTKPush = async () => {
+    if (!member || selectedPenalties.length === 0) {
+      toast.error('Please select at least one penalty to pay');
+      return;
+    }
+
+    if (!phoneNumber.trim()) {
+      toast.error('Please enter a phone number');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      setPaymentStatus('pending');
+      setErrorMessage('');
+
+      const result = await initiatePenaltySTKPush(
+        member.id,
+        phoneNumber,
+        totalAmount,
+        selectedPenalties
+      );
+
+      if (result.success) {
+        setPaymentStatus('success');
+        toast.success('Payment prompt sent to your phone. Please enter your M-Pesa PIN.');
+
+        // Poll for payment status
+        const checkoutRequestId = result.checkoutRequestId;
+        if (checkoutRequestId) {
+          pollPaymentStatus(checkoutRequestId);
+        }
+      } else {
+        setPaymentStatus('error');
+        setErrorMessage(result.error || 'Failed to initiate payment');
+        toast.error(result.error || 'Failed to initiate payment');
+      }
+    } catch (error) {
+      setPaymentStatus('error');
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setProcessing(false);
     }
   };
 
-  const totalPending = penaltyPayments
-    .filter(p => p.status === "pending")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+  // Poll for payment status
+  const pollPaymentStatus = (checkoutRequestId: string) => {
+    let attempts = 0;
+    const maxAttempts = 30; // 5 minutes with 10-second intervals
 
-  const totalVerified = penaltyPayments
-    .filter(p => p.status === "verified")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+    const poll = async () => {
+      attempts++;
+
+      const { data } = await supabase
+        .from('penalty_payment_records')
+        .select('status')
+        .eq('mpesa_transaction_id', checkoutRequestId)
+        .single();
+
+      if (data?.status === 'verified') {
+        setPaymentStatus('success');
+        toast.success('Payment verified successfully!');
+        // Refresh penalties
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else if (data?.status === 'failed' || attempts >= maxAttempts) {
+        setPaymentStatus('error');
+        setErrorMessage('Payment failed or timed out');
+      } else {
+        setTimeout(poll, 10000); // Poll every 10 seconds
+      }
+    };
+
+    poll();
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!member) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Unable to load member information</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (penalties.length === 0) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>No Penalties</CardTitle>
+            <CardDescription>You have no outstanding penalties to pay</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <CheckCircle className="h-12 w-12 text-green-500" />
+            </div>
+            <p className="text-center text-gray-600">Your account is in good standing!</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <AlertCircle className="h-8 w-8" />
-          Pay Penalty
-        </h1>
-        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Submit Payment
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Submit Penalty Payment</DialogTitle>
-              <DialogDescription>
-                Enter your payment details for verification
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Member Name</Label>
-                <Input
-                  value={memberInfo?.name || ""}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-              <div>
-                <Label>Amount (KES) *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.amount}
-                  onChange={e => setForm({ ...form, amount: e.target.value })}
-                  placeholder="Enter amount"
-                />
-              </div>
-              <div>
-                <Label>Reference Number (M-Pesa/Bank) *</Label>
-                <Input
-                  value={form.reference_number}
-                  onChange={e => setForm({ ...form, reference_number: e.target.value })}
-                  placeholder="e.g., MJK123456789"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  This is the transaction ID from your payment method
-                </p>
-              </div>
-              <div>
-                <Label>Payment Date *</Label>
-                <Input
-                  type="date"
-                  value={form.payment_date}
-                  onChange={e => setForm({ ...form, payment_date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Payment Message (M-Pesa SMS) *</Label>
-                <Textarea
-                  value={form.payment_message}
-                  onChange={e => setForm({ ...form, payment_message: e.target.value })}
-                  placeholder="Paste your M-Pesa confirmation message here...&#10;Example: MJK123456789 Confirmed. You have sent Ksh500.00 to WELFARE GROUP..."
-                  rows={4}
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Copy and paste the entire M-Pesa confirmation SMS you received
-                </p>
-              </div>
-              <div>
-                <Label>Additional Notes (Optional)</Label>
-                <Textarea
-                  value={form.notes}
-                  onChange={e => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Any additional information about this payment..."
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2">
+    <div className="container mx-auto py-8 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Pay Penalties</h1>
+        <p className="text-gray-600 mt-2">
+          You have {penalties.length} outstanding penalty/penalties to pay
+        </p>
+      </div>
+
+      {/* Payment Status Alert */}
+      {paymentStatus === 'success' && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Payment prompt sent successfully! Check your phone for the M-Pesa prompt.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {paymentStatus === 'error' && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Penalties List */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Outstanding Penalties</CardTitle>
+                  <CardDescription>Select penalties to pay</CardDescription>
+                </div>
                 <Button
                   variant="outline"
-                  onClick={() => setPaymentDialogOpen(false)}
+                  size="sm"
+                  onClick={selectAll}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => submitPayment.mutate()}
-                  disabled={submitPayment.isPending || !form.amount || !form.reference_number || !form.payment_message}
-                  className="flex-1"
-                >
-                  {submitPayment.isPending ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</>
-                  ) : (
-                    "Submit for Verification"
-                  )}
+                  {selectedPenalties.length === penalties.length ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {penalties.map((penalty) => (
+                <div
+                  key={penalty.id}
+                  className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => togglePenalty(penalty.id)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedPenalties.includes(penalty.id)}
+                    onChange={() => togglePenalty(penalty.id)}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{penalty.reason}</p>
+                    <p className="text-sm text-gray-600">
+                      Created: {new Date(penalty.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg">KES {penalty.amount.toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Payment Summary */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Penalties Count */}
+              <div className="flex justify-between items-center pb-3 border-b">
+                <span className="text-gray-600">Penalties Selected:</span>
+                <span className="font-semibold">{selectedPenalties.length}</span>
+              </div>
+
+              {/* Total Amount */}
+              <div className="flex justify-between items-center pb-3 border-b">
+                <span className="text-gray-600">Total Amount:</span>
+                <span className="text-2xl font-bold text-primary">
+                  KES {totalAmount.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Phone Number Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">M-Pesa Phone Number</label>
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <Input
+                    type="tel"
+                    placeholder="0712345678"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={processing}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Format: 0712345678 or +254712345678
+                </p>
+              </div>
+
+              {/* Payment Method Info */}
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  <strong>Payment Method:</strong> M-Pesa STK Push
+                </p>
+                <p className="text-xs text-blue-800 mt-1">
+                  You will receive a payment prompt on your phone. Enter your M-Pesa PIN to
+                  complete the payment.
+                </p>
+              </div>
+
+              {/* Pay Button */}
+              <Button
+                onClick={handleSTKPush}
+                disabled={processing || selectedPenalties.length === 0 || totalAmount === 0}
+                className="w-full"
+                size="lg"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  `Pay KES ${totalAmount.toLocaleString()}`
+                )}
+              </Button>
+
+              {/* Info Box */}
+              <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-600 space-y-1">
+                <p>✓ Secure M-Pesa payment</p>
+                <p>✓ Instant verification</p>
+                <p>✓ Receipt will be sent to your email</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Member Info Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Member Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <p className="text-gray-600">Name</p>
+                <p className="font-medium">{member.name}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Phone</p>
+                <p className="font-medium">{member.phone}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Verification</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">KES {totalPending.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {penaltyPayments.filter(p => p.status === "pending").length} payment(s)
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Verified Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">KES {totalVerified.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {penaltyPayments.filter(p => p.status === "verified").length} payment(s)
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Payment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {penaltyPayments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No penalty payments submitted yet
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {penaltyPayments.map((payment: any) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="text-sm">
-                        {new Date(payment.payment_date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        KES {parseFloat(payment.amount).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">
-                        {payment.reference_number}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(payment.status)}
-                          {getStatusBadge(payment.status)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {payment.rejection_reason ? (
-                          <div className="text-red-600 dark:text-red-400">
-                            {payment.rejection_reason}
-                          </div>
-                        ) : (
-                          payment.notes || "-"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold text-sm mb-2">How to Pay Penalty:</h3>
-          <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-            <li>Make payment via M-Pesa or bank transfer</li>
-            <li>Click "Submit Payment" and enter the amount</li>
-            <li>Enter the transaction reference number (from M-Pesa/bank)</li>
-            <li>Admin will verify the payment within 24 hours</li>
-            <li>You'll see the status update once verified</li>
-          </ol>
-        </CardContent>
-      </Card>
     </div>
   );
 }

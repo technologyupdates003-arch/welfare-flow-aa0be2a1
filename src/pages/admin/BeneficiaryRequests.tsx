@@ -82,7 +82,7 @@ export default function BeneficiaryRequests() {
       if (!selectedRequest?.beneficiary_id) return null;
       const { data } = await supabase
         .from("beneficiaries")
-        .select("name, phone, id_number, relationship")
+        .select("name, phone, id_number, relationship, spouse_first_name, spouse_surname, spouse_other_names, father_surname, father_other_names, mother_surname, mother_other_names")
         .eq("id", selectedRequest.beneficiary_id)
         .single();
       return data;
@@ -411,6 +411,21 @@ export default function BeneficiaryRequests() {
                     <p>
                       <span className="font-medium">Phone:</span> {selectedBeneficiary.phone || "N/A"}
                     </p>
+                    {selectedBeneficiary.spouse_first_name || selectedBeneficiary.spouse_surname || selectedBeneficiary.spouse_other_names ? (
+                      <p>
+                        <span className="font-medium">Spouse:</span> {[selectedBeneficiary.spouse_first_name, selectedBeneficiary.spouse_other_names, selectedBeneficiary.spouse_surname].filter(Boolean).join(" ") || "N/A"}
+                      </p>
+                    ) : null}
+                    {selectedBeneficiary.father_surname || selectedBeneficiary.father_other_names ? (
+                      <p>
+                        <span className="font-medium">Father:</span> {[selectedBeneficiary.father_other_names, selectedBeneficiary.father_surname].filter(Boolean).join(" ") || "N/A"}
+                      </p>
+                    ) : null}
+                    {selectedBeneficiary.mother_surname || selectedBeneficiary.mother_other_names ? (
+                      <p>
+                        <span className="font-medium">Mother:</span> {[selectedBeneficiary.mother_other_names, selectedBeneficiary.mother_surname].filter(Boolean).join(" ") || "N/A"}
+                      </p>
+                    ) : null}
                   </div>
                 )}
 

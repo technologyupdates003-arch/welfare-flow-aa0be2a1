@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 const supabase: any = supabaseClient;
@@ -36,29 +36,35 @@ export default function TreasurerSettings() {
     organization_phone: "+254 712 345 678",
     payout_rules: {
       wedding: 25000,
-      death: 50000,
+      death_member: 50000,
+      death_spouse: 50000,
+      death_child: 50000,
+      death_parent: 50000,
       retirement: 30000,
       emergency: 15000,
     },
   });
 
   // Update form data when settings load
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       setFormData({
         organization_name: settings.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE",
         organization_address: settings.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH",
         organization_email: settings.organization_email || "Khcww2020@gmail.com",
         organization_phone: settings.organization_phone || "+254 712 345 678",
-        payout_rules: settings.payout_rules || {
-          wedding: 25000,
-          death: 50000,
-          retirement: 30000,
-          emergency: 15000,
+        payout_rules: {
+          wedding: settings.payout_rules?.wedding ?? 25000,
+          death_member: settings.payout_rules?.death_member ?? settings.payout_rules?.death ?? 50000,
+          death_spouse: settings.payout_rules?.death_spouse ?? settings.payout_rules?.death ?? 50000,
+          death_child: settings.payout_rules?.death_child ?? settings.payout_rules?.death ?? 50000,
+          death_parent: settings.payout_rules?.death_parent ?? settings.payout_rules?.death ?? 50000,
+          retirement: settings.payout_rules?.retirement ?? 30000,
+          emergency: settings.payout_rules?.emergency ?? 15000,
         },
       });
     }
-  });
+  }, [settings]);
 
   // Handle file upload
   const handleFileUpload = async (file: File, type: "logo" | "signature" | "stamp") => {
@@ -211,13 +217,46 @@ export default function TreasurerSettings() {
               />
             </div>
             <div>
-              <Label>Death Payout (Ksh)</Label>
+              <Label>Death Payout (Member) (Ksh)</Label>
               <Input
                 type="number"
-                value={formData.payout_rules.death}
+                value={formData.payout_rules.death_member}
                 onChange={(e) => setFormData({
                   ...formData,
-                  payout_rules: { ...formData.payout_rules, death: parseInt(e.target.value) }
+                  payout_rules: { ...formData.payout_rules, death_member: parseInt(e.target.value) }
+                })}
+              />
+            </div>
+            <div>
+              <Label>Death Payout (Child) (Ksh)</Label>
+              <Input
+                type="number"
+                value={formData.payout_rules.death_child}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  payout_rules: { ...formData.payout_rules, death_child: parseInt(e.target.value) }
+                })}
+              />
+            </div>
+            <div>
+              <Label>Death Payout (Spouse) (Ksh)</Label>
+              <Input
+                type="number"
+                value={formData.payout_rules.death_spouse}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  payout_rules: { ...formData.payout_rules, death_spouse: parseInt(e.target.value) }
+                })}
+              />
+            </div>
+            <div>
+              <Label>Death Payout (Parent) (Ksh)</Label>
+              <Input
+                type="number"
+                value={formData.payout_rules.death_parent}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  payout_rules: { ...formData.payout_rules, death_parent: parseInt(e.target.value) }
                 })}
               />
             </div>

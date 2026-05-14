@@ -33,6 +33,7 @@ const getOfficeNavItems = (role: string) => {
       return [
         ...baseItems,
         { to: "/chairperson/approve-minutes", icon: FileText, label: "Approve Minutes" },
+        { to: "/chairperson/withdrawal-approvals", icon: FileSignature, label: "Withdrawal Approvals" },
         { to: "/chairperson/signature", icon: FileSignature, label: "Upload Signature", divider: true },
         ...memberItems,
       ];
@@ -49,6 +50,7 @@ const getOfficeNavItems = (role: string) => {
         { to: "/secretary/events", icon: Calendar, label: "Manage Events" },
         { to: "/secretary/minutes", icon: FileText, label: "Meeting Minutes" },
         { to: "/secretary/review", icon: Eye, label: "Review Minutes" },
+        { to: "/secretary/withdrawal-approvals", icon: FileSignature, label: "Withdrawal Approvals" },
         { to: "/secretary/signature", icon: FileSignature, label: "Upload Signature", divider: true },
         ...memberItems,
       ];
