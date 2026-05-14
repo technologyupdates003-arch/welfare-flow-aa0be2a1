@@ -230,8 +230,8 @@ export default function WithdrawalApproval() {
 
       // Update signatory status based on withdrawal type
       const signatoryTable = selectedWithdrawal.type === 'penalty' ? 'withdrawal_signatories' : 'donation_withdrawal_signatories';
-      const { error: updateError } = await supabase
-        .from(signatoryTable)
+      const { error: updateError } = await (supabase
+        .from(signatoryTable) as any)
         .update({
           status: action === 'approve' ? 'approved' : 'rejected',
           [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
