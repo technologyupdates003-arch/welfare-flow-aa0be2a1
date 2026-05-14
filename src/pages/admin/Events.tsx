@@ -68,6 +68,28 @@ export default function Events() {
         created_by: user!.id,
       });
       if (error) throw error;
+
+      // Notify all active members in-app + via SMS
+      const { data: activeMembers } = await supabase
+        .from("members")
+        .select("user_id, phone")
+        .eq("is_active", true);
+
+      const notifs = (activeMembers || [])
+        .filter((m: any) => m.user_id && m.user_id !== user!.id)
+        .map((m: any) => ({
+          user_id: m.user_id,
+          title: `📅 New Event: ${form.title}`,
+          message: form.description || `${form.event_type} event created`,
+          type: "event",
+        }));
+      if (notifs.length) await supabase.from("notifications").insert(notifs);
+
+      const phones = (activeMembers || []).map((m: any) => m.phone).filter(Boolean);
+      if (phones.length) {
+        const sms = `KHCWW Event: ${form.title}${form.scheduled_date ? ` on ${new Date(form.scheduled_date).toLocaleDateString()}` : ""}. ${form.contribution_amount ? `Contribution: KES ${form.contribution_amount}.` : ""}`.trim();
+        supabase.functions.invoke("send-bulk-sms", { body: { phones, message: sms } }).catch(() => {});
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
