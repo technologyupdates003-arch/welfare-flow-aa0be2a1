@@ -417,7 +417,7 @@ export default function WithdrawalApproval() {
             : 'View withdrawal approval status and signatory progress for admin users.'}
         </p>
         {!canApprove && isAdmin && (
-          <Alert variant="secondary" className="mt-4">
+          <Alert variant="default" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               As an admin, you can review withdrawal requests and see which signatories have approved or are still pending.
@@ -565,7 +565,7 @@ export default function WithdrawalApproval() {
                     </Button>
                   </div>
                 ) : (
-                  <Alert variant="secondary" className="pt-4">
+                  <Alert variant="default" className="pt-4">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       You are viewing approval status only. Assign a signatory role to approve requests.
