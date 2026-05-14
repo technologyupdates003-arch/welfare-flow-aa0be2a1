@@ -226,31 +226,27 @@ export default function WithdrawalApproval() {
         return;
       }
 
-      // Pull this user's stored signature + name so it's prefilled on the receipt.
-      // Look up by user_id+role first, fall back to any signature this user uploaded
-      // (admins acting as treasurer often uploaded under their own role only).
+      // Pull signature from office_bearer_signatures (same source the meeting
+      // minutes template uses). Treasurer signatory uses the admin-uploaded
+      // signature row (role='admin').
+      const sigRoleKey = userRole === 'treasurer' ? 'admin' : userRole;
       let mySignatureUrl: string | null = null;
-      let myFullName: string | null = null;
       try {
-        const { data: mySigs } = await supabase
-          .from('signatory_signatures')
-          .select('signature_url, full_name, signatory_role')
-          .eq('user_id', user.id);
-        const exact = mySigs?.find((s: any) => s.signatory_role === userRole);
-        const any = mySigs?.[0];
-        mySignatureUrl = (exact?.signature_url || any?.signature_url) ?? null;
-        myFullName = (exact?.full_name || any?.full_name) ?? null;
+        const { data: sigRow } = await supabase
+          .from('office_bearer_signatures')
+          .select('signature_url')
+          .eq('role', sigRoleKey)
+          .maybeSingle();
+        mySignatureUrl = (sigRow as any)?.signature_url ?? null;
       } catch (_) { /* ignore */ }
 
-      // Fall back to member profile name
-      if (!myFullName) {
-        const { data: memberRow } = await supabase
-          .from('members')
-          .select('name')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        myFullName = (memberRow as any)?.name || user.email || null;
-      }
+      // Name comes from the approver's own member profile
+      const { data: memberRow } = await supabase
+        .from('members')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const myFullName: string | null = (memberRow as any)?.name ?? null;
 
       // Upsert into signatory_signatures so the receipt lookup
       // (keyed by user_id + signatory_role) finds this approver's name + signature.
