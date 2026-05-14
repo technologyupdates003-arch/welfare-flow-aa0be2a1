@@ -152,7 +152,7 @@ export default function SuperAdminDashboard() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</p>
-                    <div className="text-lg sm:text-2xl font-bold mt-1.5 truncate">{s.value}</div>
+                    <div className="text-base sm:text-2xl font-bold mt-1.5 break-words leading-tight">{s.value}</div>
                   </div>
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl glass-brand flex items-center justify-center shrink-0">
                     <s.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
