@@ -71,47 +71,30 @@ export const initiateB2CWithdrawal = async (payload: B2CPayload): Promise<B2CRes
       };
     }
 
-    // Call backend API to process B2C transfer
-    const response = await fetch('/api/b2c/withdraw', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Call edge function to process the real Co-op Bank B2C transfer
+    const { data, error } = await supabase.functions.invoke('b2c-transfer', {
+      body: {
         withdrawalId: payload.withdrawalId,
         amount: payload.amount,
         phoneNumber: formattedPhone,
         reason: payload.reason,
         adminName: payload.adminName,
-      }),
+        walletType: (payload as any).walletType ?? 'penalty',
+      },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
+    if (error || !data?.success) {
       return {
         success: false,
-        error: error.message || 'Failed to process B2C withdrawal',
+        error: data?.error || data?.message || error?.message || 'Failed to process B2C withdrawal',
       };
-    }
-
-    const data = await response.json();
-
-    // Store B2C transaction record
-    if (data.transactionId) {
-      await supabase.from('b2c_transactions').insert({
-        withdrawal_id: payload.withdrawalId,
-        mpesa_transaction_id: data.transactionId,
-        phone_number: formattedPhone,
-        amount: payload.amount,
-        status: 'initiated',
-        initiated_at: new Date().toISOString(),
-      });
     }
 
     return {
       success: true,
       transactionId: data.transactionId,
-      message: `Withdrawal of KES ${payload.amount.toLocaleString()} initiated to ${formattedPhone}`,
+      message: data.message ||
+        `Withdrawal of KES ${payload.amount.toLocaleString()} initiated to ${formattedPhone}`,
     };
   } catch (error) {
     console.error('B2C withdrawal error:', error);
