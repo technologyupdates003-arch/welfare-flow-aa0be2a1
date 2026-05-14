@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, Calendar, Shield, Award, AlertCircle } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 
 export default function PatronDashboard() {
   const { data: overallStats } = useQuery({

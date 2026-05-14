@@ -10,7 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, FileText, Users, Edit, Trash2, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plus, Calendar, FileText, Users, Edit, Trash2, Loader2, CheckCircle, XCircle, Clock, ClipboardList } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { initiateB2CWithdrawal } from "@/lib/b2c";

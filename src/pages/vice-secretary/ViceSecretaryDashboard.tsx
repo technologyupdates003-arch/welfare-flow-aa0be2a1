@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Users, MessageSquare, Bell } from "lucide-react";
+import { Calendar, FileText, Users, MessageSquare, Bell, ClipboardList } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 
 export default function ViceSecretaryDashboard() {
   const { data: stats } = useQuery({
