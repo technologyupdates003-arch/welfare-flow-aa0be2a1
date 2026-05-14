@@ -10,6 +10,7 @@ import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import DashboardSwitcher from "@/components/layout/DashboardSwitcher";
 
 interface TreasurerLayoutProps {
   children: ReactNode;
@@ -166,49 +167,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
           </div>
           
           <div className="flex items-center gap-2 lg:gap-4">
-            {/* Dashboard Switcher Buttons - Always visible */}
-            <div className="flex items-center gap-1 md:gap-2 border-r border-[#E5E7EB] pr-2 md:pr-3">
-              <Link to="/treasurer">
-                <Button 
-                  variant={location.pathname.startsWith("/treasurer") ? "default" : "outline"} 
-                  size="sm"
-                  className="text-xs px-2 py-1"
-                >
-                  Treasurer
-                </Button>
-              </Link>
-              {roles.includes("admin") && (
-                <Link to="/admin">
-                  <Button 
-                    variant={location.pathname.startsWith("/admin") ? "default" : "outline"} 
-                    size="sm"
-                    className="text-xs px-2 py-1"
-                  >
-                    Admin
-                  </Button>
-                </Link>
-              )}
-              {roles.includes("super_admin") && (
-                <Link to="/super-admin">
-                  <Button 
-                    variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} 
-                    size="sm"
-                    className="text-xs px-2 py-1"
-                  >
-                    Super Admin
-                  </Button>
-                </Link>
-              )}
-              <Link to="/member">
-                <Button 
-                  variant={location.pathname.startsWith("/member") ? "default" : "outline"} 
-                  size="sm"
-                  className="text-xs px-2 py-1"
-                >
-                  Member
-                </Button>
-              </Link>
-            </div>
+            <DashboardSwitcher />
 
             {/* Notifications */}
             <Popover onOpenChange={(open) => { if (open) markAllRead(); }}>
