@@ -10,7 +10,7 @@ export default function PatronDashboard() {
     queryKey: ["patron-overall-stats"],
     queryFn: async () => {
       const [membersRes, paymentsRes, eventsRes, rolesRes] = await Promise.all([
-        supabase.from("members").select("id, is_active, total_contributions, total_penalties"),
+        supabase.from("members").select("id, name, is_active, total_contributions, total_penalties"),
         supabase.from("payments").select("amount, received_at").eq("matched", true),
         supabase.from("events").select("id, status, event_type"),
         supabase.from("user_roles").select("role"),
