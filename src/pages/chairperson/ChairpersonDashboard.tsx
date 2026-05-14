@@ -89,25 +89,47 @@ export default function ChairpersonDashboard() {
     try {
       setProcessing(true);
 
+      const isDonation = selectedWithdrawal._type === 'donation';
+      const sigTable = isDonation ? 'donation_withdrawal_signatories' : 'withdrawal_signatories';
+      const wTable = isDonation ? 'donation_withdrawals' : 'penalty_withdrawals';
+
+      // Pull this user's stored signature so it's prefilled on the receipt
+      let mySignatureUrl: string | null = null;
+      try {
+        const { data: mySig } = await supabase
+          .from('signatory_signatures')
+          .select('signature_url')
+          .eq('user_id', user.id)
+          .eq('signatory_role', 'chairperson')
+          .maybeSingle();
+        mySignatureUrl = (mySig as any)?.signature_url || null;
+      } catch (_) { /* ignore */ }
+
+      const updatePayload: any = {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
+        rejection_reason: action === 'reject' ? rejectionReason : null,
+        signatory_user_id: user.id,
+      };
+      if (action === 'approve' && mySignatureUrl) {
+        updatePayload.signature_url = mySignatureUrl;
+      }
+
       const { error: updateError } = await (supabase
-        .from('withdrawal_signatories') as any)
-        .update({
-          status: action === 'approve' ? 'approved' : 'rejected',
-          [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
-          rejection_reason: action === 'reject' ? rejectionReason : null,
-        })
+        .from(sigTable) as any)
+        .update(updatePayload)
         .eq('withdrawal_id', selectedWithdrawal.id)
         .eq('signatory_role', 'chairperson');
 
       if (updateError) throw updateError;
 
-      const { data: allSignatories } = await supabase
-        .from('withdrawal_signatories')
+      const { data: allSignatories } = await (supabase
+        .from(sigTable) as any)
         .select('status')
         .eq('withdrawal_id', selectedWithdrawal.id);
 
-      const allApproved = allSignatories?.every((s) => s.status === 'approved');
-      const anyRejected = allSignatories?.some((s) => s.status === 'rejected');
+      const allApproved = allSignatories?.every((s: any) => s.status === 'approved');
+      const anyRejected = allSignatories?.some((s: any) => s.status === 'rejected');
 
       if (allApproved) {
         toast.loading('Processing B2C transfer...');
@@ -118,37 +140,27 @@ export default function ChairpersonDashboard() {
           phoneNumber: selectedWithdrawal.phone_number || '',
           reason: selectedWithdrawal.reason,
           adminName: user.email || 'Admin',
-        });
+          walletType: isDonation ? 'donation' : 'penalty',
+        } as any);
 
         if (b2cResult.success) {
-          await supabase
-            .from('penalty_withdrawals')
-            .update({
-              status: 'completed',
-              submitted_at: new Date().toISOString(),
-            })
+          await (supabase.from(wTable) as any)
+            .update({ status: 'completed', submitted_at: new Date().toISOString() })
             .eq('id', selectedWithdrawal.id);
 
           toast.success(
             `✅ Withdrawal completed! KES ${selectedWithdrawal.amount.toLocaleString()} transferred`
           );
         } else {
-          await supabase
-            .from('penalty_withdrawals')
-            .update({
-              status: 'approved',
-              submitted_at: new Date().toISOString(),
-            })
+          await (supabase.from(wTable) as any)
+            .update({ status: 'approved', submitted_at: new Date().toISOString() })
             .eq('id', selectedWithdrawal.id);
 
           toast.error(`Approval complete but transfer failed: ${b2cResult.error}`);
         }
       } else if (anyRejected) {
-        await supabase
-          .from('penalty_withdrawals')
-          .update({
-            status: 'rejected',
-          })
+        await (supabase.from(wTable) as any)
+          .update({ status: 'rejected' })
           .eq('id', selectedWithdrawal.id);
 
         toast.error('Withdrawal rejected');
@@ -160,34 +172,7 @@ export default function ChairpersonDashboard() {
       setSelectedWithdrawal(null);
       setRejectionReason('');
 
-      // Refresh
-      const { data: updatedWithdrawals, error: updatedError } = await supabase
-        .from('penalty_withdrawals')
-        .select(`
-          id,
-          amount,
-          reason,
-          status,
-          requested_by,
-          submitted_at,
-          created_at,
-          phone_number,
-          withdrawal_signatories (
-            id,
-            signatory_role,
-            status,
-            signature_url,
-            approved_at,
-            rejected_at,
-            signatory_user_id
-          )
-        `)
-        .eq('withdrawal_signatories.signatory_role', 'chairperson')
-        .eq('withdrawal_signatories.status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (updatedError) throw updatedError;
-      setWithdrawals(updatedWithdrawals || []);
+      await fetchWithdrawals();
     } catch (error) {
       console.error('Error processing approval:', error);
       toast.error('Failed to process approval');
