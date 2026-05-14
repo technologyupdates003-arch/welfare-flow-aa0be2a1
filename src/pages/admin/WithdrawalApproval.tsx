@@ -228,15 +228,32 @@ export default function WithdrawalApproval() {
         return;
       }
 
+      // Pull this user's stored signature so it's prefilled on the receipt
+      let mySignatureUrl: string | null = null;
+      try {
+        const { data: mySig } = await supabase
+          .from('signatory_signatures')
+          .select('signature_url')
+          .eq('user_id', user.id)
+          .eq('signatory_role', userRole)
+          .maybeSingle();
+        mySignatureUrl = (mySig as any)?.signature_url || null;
+      } catch (_) { /* ignore */ }
+
       // Update signatory status based on withdrawal type
       const signatoryTable = selectedWithdrawal.type === 'penalty' ? 'withdrawal_signatories' : 'donation_withdrawal_signatories';
+      const updatePayload: any = {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
+        rejection_reason: action === 'reject' ? rejectionReason : null,
+        signatory_user_id: user.id,
+      };
+      if (action === 'approve' && mySignatureUrl) {
+        updatePayload.signature_url = mySignatureUrl;
+      }
       const { error: updateError } = await (supabase
         .from(signatoryTable) as any)
-        .update({
-          status: action === 'approve' ? 'approved' : 'rejected',
-          [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
-          rejection_reason: action === 'reject' ? rejectionReason : null,
-        })
+        .update(updatePayload)
         .eq('withdrawal_id', selectedWithdrawal.id)
         .eq('signatory_role', userRole);
 
