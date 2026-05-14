@@ -226,17 +226,49 @@ export default function WithdrawalApproval() {
         return;
       }
 
-      // Pull this user's stored signature so it's prefilled on the receipt
+      // Pull this user's stored signature + name so it's prefilled on the receipt.
+      // Look up by user_id+role first, fall back to any signature this user uploaded
+      // (admins acting as treasurer often uploaded under their own role only).
       let mySignatureUrl: string | null = null;
+      let myFullName: string | null = null;
       try {
-        const { data: mySig } = await supabase
+        const { data: mySigs } = await supabase
           .from('signatory_signatures')
-          .select('signature_url')
-          .eq('user_id', user.id)
-          .eq('signatory_role', userRole)
-          .maybeSingle();
-        mySignatureUrl = (mySig as any)?.signature_url || null;
+          .select('signature_url, full_name, signatory_role')
+          .eq('user_id', user.id);
+        const exact = mySigs?.find((s: any) => s.signatory_role === userRole);
+        const any = mySigs?.[0];
+        mySignatureUrl = (exact?.signature_url || any?.signature_url) ?? null;
+        myFullName = (exact?.full_name || any?.full_name) ?? null;
       } catch (_) { /* ignore */ }
+
+      // Fall back to member profile name
+      if (!myFullName) {
+        const { data: memberRow } = await supabase
+          .from('members')
+          .select('name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        myFullName = (memberRow as any)?.name || user.email || null;
+      }
+
+      // Upsert into signatory_signatures so the receipt lookup
+      // (keyed by user_id + signatory_role) finds this approver's name + signature.
+      if (action === 'approve') {
+        try {
+          await (supabase.from('signatory_signatures') as any).upsert(
+            {
+              user_id: user.id,
+              signatory_role: userRole,
+              signature_url: mySignatureUrl,
+              full_name: myFullName,
+              updated_by: user.id,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,signatory_role' }
+          );
+        } catch (_) { /* ignore */ }
+      }
 
       // Update signatory status based on withdrawal type
       const signatoryTable = selectedWithdrawal.type === 'penalty' ? 'withdrawal_signatories' : 'donation_withdrawal_signatories';
