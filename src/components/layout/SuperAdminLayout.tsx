@@ -124,7 +124,7 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 border-b border-border/60 glass px-3 py-2.5 sm:px-4 sm:py-3 lg:px-6 sticky top-0 z-30">
+        <header className="flex items-center justify-between gap-2 border-b border-border/60 glass px-3 py-2.5 sm:px-4 sm:py-3 lg:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Button variant="ghost" size="icon" className="lg:hidden shrink-0 h-8 w-8" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
@@ -133,25 +133,35 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
               {navItems.find(n => n.to === location.pathname)?.label || "Super Admin Dashboard"}
             </h2>
           </div>
-          <div className="flex gap-1 sm:gap-2 shrink-0 w-full sm:w-auto">
-            <Link to="/super-admin" className="flex-1 sm:flex-none">
-              <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm" className="w-full px-2 sm:px-3 text-xs sm:text-sm h-8">
-                Super
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="gradient-brand text-primary-foreground shrink-0 h-8 px-3 text-xs sm:text-sm gap-1.5">
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden xs:inline sm:inline">Dashboards</span>
+                <ChevronDown className="h-3.5 w-3.5" />
               </Button>
-            </Link>
-            {roles.includes("admin") && (
-              <Link to="/admin" className="flex-1 sm:flex-none">
-                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="w-full px-2 sm:px-3 text-xs sm:text-sm h-8">
-                  Admin
-                </Button>
-              </Link>
-            )}
-            <Link to="/member" className="flex-1 sm:flex-none">
-              <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm" className="w-full px-2 sm:px-3 text-xs sm:text-sm h-8">
-                Member
-              </Button>
-            </Link>
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 glass-strong">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Switch dashboard · {currentDashboard}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {dashboardOptions.map(opt => {
+                const Icon = opt.icon;
+                const active = location.pathname === opt.to || location.pathname.startsWith(opt.to + "/");
+                return (
+                  <DropdownMenuItem
+                    key={opt.to}
+                    onClick={() => navigate(opt.to)}
+                    className={cn("gap-2 cursor-pointer", active && "bg-primary/10 text-primary font-medium")}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {opt.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <div className="flex-1 p-4 lg:p-6 overflow-auto">
           {children}
