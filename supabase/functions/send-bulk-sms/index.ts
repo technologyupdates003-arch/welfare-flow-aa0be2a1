@@ -5,6 +5,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ABANCOOL_URL = "https://hynoajfxknnudmziecua.supabase.co/functions/v1/send-sms";
+const SENDER_ID = "ABAN_COOL";
+
+// Normalize phones to 2547XXXXXXXX (no +, no leading 0)
+function normalizePhone(raw: string): string | null {
+  if (!raw) return null;
+  let p = String(raw).replace(/[^\d+]/g, "");
+  if (p.startsWith("+")) p = p.slice(1);
+  if (p.startsWith("0")) p = "254" + p.slice(1);
+  if (p.startsWith("7") || p.startsWith("1")) p = "254" + p;
+  if (!p.startsWith("254") || p.length !== 12) return null;
+  return p;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,77 +34,67 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    // Check for Twilio config
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
-    const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER");
-
-    if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !TWILIO_FROM) {
-      // Log SMS without sending (no Twilio configured)
-      const logs = phones.map((phone: string) => ({
-        recipient_phone: phone,
-        message,
-        status: "queued_no_provider",
-      }));
-      await supabase.from("sms_logs").insert(logs);
-
-      return new Response(JSON.stringify({
-        status: "queued",
-        note: "SMS logged but not sent - Twilio not configured",
-        count: phones.length,
-      }), {
+    const apiKey = Deno.env.get("ABANCOOL_SMS_API_KEY");
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "ABANCOOL_SMS_API_KEY not configured" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Send via Twilio gateway
-    const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
-    const results = [];
+    const recipients = Array.from(
+      new Set(
+        (phones as string[])
+          .map(normalizePhone)
+          .filter((p): p is string => !!p),
+      ),
+    );
 
-    for (const phone of phones) {
-      try {
-        const response = await fetch(`${GATEWAY_URL}/Messages.json`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "X-Connection-Api-Key": TWILIO_API_KEY,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: phone,
-            From: TWILIO_FROM,
-            Body: message,
-          }),
-        });
-
-        const data = await response.json();
-
-        await supabase.from("sms_logs").insert({
-          recipient_phone: phone,
-          message,
-          status: response.ok ? "sent" : "failed",
-          provider_ref: data.sid || null,
-        });
-
-        results.push({ phone, status: response.ok ? "sent" : "failed" });
-      } catch (err) {
-        await supabase.from("sms_logs").insert({
-          recipient_phone: phone,
-          message,
-          status: "error",
-        });
-        results.push({ phone, status: "error" });
-      }
+    if (recipients.length === 0) {
+      return new Response(JSON.stringify({ error: "No valid phone numbers" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ status: "completed", results }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const resp = await fetch(ABANCOOL_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        recipients,
+        message,
+        sender_id: SENDER_ID,
+      }),
     });
 
+    const text = await resp.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    const status = resp.ok ? "sent" : "failed";
+    const logs = recipients.map((phone) => ({
+      recipient_phone: phone,
+      message,
+      status,
+      provider_ref: data?.message_id || data?.id || null,
+    }));
+    await supabase.from("sms_logs").insert(logs);
+
+    return new Response(
+      JSON.stringify({ status, count: recipients.length, provider: data }),
+      {
+        status: resp.ok ? 200 : 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (error) {
     console.error("Bulk SMS error:", error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
