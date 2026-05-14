@@ -80,12 +80,12 @@ export default function BeneficiaryRequests() {
     queryKey: ["beneficiary-detail", selectedRequest?.beneficiary_id],
     queryFn: async () => {
       if (!selectedRequest?.beneficiary_id) return null;
-      const { data } = await supabase
-        .from("beneficiaries")
-        .select("name, phone, id_number, relationship, spouse_first_name, spouse_surname, spouse_other_names, father_surname, father_other_names, mother_surname, mother_other_names")
+      const { data } = await (supabase
+        .from("beneficiaries") as any)
+        .select("*")
         .eq("id", selectedRequest.beneficiary_id)
         .single();
-      return data;
+      return data as any;
     },
     enabled: !!selectedRequest?.beneficiary_id,
   });
