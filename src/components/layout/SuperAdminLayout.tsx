@@ -103,9 +103,9 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-white">
-        <header className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:px-6">
-          <div className="flex items-center gap-3">
+      <main className="flex-1 flex flex-col min-w-0">
+        <header className="flex items-center justify-between gap-3 border-b border-border/60 glass px-4 py-3 lg:px-6 sticky top-0 z-30">
+          <div className="flex items-center gap-3 min-w-0">
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
@@ -113,40 +113,31 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
               {navItems.find(n => n.to === location.pathname)?.label || "Super Admin Dashboard"}
             </h2>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden md:flex gap-2">
             <Link to="/super-admin">
-              <Button 
-                variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} 
-                size="sm"
-              >
+              <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm">
                 Super Admin
               </Button>
             </Link>
             {roles.includes("admin") && (
               <Link to="/admin">
-                <Button 
-                  variant={location.pathname.startsWith("/admin") ? "default" : "outline"} 
-                  size="sm"
-                >
-                  Admin Dashboard
+                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm">
+                  Admin
                 </Button>
               </Link>
             )}
             <Link to="/member">
-              <Button 
-                variant={location.pathname.startsWith("/member") ? "default" : "outline"} 
-                size="sm"
-              >
-                Member Dashboard
+              <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm">
+                Member
               </Button>
             </Link>
           </div>
         </header>
-        <div className="flex-1 p-4 lg:p-6 overflow-auto bg-white">
+        <div className="flex-1 p-4 lg:p-6 overflow-auto">
           {children}
         </div>
       </main>
-      
+
       <FloatingChatBubble />
       <AIAssistant />
     </div>
