@@ -529,6 +529,7 @@ export type Database = {
           created_at: string
           id: string
           rejected_at: string | null
+          rejection_reason: string | null
           signatory_role: string
           signatory_user_id: string | null
           signature_url: string | null
@@ -541,6 +542,7 @@ export type Database = {
           created_at?: string
           id?: string
           rejected_at?: string | null
+          rejection_reason?: string | null
           signatory_role: string
           signatory_user_id?: string | null
           signature_url?: string | null
@@ -553,6 +555,7 @@ export type Database = {
           created_at?: string
           id?: string
           rejected_at?: string | null
+          rejection_reason?: string | null
           signatory_role?: string
           signatory_user_id?: string | null
           signature_url?: string | null

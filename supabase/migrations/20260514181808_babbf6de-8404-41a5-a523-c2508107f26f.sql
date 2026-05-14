@@ -1,0 +1,1 @@
+ALTER TABLE public.donation_withdrawal_signatories ADD COLUMN IF NOT EXISTS rejection_reason text;
