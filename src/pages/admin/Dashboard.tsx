@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 export default function AdminDashboard() {
   const { data: recentContribs } = useQuery({
@@ -33,6 +34,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      <DashboardHeader
+        title="Admin Dashboard"
+        subtitle="Members, contributions, and welfare operations at a glance"
+        icon={LayoutDashboard}
+        badge="Admin Access"
+      />
       <StatsCards />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

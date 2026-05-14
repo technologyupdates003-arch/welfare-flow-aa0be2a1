@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, Calendar, Shield, Award, AlertCircle } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 
 export default function PatronDashboard() {
   const { data: overallStats } = useQuery({
@@ -138,72 +140,23 @@ export default function PatronDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Patron Dashboard</h1>
-        <Badge variant="default" className="text-sm flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          Oversight & Governance
-        </Badge>
-      </div>
+      <DashboardHeader
+        title="Patron Dashboard"
+        subtitle="Strategic oversight & governance"
+        icon={Shield}
+        badge="Oversight & Governance"
+      />
 
       {/* Key Performance Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{overallStats?.totalMembers || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {overallStats?.activeMembers || 0} active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              KES {(overallStats?.totalCollected || 0).toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              KES {(overallStats?.thisMonthTotal || 0).toLocaleString()} this month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Rate</CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {(performanceMetrics?.paymentRate || 0).toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {performanceMetrics?.overdueCount || 0} overdue
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{overallStats?.activeEvents || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {overallStats?.totalEvents || 0} total events
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <GlassStatsGrid
+        cols="grid-cols-2 lg:grid-cols-4"
+        stats={[
+          { label: "Total Members", value: overallStats?.totalMembers || 0, icon: Users, sub: `${overallStats?.activeMembers || 0} active`, accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Total Collected", value: `KES ${(overallStats?.totalCollected || 0).toLocaleString()}`, icon: TrendingUp, sub: `KES ${(overallStats?.thisMonthTotal || 0).toLocaleString()} this month`, accent: "from-success/30 to-success/5" },
+          { label: "Payment Rate", value: `${(performanceMetrics?.paymentRate || 0).toFixed(1)}%`, icon: Award, sub: `${performanceMetrics?.overdueCount || 0} overdue`, accent: "from-secondary/30 to-secondary/5" },
+          { label: "Active Events", value: overallStats?.activeEvents || 0, icon: Calendar, sub: `${overallStats?.totalEvents || 0} total events`, accent: "from-primary/30 to-primary-glow/10" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Role Distribution */}

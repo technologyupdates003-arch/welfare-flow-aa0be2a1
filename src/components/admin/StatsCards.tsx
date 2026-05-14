@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Users, AlertTriangle, TrendingUp } from "lucide-react";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 
 export default function StatsCards() {
   const { data: stats } = useQuery({
@@ -33,28 +33,17 @@ export default function StatsCards() {
     },
   });
 
-  const cards = [
-    { title: "Total Collected", value: `KES ${(stats?.totalCollected || 0).toLocaleString()}`, icon: DollarSign, color: "text-success" },
-    { title: "Expected (All Time)", value: `KES ${(stats?.totalExpected || 0).toLocaleString()}`, icon: TrendingUp, color: "text-primary" },
-    { title: "Outstanding", value: `KES ${(stats?.outstanding || 0).toLocaleString()}`, icon: AlertTriangle, color: "text-warning" },
-    { title: "Total Members", value: stats?.totalMembers || 0, icon: Users, color: "text-primary" },
-    { title: "Defaulters", value: stats?.defaulters || 0, icon: AlertTriangle, color: "text-destructive" },
-    { title: "Penalties Collected", value: `KES ${(stats?.totalPenalties || 0).toLocaleString()}`, icon: DollarSign, color: "text-accent" },
-  ];
-
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map(({ title, value, icon: Icon, color }) => (
-        <Card key={title} className="animate-fade-in">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-            <Icon className={`h-5 w-5 ${color}`} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-display font-bold">{value}</div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <GlassStatsGrid
+      cols="grid-cols-2 lg:grid-cols-3"
+      stats={[
+        { label: "Total Collected", value: `KES ${(stats?.totalCollected || 0).toLocaleString()}`, icon: DollarSign, sub: "All paid contributions", accent: "from-success/30 to-success/5" },
+        { label: "Expected (All Time)", value: `KES ${(stats?.totalExpected || 0).toLocaleString()}`, icon: TrendingUp, sub: "Total invoiced", accent: "from-primary/30 to-primary-glow/10" },
+        { label: "Outstanding", value: `KES ${(stats?.outstanding || 0).toLocaleString()}`, icon: AlertTriangle, sub: "Not yet collected", accent: "from-warning/30 to-warning/5" },
+        { label: "Total Members", value: (stats?.totalMembers || 0).toLocaleString(), icon: Users, sub: "Registered members", accent: "from-primary/30 to-primary-glow/10" },
+        { label: "Defaulters", value: stats?.defaulters || 0, icon: AlertTriangle, sub: "Overdue accounts", accent: "from-destructive/30 to-destructive/5" },
+        { label: "Penalties Collected", value: `KES ${(stats?.totalPenalties || 0).toLocaleString()}`, icon: DollarSign, sub: "Penalty wallet", accent: "from-secondary/30 to-secondary/5" },
+      ]}
+    />
   );
 }

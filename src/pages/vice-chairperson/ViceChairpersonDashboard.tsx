@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertTriangle, TrendingUp, Calendar, FileText } from "lucide-react";
+import { Users, AlertTriangle, TrendingUp, Calendar, FileText, ShieldCheck } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 
 export default function ViceChairpersonDashboard() {
   const { data: stats } = useQuery({
@@ -66,65 +68,24 @@ export default function ViceChairpersonDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Vice Chairperson Dashboard</h1>
-        <Badge variant="secondary" className="text-sm">Read Only Access</Badge>
-      </div>
+      <DashboardHeader
+        title="Vice Chairperson Dashboard"
+        subtitle="Support governance and oversight"
+        icon={ShieldCheck}
+        badge="Read Only Access"
+      />
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeMembers || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">KES {(stats?.totalCollected || 0).toLocaleString()}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Contributions</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              KES {(memberStats?.avgContributions || 0).toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeEvents || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalDocuments || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <GlassStatsGrid
+        cols="grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        stats={[
+          { label: "Active Members", value: stats?.activeMembers || 0, icon: Users, sub: "Registered", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Total Collected", value: `KES ${(stats?.totalCollected || 0).toLocaleString()}`, icon: TrendingUp, sub: "All time", accent: "from-success/30 to-success/5" },
+          { label: "Avg Contributions", value: `KES ${(memberStats?.avgContributions || 0).toLocaleString()}`, icon: TrendingUp, sub: "Per member", accent: "from-secondary/30 to-secondary/5" },
+          { label: "Active Events", value: stats?.activeEvents || 0, icon: Calendar, sub: "Currently open", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Documents", value: stats?.totalDocuments || 0, icon: FileText, sub: "Uploaded", accent: "from-secondary/30 to-secondary/5" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Events */}

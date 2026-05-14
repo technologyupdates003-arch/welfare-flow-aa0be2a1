@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, AlertTriangle, TrendingUp, Calendar, FileText, CheckCircle, XCircle, Loader2, Clock } from "lucide-react";
+import { Users, AlertTriangle, TrendingUp, Calendar, FileText, CheckCircle, XCircle, Loader2, Clock, Crown } from "lucide-react";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -220,53 +222,23 @@ export default function ChairpersonDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Chairperson Dashboard</h1>
-        <Badge variant="secondary" className="text-sm">Read Only Access</Badge>
-      </div>
+      <DashboardHeader
+        title="Chairperson Dashboard"
+        subtitle="Governance, oversight, and approvals"
+        icon={Crown}
+        badge="Read Only Access"
+      />
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeMembers || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">KES {(stats?.totalCollected || 0).toLocaleString()}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Defaulters</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats?.defaulters || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeEvents || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <GlassStatsGrid
+        cols="grid-cols-2 lg:grid-cols-4"
+        stats={[
+          { label: "Active Members", value: stats?.activeMembers || 0, icon: Users, sub: "Registered", accent: "from-primary/30 to-primary-glow/10" },
+          { label: "Total Collected", value: `KES ${(stats?.totalCollected || 0).toLocaleString()}`, icon: TrendingUp, sub: "All time", accent: "from-success/30 to-success/5" },
+          { label: "Defaulters", value: stats?.defaulters || 0, icon: AlertTriangle, sub: "Members with penalties", accent: "from-destructive/30 to-destructive/5" },
+          { label: "Active Events", value: stats?.activeEvents || 0, icon: Calendar, sub: "Currently open", accent: "from-secondary/30 to-secondary/5" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Defaulters List */}

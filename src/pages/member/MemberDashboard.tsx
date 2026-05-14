@@ -175,73 +175,73 @@ export default function MemberDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Total Contributed */}
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800 cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
+        <Card className="glass border-white/40 overflow-hidden relative hover:shadow-glass-lg transition-all cursor-pointer">
+          <div className="absolute inset-0 bg-gradient-to-br from-success/30 to-success/5 opacity-60 pointer-events-none" />
+          <CardContent className="relative p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 rounded-xl glass-brand flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              <ChevronRight className="h-4 w-4 text-green-600" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-green-700 dark:text-green-300 font-medium mb-1">Total Contributed</p>
-            <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Total Contributed</p>
+            <p className="text-xl font-bold mt-1 break-words leading-tight">
               KES {totalPaidThisYear.toLocaleString()}
             </p>
-            <p className="text-xs text-green-600 dark:text-green-400 mt-1">This Year</p>
+            <p className="text-[11px] text-muted-foreground mt-1">This Year</p>
           </CardContent>
         </Card>
 
-        {/* Unpaid Contributions */}
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
+        <Card className="glass border-white/40 overflow-hidden relative hover:shadow-glass-lg transition-all cursor-pointer">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary-glow/10 opacity-60 pointer-events-none" />
+          <CardContent className="relative p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Clock className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 rounded-xl glass-brand flex items-center justify-center">
+                <Clock className="h-5 w-5 text-primary" />
               </div>
-              <ChevronRight className="h-4 w-4 text-blue-600" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mb-1">Unpaid Contributions</p>
-            <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Unpaid Contributions</p>
+            <p className="text-xl font-bold mt-1 break-words leading-tight">
               KES {unpaidAmount.toLocaleString()}
             </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1">
               {unpaidContributions.length} Month{unpaidContributions.length !== 1 ? 's' : ''} Pending
             </p>
           </CardContent>
         </Card>
 
-        {/* Overdue Payments */}
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800 cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
+        <Card className="glass border-white/40 overflow-hidden relative hover:shadow-glass-lg transition-all cursor-pointer">
+          <div className="absolute inset-0 bg-gradient-to-br from-destructive/30 to-destructive/5 opacity-60 pointer-events-none" />
+          <CardContent className="relative p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-red-500 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 rounded-xl glass-brand flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-primary" />
               </div>
-              <ChevronRight className="h-4 w-4 text-red-600" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-red-700 dark:text-red-300 font-medium mb-1">Overdue Payments</p>
-            <p className="text-2xl font-bold text-red-900 dark:text-red-100">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Overdue Payments</p>
+            <p className="text-xl font-bold mt-1 break-words leading-tight">
               KES {overdueAmount.toLocaleString()}
             </p>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-1">Due Now</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Due Now</p>
           </CardContent>
         </Card>
 
-        {/* Next Due Date */}
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
+        <Card className="glass border-white/40 overflow-hidden relative hover:shadow-glass-lg transition-all cursor-pointer">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary/30 to-secondary/5 opacity-60 pointer-events-none" />
+          <CardContent className="relative p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-purple-500 rounded-lg">
-                <Calendar className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 rounded-xl glass-brand flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <ChevronRight className="h-4 w-4 text-purple-600" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-purple-700 dark:text-purple-300 font-medium mb-1">Next Due Date</p>
-            <p className="text-lg font-bold text-purple-900 dark:text-purple-100">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Next Due Date</p>
+            <p className="text-base font-bold mt-1 break-words leading-tight">
               {nextDueDate ? nextDueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No pending'}
             </p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1">
               {daysUntilDue !== null ? `In ${daysUntilDue} Days` : 'All paid up!'}
             </p>
           </CardContent>
