@@ -265,6 +265,7 @@ export default function WithdrawalApproval() {
           phoneNumber: selectedWithdrawal.phone_number || '',
           reason: selectedWithdrawal.reason,
           adminName: user.email || 'Admin',
+          walletType: selectedWithdrawal.type,
         });
 
         if (b2cResult.success) {
