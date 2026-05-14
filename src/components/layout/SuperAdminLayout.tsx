@@ -39,7 +39,7 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
   const navItems = getSuperAdminNavItems();
 
   return (
-    <div className="flex min-h-screen bg-white font-['Times_New_Roman',_serif]">
+    <div className="flex min-h-screen">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
