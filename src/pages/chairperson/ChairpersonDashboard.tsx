@@ -23,45 +23,49 @@ export default function ChairpersonDashboard() {
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject' | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  // Fetch pending withdrawal approvals
-  useEffect(() => {
-    const fetchWithdrawals = async () => {
-      if (!user) return;
-
-      try {
-        const { data: withdrawalsData, error: withdrawalsError } = await supabase
+  // Fetch pending withdrawal approvals (penalty + donation)
+  const fetchWithdrawals = async () => {
+    if (!user) return;
+    try {
+      const [penaltyRes, donationRes] = await Promise.all([
+        supabase
           .from('penalty_withdrawals')
           .select(`
-            id,
-            amount,
-            reason,
-            status,
-            requested_by,
-            submitted_at,
-            created_at,
-            phone_number,
-            withdrawal_signatories (
-              id,
-              signatory_role,
-              status,
-              signature_url,
-              approved_at,
-              rejected_at,
-              signatory_user_id
-            )
+            id, amount, reason, status, requested_by, submitted_at, created_at, phone_number,
+            withdrawal_signatories ( id, signatory_role, status, signature_url, approved_at, rejected_at, signatory_user_id )
           `)
           .eq('withdrawal_signatories.signatory_role', 'chairperson')
           .eq('withdrawal_signatories.status', 'pending')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('donation_withdrawals')
+          .select(`
+            id, amount, reason, status, requested_by, submitted_at, created_at, phone_number,
+            donation_withdrawal_signatories ( id, signatory_role, status, signature_url, approved_at, rejected_at, signatory_user_id )
+          `)
+          .eq('donation_withdrawal_signatories.signatory_role', 'chairperson')
+          .eq('donation_withdrawal_signatories.status', 'pending')
+          .order('created_at', { ascending: false }),
+      ]);
 
-        if (withdrawalsError) throw withdrawalsError;
+      if (penaltyRes.error) throw penaltyRes.error;
+      if (donationRes.error) throw donationRes.error;
 
-        setWithdrawals(withdrawalsData || []);
-      } catch (error) {
-        console.error('Error fetching withdrawals:', error);
-      }
-    };
+      const combined = [
+        ...(penaltyRes.data || []).map((w: any) => ({ ...w, _type: 'penalty' as const })),
+        ...(donationRes.data || []).map((w: any) => ({
+          ...w,
+          _type: 'donation' as const,
+          withdrawal_signatories: w.donation_withdrawal_signatories,
+        })),
+      ];
+      setWithdrawals(combined);
+    } catch (error) {
+      console.error('Error fetching withdrawals:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchWithdrawals();
   }, [user]);
 
