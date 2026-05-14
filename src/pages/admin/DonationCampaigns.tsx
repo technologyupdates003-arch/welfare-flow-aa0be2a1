@@ -76,12 +76,12 @@ export default function DonationCampaigns() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('donation_campaigns')
+        .from('donation_campaigns' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCampaigns(data || []);
+      setCampaigns((data as any) || []);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       toast.error('Failed to fetch campaigns');
@@ -109,7 +109,7 @@ export default function DonationCampaigns() {
       if (editingId) {
         // Update campaign
         const { error } = await supabase
-          .from('donation_campaigns')
+          .from('donation_campaigns' as any)
           .update({
             name: campaignName,
             description: campaignDescription,
@@ -125,7 +125,7 @@ export default function DonationCampaigns() {
       } else {
         // Create new campaign
         const { error } = await supabase
-          .from('donation_campaigns')
+          .from('donation_campaigns' as any)
           .insert({
             name: campaignName,
             description: campaignDescription,
@@ -157,7 +157,7 @@ export default function DonationCampaigns() {
 
     try {
       const { error } = await supabase
-        .from('donation_campaigns')
+        .from('donation_campaigns' as any)
         .delete()
         .eq('id', id);
 
