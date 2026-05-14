@@ -216,7 +216,7 @@ export async function processSTKPushCallback(
           .single();
 
         if (donationRecord) {
-          await supabase.rpc('increment', {
+          await (supabase.rpc as any)('increment', {
             table_name: 'donation_wallet',
             row_id: (await supabase.from('donation_wallet').select('id').single()).data?.id,
             amount: donationRecord.amount,

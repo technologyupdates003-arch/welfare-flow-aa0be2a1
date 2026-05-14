@@ -216,8 +216,8 @@ export default function PenaltyWallet() {
 
       // Create signatory records for chairperson, secretary, and treasurer
       const signatories = ['chairperson', 'secretary', 'treasurer'];
-      const { error: signatoriesError } = await supabase
-        .from('withdrawal_signatories')
+      const { error: signatoriesError } = await (supabase
+        .from('withdrawal_signatories') as any)
         .insert(
           signatories.map((role) => ({
             withdrawal_id: withdrawalData.id,

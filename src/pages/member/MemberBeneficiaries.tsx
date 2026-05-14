@@ -368,7 +368,7 @@ export default function MemberBeneficiaries() {
                               <Badge variant={req.request_type === "add" ? "default" : "secondary"}>
                                 {req.request_type === "add" ? "Add" : "Remove"}
                               </Badge>
-                              <Badge variant={getStatusColor(req.status)}>
+                              <Badge variant={getStatusColor(req.status) as any}>
                                 <span className="flex items-center gap-1">
                                   {getStatusIcon(req.status)}
                                   {req.status}

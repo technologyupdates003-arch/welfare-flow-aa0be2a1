@@ -230,8 +230,8 @@ export default function WithdrawalApproval() {
 
       // Update signatory status based on withdrawal type
       const signatoryTable = selectedWithdrawal.type === 'penalty' ? 'withdrawal_signatories' : 'donation_withdrawal_signatories';
-      const { error: updateError } = await supabase
-        .from(signatoryTable)
+      const { error: updateError } = await (supabase
+        .from(signatoryTable) as any)
         .update({
           status: action === 'approve' ? 'approved' : 'rejected',
           [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
@@ -278,7 +278,7 @@ export default function WithdrawalApproval() {
             .eq('id', selectedWithdrawal.id);
 
           // Update wallet balance
-          await supabase.rpc('increment', {
+          await (supabase.rpc as any)('increment', {
             table_name: walletTable,
             row_id: (await supabase.from(walletTable).select('id').single()).data?.id,
             amount: -selectedWithdrawal.amount,
@@ -417,7 +417,7 @@ export default function WithdrawalApproval() {
             : 'View withdrawal approval status and signatory progress for admin users.'}
         </p>
         {!canApprove && isAdmin && (
-          <Alert variant="secondary" className="mt-4">
+          <Alert variant="default" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               As an admin, you can review withdrawal requests and see which signatories have approved or are still pending.
@@ -565,7 +565,7 @@ export default function WithdrawalApproval() {
                     </Button>
                   </div>
                 ) : (
-                  <Alert variant="secondary" className="pt-4">
+                  <Alert variant="default" className="pt-4">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       You are viewing approval status only. Assign a signatory role to approve requests.

@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, AlertTriangle, TrendingUp, Calendar, FileText, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Users, AlertTriangle, TrendingUp, Calendar, FileText, CheckCircle, XCircle, Loader2, Clock } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -85,8 +86,8 @@ export default function ChairpersonDashboard() {
     try {
       setProcessing(true);
 
-      const { error: updateError } = await supabase
-        .from('withdrawal_signatories')
+      const { error: updateError } = await (supabase
+        .from('withdrawal_signatories') as any)
         .update({
           status: action === 'approve' ? 'approved' : 'rejected',
           [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
