@@ -42,6 +42,7 @@ import MemberNews from "@/pages/member/MemberNews";
 import MemberEvents from "@/pages/member/MemberEvents";
 import MemberDocuments from "@/pages/member/MemberDocuments";
 import MemberDownloads from "@/pages/member/MemberDownloads";
+import WithdrawalReceipts from "@/pages/WithdrawalReceipts";
 import MemberNotifications from "@/pages/member/MemberNotifications";
 import MemberProfile from "@/pages/member/MemberProfile";
 import MemberBeneficiaries from "@/pages/member/MemberBeneficiaries";
@@ -135,6 +136,7 @@ function AppRoutes() {
         <Route path="/admin/donations" element={<AdminLayout><DonationWallet /></AdminLayout>} />
         <Route path="/admin/donation-campaigns" element={<AdminLayout><DonationCampaigns /></AdminLayout>} />
         <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+        <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
@@ -153,6 +155,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -198,6 +201,7 @@ function AppRoutes() {
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
             <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
             <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+            <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
           </>
         )}
         
@@ -218,6 +222,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -254,6 +259,7 @@ function AppRoutes() {
         <Route path="/admin/donations" element={<AdminLayout><DonationWallet /></AdminLayout>} />
         <Route path="/admin/donation-campaigns" element={<AdminLayout><DonationCampaigns /></AdminLayout>} />
         <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+        <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
@@ -286,6 +292,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -309,6 +316,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -337,6 +345,7 @@ function AppRoutes() {
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
             <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
             <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+            <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -361,6 +370,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -389,6 +399,7 @@ function AppRoutes() {
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
             <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
             <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+            <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -418,6 +429,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -446,6 +458,7 @@ function AppRoutes() {
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
             <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
             <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+            <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -471,6 +484,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -499,6 +513,7 @@ function AppRoutes() {
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
             <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
             <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+            <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -523,6 +538,7 @@ function AppRoutes() {
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
         <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
         <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
         <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
@@ -551,6 +567,7 @@ function AppRoutes() {
             <Route path="/admin/penalty-payments" element={<AdminLayout><VerifyPenaltyPayments /></AdminLayout>} />
             <Route path="/admin/penalty-wallet" element={<AdminLayout><PenaltyWallet /></AdminLayout>} />
             <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
+            <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
           </>
         )}
         {/* Super Admin routes if user has super_admin role */}
@@ -573,6 +590,7 @@ function AppRoutes() {
       <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
       <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
       <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+      <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
       <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
       <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
       <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />

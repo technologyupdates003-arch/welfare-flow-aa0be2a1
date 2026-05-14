@@ -20,6 +20,7 @@ const getMemberNavItems = (role: string | null) => {
     { to: "/member/documents", icon: FileText, label: "Documents" },
     { to: "/member/beneficiaries", icon: Users, label: "Beneficiaries" },
     { to: "/member/downloads", icon: Download, label: "Downloads" },
+    { to: "/member/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" },
     { to: "/member/pay-penalty", icon: AlertCircle, label: "Pay Penalty" },
     { to: "/member/donate", icon: DollarSign, label: "Donate" },
     { to: "/member/notifications", icon: Bell, label: "Alerts", showBadge: true },
