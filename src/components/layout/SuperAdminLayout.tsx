@@ -113,21 +113,21 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
               {navItems.find(n => n.to === location.pathname)?.label || "Super Admin Dashboard"}
             </h2>
           </div>
-          <div className="hidden md:flex gap-2">
+          <div className="flex gap-1 sm:gap-2 shrink-0">
             <Link to="/super-admin">
-              <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm">
-                Super Admin
+              <Button variant={location.pathname.startsWith("/super-admin") ? "default" : "outline"} size="sm" className="px-2 sm:px-3 text-xs sm:text-sm">
+                Super
               </Button>
             </Link>
             {roles.includes("admin") && (
               <Link to="/admin">
-                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm">
+                <Button variant={location.pathname.startsWith("/admin") ? "default" : "outline"} size="sm" className="px-2 sm:px-3 text-xs sm:text-sm">
                   Admin
                 </Button>
               </Link>
             )}
             <Link to="/member">
-              <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm">
+              <Button variant={location.pathname.startsWith("/member") ? "default" : "outline"} size="sm" className="px-2 sm:px-3 text-xs sm:text-sm">
                 Member
               </Button>
             </Link>

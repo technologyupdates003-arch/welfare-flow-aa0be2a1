@@ -152,7 +152,7 @@ export default function SuperAdminDashboard() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[11px] sm:text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</p>
-                    <div className="text-lg sm:text-2xl font-bold mt-1.5 truncate">{s.value}</div>
+                    <div className="text-base sm:text-2xl font-bold mt-1.5 break-words leading-tight">{s.value}</div>
                   </div>
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl glass-brand flex items-center justify-center shrink-0">
                     <s.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -245,56 +245,52 @@ export default function SuperAdminDashboard() {
                       </div>
                     ) : (
                       filteredMembers.map(member => (
-                        <Card key={member.id} className="hover:bg-muted/50 transition-colors">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                  <span className="text-foreground font-semibold">
-                                    {member.name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                                <div className="flex-1">
-                                  <h3 className="font-semibold">{member.name}</h3>
-                                  <div className="flex items-center gap-4 mt-1">
-                                    <div className="flex items-center gap-1 text-muted-foreground">
-                                      <Phone className="h-3 w-3" />
-                                      <span className="text-sm">{member.phone}</span>
-                                    </div>
-                                    {(member as any).email && (
-                                      <div className="flex items-center gap-1 text-muted-foreground">
-                                        <Mail className="h-3 w-3" />
-                                        <span className="text-sm">{(member as any).email}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-2 mt-2">
-                                    <Badge variant={member.is_active ? "default" : "secondary"} className="text-xs">
-                                      {member.is_active ? "Active" : "Inactive"}
-                                    </Badge>
-                                    <Badge variant="outline" className="text-xs">
-                                      ID: {(member as any).id_number || "N/A"}
-                                    </Badge>
-                                  </div>
-                                </div>
+                        <Card key={member.id} className="glass border-white/40 hover:shadow-glass-lg transition-all overflow-hidden">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full gradient-brand flex items-center justify-center shrink-0 shadow-brand">
+                                <span className="text-primary-foreground font-semibold text-sm sm:text-base">
+                                  {member.name.charAt(0).toUpperCase()}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <CreditCard className="h-3 w-3" />
-                                    <span>KES {member.total_contributions?.toLocaleString() || "0"}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{new Date(member.created_at).toLocaleDateString()}</span>
-                                  </div>
+                              <div className="flex-1 min-w-0 space-y-1.5">
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="font-semibold text-sm sm:text-base truncate">{member.name}</h3>
+                                  <Link to={`/super-admin/member/${member.id}`} className="shrink-0">
+                                    <Button size="sm" className="h-7 sm:h-8 px-2 sm:px-3 text-xs gradient-brand text-primary-foreground">
+                                      <Eye className="h-3 w-3 sm:mr-1" />
+                                      <span className="hidden sm:inline">Manage</span>
+                                    </Button>
+                                  </Link>
                                 </div>
-                                <Link to={`/super-admin/member/${member.id}`}>
-                                  <Button size="sm">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Manage
-                                  </Button>
-                                </Link>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1 truncate max-w-full">
+                                    <Phone className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{member.phone}</span>
+                                  </span>
+                                  {(member as any).email && (
+                                    <span className="flex items-center gap-1 truncate max-w-full">
+                                      <Mail className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{(member as any).email}</span>
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  <Badge variant={member.is_active ? "default" : "secondary"} className="text-[10px] h-5">
+                                    {member.is_active ? "Active" : "Inactive"}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-[10px] h-5">
+                                    ID: {(member as any).id_number || "N/A"}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-[10px] h-5 glass-brand text-primary border-primary/30">
+                                    <CreditCard className="h-2.5 w-2.5 mr-1" />
+                                    KES {Number(member.total_contributions || 0).toLocaleString()}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-[10px] h-5">
+                                    <Calendar className="h-2.5 w-2.5 mr-1" />
+                                    {new Date(member.created_at).toLocaleDateString()}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
                           </CardContent>
