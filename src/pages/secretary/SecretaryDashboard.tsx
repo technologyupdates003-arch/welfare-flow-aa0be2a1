@@ -37,45 +37,49 @@ export default function SecretaryDashboard() {
     related_member_id: "",
   });
 
-  // Fetch pending withdrawal approvals for secretary
-  useEffect(() => {
-    const fetchWithdrawals = async () => {
-      if (!user) return;
-
-      try {
-        const { data: withdrawalsData, error: withdrawalsError } = await supabase
+  // Fetch pending withdrawal approvals (penalty + donation)
+  const fetchWithdrawals = async () => {
+    if (!user) return;
+    try {
+      const [penaltyRes, donationRes] = await Promise.all([
+        supabase
           .from('penalty_withdrawals')
           .select(`
-            id,
-            amount,
-            reason,
-            status,
-            requested_by,
-            submitted_at,
-            created_at,
-            phone_number,
-            withdrawal_signatories (
-              id,
-              signatory_role,
-              status,
-              signature_url,
-              approved_at,
-              rejected_at,
-              signatory_user_id
-            )
+            id, amount, reason, status, requested_by, submitted_at, created_at, phone_number,
+            withdrawal_signatories ( id, signatory_role, status, signature_url, approved_at, rejected_at, signatory_user_id )
           `)
           .eq('withdrawal_signatories.signatory_role', 'secretary')
           .eq('withdrawal_signatories.status', 'pending')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('donation_withdrawals')
+          .select(`
+            id, amount, reason, status, requested_by, submitted_at, created_at, phone_number,
+            donation_withdrawal_signatories ( id, signatory_role, status, signature_url, approved_at, rejected_at, signatory_user_id )
+          `)
+          .eq('donation_withdrawal_signatories.signatory_role', 'secretary')
+          .eq('donation_withdrawal_signatories.status', 'pending')
+          .order('created_at', { ascending: false }),
+      ]);
 
-        if (withdrawalsError) throw withdrawalsError;
+      if (penaltyRes.error) throw penaltyRes.error;
+      if (donationRes.error) throw donationRes.error;
 
-        setWithdrawals(withdrawalsData || []);
-      } catch (error) {
-        console.error('Error fetching withdrawals:', error);
-      }
-    };
+      const combined = [
+        ...(penaltyRes.data || []).map((w: any) => ({ ...w, _type: 'penalty' as const })),
+        ...(donationRes.data || []).map((w: any) => ({
+          ...w,
+          _type: 'donation' as const,
+          withdrawal_signatories: w.donation_withdrawal_signatories,
+        })),
+      ];
+      setWithdrawals(combined);
+    } catch (error) {
+      console.error('Error fetching withdrawals:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchWithdrawals();
   }, [user]);
 
@@ -99,25 +103,46 @@ export default function SecretaryDashboard() {
     try {
       setProcessing(true);
 
+      const isDonation = selectedWithdrawal._type === 'donation';
+      const sigTable = isDonation ? 'donation_withdrawal_signatories' : 'withdrawal_signatories';
+      const wTable = isDonation ? 'donation_withdrawals' : 'penalty_withdrawals';
+
+      let mySignatureUrl: string | null = null;
+      try {
+        const { data: mySig } = await supabase
+          .from('signatory_signatures')
+          .select('signature_url')
+          .eq('user_id', user.id)
+          .eq('signatory_role', 'secretary')
+          .maybeSingle();
+        mySignatureUrl = (mySig as any)?.signature_url || null;
+      } catch (_) { /* ignore */ }
+
+      const updatePayload: any = {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
+        rejection_reason: action === 'reject' ? rejectionReason : null,
+        signatory_user_id: user.id,
+      };
+      if (action === 'approve' && mySignatureUrl) {
+        updatePayload.signature_url = mySignatureUrl;
+      }
+
       const { error: updateError } = await (supabase
-        .from('withdrawal_signatories') as any)
-        .update({
-          status: action === 'approve' ? 'approved' : 'rejected',
-          [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
-          rejection_reason: action === 'reject' ? rejectionReason : null,
-        })
+        .from(sigTable) as any)
+        .update(updatePayload)
         .eq('withdrawal_id', selectedWithdrawal.id)
         .eq('signatory_role', 'secretary');
 
       if (updateError) throw updateError;
 
-      const { data: allSignatories } = await supabase
-        .from('withdrawal_signatories')
+      const { data: allSignatories } = await (supabase
+        .from(sigTable) as any)
         .select('status')
         .eq('withdrawal_id', selectedWithdrawal.id);
 
-      const allApproved = allSignatories?.every((s) => s.status === 'approved');
-      const anyRejected = allSignatories?.some((s) => s.status === 'rejected');
+      const allApproved = allSignatories?.every((s: any) => s.status === 'approved');
+      const anyRejected = allSignatories?.some((s: any) => s.status === 'rejected');
 
       if (allApproved) {
         toast.loading('Processing B2C transfer...');
@@ -128,37 +153,27 @@ export default function SecretaryDashboard() {
           phoneNumber: selectedWithdrawal.phone_number || '',
           reason: selectedWithdrawal.reason,
           adminName: user.email || 'Admin',
-        });
+          walletType: isDonation ? 'donation' : 'penalty',
+        } as any);
 
         if (b2cResult.success) {
-          await supabase
-            .from('penalty_withdrawals')
-            .update({
-              status: 'completed',
-              submitted_at: new Date().toISOString(),
-            })
+          await (supabase.from(wTable) as any)
+            .update({ status: 'completed', submitted_at: new Date().toISOString() })
             .eq('id', selectedWithdrawal.id);
 
           toast.success(
             `✅ Withdrawal completed! KES ${selectedWithdrawal.amount.toLocaleString()} transferred`
           );
         } else {
-          await supabase
-            .from('penalty_withdrawals')
-            .update({
-              status: 'approved',
-              submitted_at: new Date().toISOString(),
-            })
+          await (supabase.from(wTable) as any)
+            .update({ status: 'approved', submitted_at: new Date().toISOString() })
             .eq('id', selectedWithdrawal.id);
 
           toast.error(`Approval complete but transfer failed: ${b2cResult.error}`);
         }
       } else if (anyRejected) {
-        await supabase
-          .from('penalty_withdrawals')
-          .update({
-            status: 'rejected',
-          })
+        await (supabase.from(wTable) as any)
+          .update({ status: 'rejected' })
           .eq('id', selectedWithdrawal.id);
 
         toast.error('Withdrawal rejected');
@@ -170,34 +185,7 @@ export default function SecretaryDashboard() {
       setSelectedWithdrawal(null);
       setRejectionReason('');
 
-      // Refresh
-      const { data: updatedWithdrawals, error: updatedError } = await supabase
-        .from('penalty_withdrawals')
-        .select(`
-          id,
-          amount,
-          reason,
-          status,
-          requested_by,
-          submitted_at,
-          created_at,
-          phone_number,
-          withdrawal_signatories (
-            id,
-            signatory_role,
-            status,
-            signature_url,
-            approved_at,
-            rejected_at,
-            signatory_user_id
-          )
-        `)
-        .eq('withdrawal_signatories.signatory_role', 'secretary')
-        .eq('withdrawal_signatories.status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (updatedError) throw updatedError;
-      setWithdrawals(updatedWithdrawals || []);
+      await fetchWithdrawals();
     } catch (error) {
       console.error('Error processing approval:', error);
       toast.error('Failed to process approval');
