@@ -278,7 +278,7 @@ export default function WithdrawalApproval() {
             .eq('id', selectedWithdrawal.id);
 
           // Update wallet balance
-          await supabase.rpc('increment', {
+          await (supabase.rpc as any)('increment', {
             table_name: walletTable,
             row_id: (await supabase.from(walletTable).select('id').single()).data?.id,
             amount: -selectedWithdrawal.amount,
