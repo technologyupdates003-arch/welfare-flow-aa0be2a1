@@ -46,13 +46,12 @@ export default function Donate() {
         .select("*")
         .eq("active", true)
         .order("created_at", { ascending: false });
-      return data || [];
-    },
-    onSuccess: (data) => {
-      setCampaigns(data);
-      if (!selectedCampaignId && data.length > 0) {
-        setSelectedCampaignId(data[0].id);
+      const list = (data || []) as any as DonationCampaign[];
+      setCampaigns(list);
+      if (!selectedCampaignId && list.length > 0) {
+        setSelectedCampaignId(list[0].id);
       }
+      return list;
     },
   });
 
