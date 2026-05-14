@@ -64,6 +64,8 @@ import SuperAdminMemberDetail from "@/pages/super-admin/SuperAdminMemberDetail";
 import TreasurerLayout from "@/components/layout/TreasurerLayout";
 import TreasurerDashboard from "@/pages/treasurer/TreasurerDashboard";
 import TreasurerWithdrawalApprovals from "@/pages/treasurer/WithdrawalApprovals";
+import TreasurerPenaltyWallet from "@/pages/treasurer/PenaltyWallet";
+import TreasurerDonationWallet from "@/pages/treasurer/DonationWallet";
 import TreasurerContributions from "@/pages/treasurer/TreasurerContributions";
 import ExpensesPayouts from "@/pages/treasurer/ExpensesPayouts";
 import CreateMemo from "@/pages/treasurer/CreateMemo";
@@ -141,6 +143,8 @@ function AppRoutes() {
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
         <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
+        <Route path="/treasurer/penalty-wallet" element={<TreasurerLayout><TreasurerPenaltyWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/donation-wallet" element={<TreasurerLayout><TreasurerDonationWallet /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
@@ -208,6 +212,8 @@ function AppRoutes() {
         {/* Treasurer Routes - Accessible by admin and super_admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
         <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
+        <Route path="/treasurer/penalty-wallet" element={<TreasurerLayout><TreasurerPenaltyWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/donation-wallet" element={<TreasurerLayout><TreasurerDonationWallet /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
@@ -264,6 +270,8 @@ function AppRoutes() {
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
         <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
+        <Route path="/treasurer/penalty-wallet" element={<TreasurerLayout><TreasurerPenaltyWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/donation-wallet" element={<TreasurerLayout><TreasurerDonationWallet /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
