@@ -96,6 +96,56 @@ export type Database = {
           },
         ]
       }
+      b2c_transactions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          initiated_at: string
+          mpesa_transaction_id: string
+          phone_number: string
+          status: string
+          updated_at: string
+          withdrawal_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          initiated_at?: string
+          mpesa_transaction_id: string
+          phone_number: string
+          status?: string
+          updated_at?: string
+          withdrawal_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          initiated_at?: string
+          mpesa_transaction_id?: string
+          phone_number?: string
+          status?: string
+          updated_at?: string
+          withdrawal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2c_transactions_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "penalty_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beneficiaries: {
         Row: {
           created_at: string
@@ -361,6 +411,200 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      donation_campaigns: {
+        Row: {
+          active: boolean
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      donation_payment_records: {
+        Row: {
+          amount: number
+          campaign_id: string | null
+          created_at: string
+          id: string
+          member_id: string | null
+          mpesa_transaction_id: string | null
+          payment_ref: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          amount: number
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          mpesa_transaction_id?: string | null
+          payment_ref?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          mpesa_transaction_id?: string | null
+          payment_ref?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_payment_records_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "donation_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_payment_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_wallet: {
+        Row: {
+          id: string
+          total_balance: number
+          total_received: number
+          total_withdrawn: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          total_balance?: number
+          total_received?: number
+          total_withdrawn?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          total_balance?: number
+          total_received?: number
+          total_withdrawn?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      donation_withdrawal_signatories: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          id: string
+          rejected_at: string | null
+          signatory_role: string
+          signatory_user_id: string | null
+          signature_url: string | null
+          status: string
+          updated_at: string
+          withdrawal_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          signatory_role: string
+          signatory_user_id?: string | null
+          signature_url?: string | null
+          status?: string
+          updated_at?: string
+          withdrawal_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          signatory_role?: string
+          signatory_user_id?: string | null
+          signature_url?: string | null
+          status?: string
+          updated_at?: string
+          withdrawal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_withdrawal_signatories_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "donation_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_withdrawals: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          phone_number: string | null
+          reason: string
+          requested_by: string | null
+          status: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          reason: string
+          requested_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          reason?: string
+          requested_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       events: {
         Row: {
@@ -1318,6 +1562,63 @@ export type Database = {
           },
         ]
       }
+      penalty_payment_records: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          member_id: string
+          mpesa_transaction_id: string | null
+          payment_ref: string | null
+          penalty_id: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          member_id: string
+          mpesa_transaction_id?: string | null
+          payment_ref?: string | null
+          penalty_id?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          member_id?: string
+          mpesa_transaction_id?: string | null
+          payment_ref?: string | null
+          penalty_id?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "penalty_payment_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "penalty_payment_records_penalty_id_fkey"
+            columns: ["penalty_id"]
+            isOneToOne: false
+            referencedRelation: "penalties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       penalty_payments: {
         Row: {
           amount: number
@@ -1373,6 +1674,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      penalty_wallet: {
+        Row: {
+          created_at: string
+          id: string
+          last_updated: string
+          total_balance: number
+          total_received: number
+          total_withdrawn: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_updated?: string
+          total_balance?: number
+          total_received?: number
+          total_withdrawn?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_updated?: string
+          total_balance?: number
+          total_received?: number
+          total_withdrawn?: number
+        }
+        Relationships: []
+      }
+      penalty_withdrawals: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          phone_number: string | null
+          reason: string
+          receipt_url: string | null
+          requested_by: string
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          reason: string
+          receipt_url?: string | null
+          requested_by: string
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          reason?: string
+          receipt_url?: string | null
+          requested_by?: string
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      signatory_signatures: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          signatory_role: string
+          signature_url: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          signatory_role: string
+          signature_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          signatory_role?: string
+          signature_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       sms_logs: {
         Row: {
@@ -1592,6 +1995,88 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_receipts: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          receipt_pdf_url: string
+          withdrawal_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          receipt_pdf_url: string
+          withdrawal_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          receipt_pdf_url?: string
+          withdrawal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_receipts_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "penalty_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_signatories: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          id: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          signatory_role: string
+          signatory_user_id: string | null
+          signature_url: string | null
+          status: Database["public"]["Enums"]["signatory_status"]
+          updated_at: string
+          withdrawal_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          signatory_role: string
+          signatory_user_id?: string | null
+          signature_url?: string | null
+          status?: Database["public"]["Enums"]["signatory_status"]
+          updated_at?: string
+          withdrawal_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          signatory_role?: string
+          signatory_user_id?: string | null
+          signature_url?: string | null
+          status?: Database["public"]["Enums"]["signatory_status"]
+          updated_at?: string
+          withdrawal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_signatories_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "penalty_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1648,6 +2133,14 @@ export type Database = {
         | "vice_secretary"
         | "patron"
         | "treasurer"
+      signatory_status: "pending" | "approved" | "rejected"
+      withdrawal_status:
+        | "pending"
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1786,6 +2279,15 @@ export const Constants = {
         "vice_secretary",
         "patron",
         "treasurer",
+      ],
+      signatory_status: ["pending", "approved", "rejected"],
+      withdrawal_status: [
+        "pending",
+        "submitted",
+        "approved",
+        "rejected",
+        "completed",
+        "cancelled",
       ],
     },
   },
