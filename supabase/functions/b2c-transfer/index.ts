@@ -1,12 +1,9 @@
-// Co-op Bank B2C transfer edge function.
-// Initiates an outgoing transfer from the welfare account to a member's
-// phone number for an approved withdrawal (penalty or donation wallet).
+// Safaricom Daraja SANDBOX B2C transfer.
+// Pays out approved withdrawals from either the penalty or donation wallet
+// to a member's M-Pesa number using sandbox credentials.
 //
-// Required secrets (set via Lovable Cloud secrets):
-//   COOP_CONSUMER_KEY, COOP_CONSUMER_SECRET, COOP_ACCOUNT_NUMBER,
-//   COOP_B2C_CALLBACK_URL (optional)
-// If credentials are missing the function returns success=false with a
-// descriptive error so the UI can surface a clear status to operators.
+// Required secrets: MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET
+// Sandbox public defaults are used for shortcode/initiator/security credential.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -26,17 +23,34 @@ interface B2CRequest {
   walletType?: "penalty" | "donation";
 }
 
+const DARAJA_BASE =
+  Deno.env.get("MPESA_BASE_URL") ?? "https://sandbox.safaricom.co.ke";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-async function getCoopToken(): Promise<string | null> {
-  const key = Deno.env.get("COOP_CONSUMER_KEY");
-  const secret = Deno.env.get("COOP_CONSUMER_SECRET");
+// Public sandbox defaults from Safaricom Daraja docs
+const SANDBOX_B2C_SHORTCODE = "600000";
+const SANDBOX_INITIATOR_NAME = "testapi";
+// Pre-encrypted security credential for the sandbox testapi user
+const SANDBOX_SECURITY_CREDENTIAL =
+  "Safaricom999!*!";
+
+function normalizePhone(p: string): string {
+  const digits = (p || "").replace(/\D/g, "");
+  if (digits.startsWith("254")) return digits;
+  if (digits.startsWith("0")) return "254" + digits.slice(1);
+  if (digits.startsWith("7") || digits.startsWith("1")) return "254" + digits;
+  return digits;
+}
+
+async function getDarajaToken(): Promise<string | null> {
+  const key = Deno.env.get("MPESA_CONSUMER_KEY");
+  const secret = Deno.env.get("MPESA_CONSUMER_SECRET");
   if (!key || !secret) return null;
   const auth = btoa(`${key}:${secret}`);
   const res = await fetch(
-    "https://developer.co-opbank.co.ke:8243/token?grant_type=client_credentials",
-    { method: "POST", headers: { Authorization: `Basic ${auth}` } },
+    `${DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
+    { method: "GET", headers: { Authorization: `Basic ${auth}` } },
   );
   if (!res.ok) return null;
   const data = await res.json();
@@ -52,7 +66,13 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as B2CRequest;
-    const { withdrawalId, amount, phoneNumber, reason, walletType = "penalty" } = body;
+    const {
+      withdrawalId,
+      amount,
+      phoneNumber,
+      reason,
+      walletType = "penalty",
+    } = body;
 
     if (!withdrawalId || !amount || !phoneNumber) {
       return new Response(
@@ -61,59 +81,66 @@ Deno.serve(async (req) => {
       );
     }
 
-    const token = await getCoopToken();
-    const accountNumber = Deno.env.get("COOP_ACCOUNT_NUMBER");
+    const phone = normalizePhone(phoneNumber);
+    const token = await getDarajaToken();
 
-    let mpesaTransactionId = `B2C-${Date.now()}-${withdrawalId.slice(0, 8)}`;
+    const mpesaTransactionId = `B2C-${Date.now()}-${withdrawalId.slice(0, 8)}`;
     let bankResponse: any = null;
     let success = false;
     let errorMessage: string | null = null;
 
-    if (token && accountNumber) {
-      // Real Co-op Bank IFT (Internal Funds Transfer to Mobile)
-      const callbackUrl = Deno.env.get("COOP_B2C_CALLBACK_URL") ??
+    if (token) {
+      const SHORTCODE =
+        Deno.env.get("MPESA_B2C_SHORTCODE") ?? SANDBOX_B2C_SHORTCODE;
+      const INITIATOR =
+        Deno.env.get("MPESA_INITIATOR_NAME") ?? SANDBOX_INITIATOR_NAME;
+      const SECURITY_CREDENTIAL =
+        Deno.env.get("MPESA_SECURITY_CREDENTIAL") ?? SANDBOX_SECURITY_CREDENTIAL;
+      const callbackUrl =
+        Deno.env.get("MPESA_B2C_CALLBACK_URL") ??
         `${SUPABASE_URL}/functions/v1/b2c-transfer/callback`;
+      const timeoutUrl =
+        Deno.env.get("MPESA_B2C_TIMEOUT_URL") ?? callbackUrl;
+
       const payload = {
-        MessageReference: mpesaTransactionId,
-        CallBackUrl: callbackUrl,
-        Source: { AccountNumber: accountNumber, Amount: amount, Narration: reason },
-        Destinations: [
-          {
-            ReferenceNumber: mpesaTransactionId,
-            AccountNumber: phoneNumber,
-            BankCode: "MPESA",
-            Amount: amount,
-            Narration: reason,
-          },
-        ],
+        OriginatorConversationID: mpesaTransactionId,
+        InitiatorName: INITIATOR,
+        SecurityCredential: SECURITY_CREDENTIAL,
+        CommandID: "BusinessPayment",
+        Amount: Math.round(Number(amount)),
+        PartyA: SHORTCODE,
+        PartyB: phone,
+        Remarks: (reason || `Welfare ${walletType} payout`).slice(0, 100),
+        QueueTimeOutURL: timeoutUrl,
+        ResultURL: callbackUrl,
+        Occasion: walletType,
       };
 
-      const res = await fetch(
-        "https://developer.co-opbank.co.ke:8243/FundsTransfer/Mobile/3.0.0",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+      const res = await fetch(`${DARAJA_BASE}/mpesa/b2c/v3/paymentrequest`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(payload),
+      });
       bankResponse = await res.json().catch(() => ({}));
-      success = res.ok && (bankResponse?.MessageReference != null);
+      success = res.ok && (bankResponse?.ResponseCode === "0");
       if (!success) {
-        errorMessage = bankResponse?.MessageDescription ||
-          bankResponse?.error_description || `Bank API ${res.status}`;
+        errorMessage =
+          bankResponse?.errorMessage ||
+          bankResponse?.ResponseDescription ||
+          `Daraja API ${res.status}`;
       }
     } else {
-      errorMessage = "Co-op Bank credentials not configured (COOP_CONSUMER_KEY / COOP_CONSUMER_SECRET / COOP_ACCOUNT_NUMBER).";
+      errorMessage =
+        "M-Pesa sandbox not configured (MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET).";
     }
 
-    // Record the attempt
     await supabase.from("b2c_transactions").insert({
       withdrawal_id: withdrawalId,
       mpesa_transaction_id: mpesaTransactionId,
-      phone_number: phoneNumber,
+      phone_number: phone,
       amount,
       status: success ? "initiated" : "failed",
       error_message: errorMessage,
@@ -124,10 +151,11 @@ Deno.serve(async (req) => {
         success,
         transactionId: mpesaTransactionId,
         message: success
-          ? `Transfer of KES ${amount} initiated to ${phoneNumber}`
+          ? `Sandbox transfer of KES ${amount} initiated to ${phone}`
           : errorMessage,
         bank: bankResponse,
         walletType,
+        sandbox: true,
       }),
       {
         status: success ? 200 : 502,
