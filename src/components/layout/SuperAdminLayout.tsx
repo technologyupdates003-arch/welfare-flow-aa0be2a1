@@ -1,12 +1,16 @@
 import { ReactNode, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { 
   LogOut, Menu, X, Users, Wrench, Shield, 
   LayoutDashboard, Calendar, FileText, Newspaper, 
-  Bell, Settings, Database, Key, Eye, Lock
+  Bell, Settings, Database, Key, Eye, Lock, ChevronDown
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
 import AIAssistant from "@/components/chat/AIAssistant";
@@ -34,9 +38,26 @@ const getSuperAdminNavItems = () => {
 export default function SuperAdminLayout({ children }: { children: ReactNode }) {
   const { signOut, roles } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = getSuperAdminNavItems();
+
+  const dashboardOptions = [
+    { to: "/super-admin", label: "Super Admin", icon: Shield, show: true },
+    { to: "/admin", label: "Admin", icon: LayoutDashboard, show: roles.includes("admin") },
+    { to: "/treasurer", label: "Treasurer", icon: Database, show: roles.includes("treasurer") },
+    { to: "/secretary", label: "Secretary", icon: FileText, show: roles.includes("secretary") },
+    { to: "/chairperson", label: "Chairperson", icon: Users, show: roles.includes("chairperson") },
+    { to: "/vice-chairperson", label: "Vice Chairperson", icon: Users, show: roles.includes("vice_chairperson") },
+    { to: "/vice-secretary", label: "Vice Secretary", icon: FileText, show: roles.includes("vice_secretary") },
+    { to: "/patron", label: "Patron", icon: Shield, show: roles.includes("patron") },
+    { to: "/member", label: "Member", icon: LayoutDashboard, show: true },
+  ].filter(o => o.show);
+
+  const currentDashboard =
+    dashboardOptions.find(o => location.pathname === o.to || location.pathname.startsWith(o.to + "/"))?.label
+    || "Dashboards";
 
   return (
     <div className="flex min-h-screen">
