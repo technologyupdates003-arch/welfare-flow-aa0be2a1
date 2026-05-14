@@ -56,7 +56,6 @@ export default function TreasurerDashboard() {
           `)
           .eq('withdrawal_signatories.signatory_role', 'treasurer')
           .eq('withdrawal_signatories.status', 'pending')
-          .or(`withdrawal_signatories.signatory_user_id.eq.${user.id},withdrawal_signatories.signatory_user_id.is.null`)
           .order('created_at', { ascending: false });
 
         if (withdrawalsError) throw withdrawalsError;
@@ -211,7 +210,6 @@ export default function TreasurerDashboard() {
         `)
         .eq('withdrawal_signatories.signatory_role', 'treasurer')
         .eq('withdrawal_signatories.status', 'pending')
-        .or(`withdrawal_signatories.signatory_user_id.eq.${user.id},withdrawal_signatories.signatory_user_id.is.null`)
         .order('created_at', { ascending: false });
 
       if (updatedError) throw updatedError;
