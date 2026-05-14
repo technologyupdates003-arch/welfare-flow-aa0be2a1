@@ -174,22 +174,20 @@ export default function WithdrawalApproval() {
   }, [user]);
 
   // Get user's signatory role
+  // Admin / super_admin act as treasurer signatory by default (they may also have
+  // another office role; that takes precedence).
   const getUserSignatoryRole = (): string | null => {
-    const roleMap: { [key: string]: string } = {
-      chairperson: 'chairperson',
-      secretary: 'secretary',
-      treasurer: 'treasurer',
-    };
-
-    for (const userRole of userRoles) {
-      if (roleMap[userRole.role]) {
-        return roleMap[userRole.role];
-      }
+    const priority = ['chairperson', 'secretary', 'treasurer'];
+    for (const role of priority) {
+      if (userRoles.some((r) => r.role === role)) return role;
+    }
+    if (userRoles.some((r) => r.role === 'admin' || r.role === 'super_admin')) {
+      return 'treasurer';
     }
     return null;
   };
 
-  const isAdmin = userRoles.some((userRole) => userRole.role === 'admin');
+  const isAdmin = userRoles.some((userRole) => userRole.role === 'admin' || userRole.role === 'super_admin');
 
   // Get visible withdrawals for the current user
   const getPendingWithdrawals = (): WithdrawalRequest[] => {
