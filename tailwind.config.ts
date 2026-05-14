@@ -12,10 +12,20 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Times New Roman", "Times", "serif"],
-        body: ["Times New Roman", "Times", "serif"],
-        sans: ["Times New Roman", "Times", "serif"],
-        serif: ["Times New Roman", "Times", "serif"],
+        display: ["Space Grotesk", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["ui-serif", "Georgia", "serif"],
+      },
+      backgroundImage: {
+        "gradient-brand": "var(--gradient-brand)",
+        "gradient-brand-soft": "var(--gradient-brand-soft)",
+        "gradient-deep": "var(--gradient-deep)",
+      },
+      boxShadow: {
+        glass: "0 8px 32px -8px hsl(24 60% 30% / 0.12), inset 0 1px 0 0 hsl(0 0% 100% / 0.6)",
+        "glass-lg": "0 20px 50px -12px hsl(24 60% 30% / 0.18), inset 0 1px 0 0 hsl(0 0% 100% / 0.7)",
+        brand: "0 12px 40px -10px hsl(24 95% 53% / 0.45)",
       },
       colors: {
         border: "hsl(var(--border))",
