@@ -144,34 +144,34 @@ export default function MemberDashboard() {
 
   return (
     <div className="space-y-4 pb-4">
-      {/* Profile Section */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <div className="relative">
-              <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
-                <AvatarImage src={member?.profile_picture_url || ""} alt={member?.name || "Member"} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-white text-2xl font-bold">
-                  {member?.name ? getInitials(member.name) : <User className="h-8 w-8" />}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1">
-                <CheckCircle className="h-4 w-4 text-white" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                {member?.name || "Member"} 👋
-              </h2>
-              <p className="text-sm text-muted-foreground">Active Member since {memberSince}</p>
-              <Badge variant="secondary" className="mt-1 text-xs">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Verified Member
-              </Badge>
-            </div>
+      {/* Profile Section — borderless, no card */}
+      <div className="flex items-center gap-4 px-1 pt-1">
+        <div className="relative shrink-0">
+          <div className="absolute -inset-1 rounded-full gradient-brand opacity-70 blur-md" aria-hidden />
+          <Avatar className="relative h-20 w-20 ring-2 ring-white/70 shadow-brand">
+            <AvatarImage src={member?.profile_picture_url || ""} alt={member?.name || "Member"} />
+            <AvatarFallback className="gradient-brand text-primary-foreground text-2xl font-bold">
+              {member?.name ? getInitials(member.name) : <User className="h-8 w-8" />}
+            </AvatarFallback>
+          </Avatar>
+          <div className="absolute -bottom-0.5 -right-0.5 bg-success rounded-full p-1 ring-2 ring-background">
+            <CheckCircle className="h-3.5 w-3.5 text-white" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">Welcome back 👋</p>
+          <h2 className="text-xl sm:text-2xl font-bold truncate text-gradient-brand leading-tight">
+            {member?.name || "Member"}
+          </h2>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <Badge className="text-[10px] h-5 glass-brand text-primary border-primary/30">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Verified
+            </Badge>
+            <span className="text-[11px] text-muted-foreground">Member since {memberSince}</span>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
