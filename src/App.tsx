@@ -64,6 +64,8 @@ import SuperAdminMemberDetail from "@/pages/super-admin/SuperAdminMemberDetail";
 import TreasurerLayout from "@/components/layout/TreasurerLayout";
 import TreasurerDashboard from "@/pages/treasurer/TreasurerDashboard";
 import TreasurerWithdrawalApprovals from "@/pages/treasurer/WithdrawalApprovals";
+import TreasurerPenaltyWallet from "@/pages/treasurer/PenaltyWallet";
+import TreasurerDonationWallet from "@/pages/treasurer/DonationWallet";
 import TreasurerContributions from "@/pages/treasurer/TreasurerContributions";
 import ExpensesPayouts from "@/pages/treasurer/ExpensesPayouts";
 import CreateMemo from "@/pages/treasurer/CreateMemo";
