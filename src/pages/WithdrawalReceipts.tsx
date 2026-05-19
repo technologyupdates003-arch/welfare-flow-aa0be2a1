@@ -32,13 +32,14 @@ export default function WithdrawalReceipts() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ReceiptRow[]>([]);
   const [open, setOpen] = useState<ReceiptRow | null>(null);
+  const [orgSettings, setOrgSettings] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
-        const [pen, don, sigs] = await Promise.all([
+        const [pen, don, sigs, org] = await Promise.all([
           supabase
             .from("penalty_withdrawals")
             .select(`
@@ -56,9 +57,11 @@ export default function WithdrawalReceipts() {
             .eq("status", "completed")
             .order("submitted_at", { ascending: false }),
           supabase.from("signatory_signatures").select("user_id, signatory_role, signature_url, full_name"),
+          supabase.from("organization_settings").select("*").maybeSingle(),
         ]);
         if (pen.error) throw pen.error;
         if (don.error) throw don.error;
+        setOrgSettings(org.data || null);
 
         const sigMap = new Map<string, any>();
         sigs.data?.forEach((s: any) => {
@@ -213,20 +216,29 @@ export default function WithdrawalReceipts() {
           </DialogHeader>
           {open && (
             <>
-              <div ref={printRef} className="bg-white text-foreground p-4" style={{ fontFamily: 'Arial, sans-serif' }}>
-                {/* Memo Letterhead */}
-                <div style={{ border: '2px solid #1f2937', padding: '20px', marginBottom: '20px', background: '#f9fafb', borderRadius: '8px' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-                    <div style={{ fontSize: '24px', fontWeight: '900', color: '#1f2937', letterSpacing: '1px' }}>KHCWW WELFARE</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Kenyatta Hospital Community Welfare Wing</div>
-                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Official Withdrawal Receipt</div>
-                  </div>
-                  <div style={{ borderTop: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db', padding: '10px 0', margin: '15px 0', textAlign: 'center', fontSize: '11px', color: '#6b7280' }}>
-                    <div>📍 Nairobi, Kenya | 📞 +254 (0) 20 XXXX XXXX | 📧 welfare@khcww.org</div>
+              <div ref={printRef} className="bg-white text-foreground p-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                <div style={{ borderBottom: '4px solid #f97316', paddingBottom: '16px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                    {orgSettings?.logo_url ? (
+                      <img src={orgSettings.logo_url} alt="Organization logo" style={{ height: '80px', width: '80px', objectFit: 'contain', flexShrink: 0 }} />
+                    ) : null}
+                    <div style={{ flex: 1, textAlign: 'right' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                        {orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE"}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', lineHeight: 1.5 }}>
+                        <div>{orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH'}</div>
+                        <div style={{ color: '#ea580c', fontWeight: 600 }}>Email: {orgSettings?.organization_email || 'Khcww2020@gmail.com'}</div>
+                        <div>Tel: {orgSettings?.organization_phone || '+254 712 345 678'}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Receipt Header */}
+                <div style={{ textAlign: 'center', marginBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#f97316', letterSpacing: '3px' }}>
+                  KHCWW OFFICIAL WITHDRAWAL RECEIPT
+                </div>
+
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>
                     {open.type === 'penalty' ? 'PENALTY WALLET' : 'FUNDS WALLET'} WITHDRAWAL RECEIPT
@@ -276,7 +288,6 @@ export default function WithdrawalReceipts() {
                   </table>
                 </div>
 
-                {/* Approvals Section */}
                 <div style={{ marginTop: '30px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '15px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>
                     APPROVAL SIGNATURES
@@ -313,7 +324,6 @@ export default function WithdrawalReceipts() {
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px solid #1f2937' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '10px', color: '#6b7280', textAlign: 'center' }}>
                     <div>
@@ -329,6 +339,12 @@ export default function WithdrawalReceipts() {
                       <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
                     </div>
                   </div>
+
+                  {orgSettings?.stamp_url ? (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                      <img src={orgSettings.stamp_url} alt="Official stamp" style={{ height: '90px', width: '90px', objectFit: 'contain', opacity: 0.9 }} />
+                    </div>
+                  ) : null}
                   
                   <div style={{ background: '#f3f4f6', padding: '15px', borderRadius: '6px', marginTop: '20px', fontSize: '9px', color: '#6b7280', lineHeight: '1.6' }}>
                     <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>IMPORTANT NOTES:</div>
@@ -341,8 +357,9 @@ export default function WithdrawalReceipts() {
                   </div>
 
                   <div style={{ textAlign: 'center', marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #e5e7eb', fontSize: '9px', color: '#9ca3af' }}>
-                    <p style={{ margin: '0' }}>KHCWW Welfare System | Confidential Document</p>
-                    <p style={{ margin: '5px 0 0 0' }}>© 2026 Kenyatta Hospital Community Welfare Wing. All Rights Reserved.</p>
+                    <p style={{ margin: '0', fontWeight: 600, color: '#1f2937' }}>{orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE"}</p>
+                    <p style={{ margin: '5px 0 0 0' }}>{orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH'}</p>
+                    <p style={{ margin: '5px 0 0 0' }}>Email: {orgSettings?.organization_email || 'Khcww2020@gmail.com'} | Tel: {orgSettings?.organization_phone || '+254 712 345 678'}</p>
                   </div>
                 </div>
               </div>
