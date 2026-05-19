@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertCircle, CheckCircle, Wallet, ArrowUp, Phone, DollarSign, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, Wallet, ArrowUp, Phone, TrendingUp, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { validatePhoneNumber } from '@/lib/b2c';
 
@@ -70,6 +70,7 @@ export default function PenaltyWallet() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [payments, setPayments] = useState<PenaltyPayment[]>([]);
   const [signatureMap, setSignatureMap] = useState<Map<string, any>>(new Map());
+  const [orgSettings, setOrgSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
@@ -83,13 +84,51 @@ export default function PenaltyWallet() {
       try {
         setLoading(true);
 
-        // Get wallet balance
-        const { data: walletData, error: walletError } = await supabase
-          .from('penalty_wallet')
+        // Fetch organization settings for letterhead
+        const { data: orgSettings } = await supabase
+          .from('organization_settings')
           .select('*')
           .single();
 
-        if (walletError) throw walletError;
+        // Calculate wallet balance from penalties and penalty_payment_records
+        const { data: penaltiesData, error: penaltiesError } = await supabase
+          .from('penalties')
+          .select('amount, is_paid');
+
+        const { data: verifiedPaymentsData, error: verifiedPaymentsError } = await supabase
+          .from('penalty_payment_records')
+          .select('amount, status');
+
+        const { data: completedWithdrawalsData, error: completedWithdrawalsError } = await supabase
+          .from('penalty_withdrawals')
+          .select('amount')
+          .eq('status', 'completed');
+
+        if (penaltiesError || verifiedPaymentsError || completedWithdrawalsError) {
+          console.error('Error fetching wallet data:', { penaltiesError, verifiedPaymentsError, completedWithdrawalsError });
+        }
+
+        // Store org settings for use in receipt generation
+        setOrgSettings(orgSettings);
+
+        // Calculate totals
+        const totalBalance = (penaltiesData || [])
+          .filter((p: any) => !p.is_paid)
+          .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+        const totalReceived = (verifiedPaymentsData || [])
+          .filter((p: any) => p.status === 'verified')
+          .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+        const totalWithdrawn = (completedWithdrawalsData || [])
+          .reduce((sum: number, w: any) => sum + Number(w.amount), 0);
+
+        const walletData = {
+          total_balance: totalBalance,
+          total_received: totalReceived,
+          total_withdrawn: totalWithdrawn,
+        };
+
         setWallet(walletData);
 
         // Get withdrawal requests
@@ -318,20 +357,80 @@ export default function PenaltyWallet() {
         .join('');
 
       container.innerHTML = `
-        <div style="border-bottom:3px solid #f59e0b;padding-bottom:12px;margin-bottom:18px;">
-          <h1 style="font-size:20px;margin:0;">Penalty Wallet Withdrawal Receipt</h1>
-        </div>
-        <div style="font-size:12px;line-height:1.6;">
-          <p><strong>Withdrawal ID:</strong> ${safeHtml(withdrawal.id)}</p>
-          <p><strong>Amount:</strong> KES ${withdrawal.amount.toLocaleString()}</p>
-          <p><strong>Reason:</strong> ${safeHtml(withdrawal.reason)}</p>
-          <p><strong>Status:</strong> ${safeHtml(withdrawal.status)}</p>
-          <p><strong>Requested:</strong> ${safeHtml(new Date(withdrawal.created_at).toLocaleString())}</p>
-          ${withdrawal.phone_number ? `<p><strong>Transfer to:</strong> ${safeHtml(withdrawal.phone_number)}</p>` : ''}
-        </div>
-        <div style="margin-top:22px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:12px;">Approvals</div>
-          ${approvalsHtml}
+        <div style="font-family:'Times New Roman', Times, serif;max-width:900px;margin:0 auto;padding:20px;background:white;color:#111827;">
+          <!-- Memo Letterhead Header -->
+          <div style="border-bottom:4px solid #f97316;padding-bottom:15px;margin-bottom:20px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:15px;">
+              ${orgSettings?.logo_url ? `<img src="${orgSettings.logo_url}" alt="Logo" style="height:80px;width:80px;object-fit:contain;flex-shrink:0;" />` : ''}
+              <div style="flex:1;text-align:right;">
+                <h1 style="font-size:16px;font-weight:bold;margin:0 0 5px 0;line-height:1.2;">${safeHtml(orgSettings?.organization_name || 'KHCWW WELFARE')}</h1>
+                <div style="font-size:11px;color:#6B7280;line-height:1.4;">
+                  <p style="margin:0;">${safeHtml(orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA')}</p>
+                  <p style="margin:3px 0 0 0;color:#f97316;font-weight:500;word-break:break-all;">Email: ${safeHtml(orgSettings?.organization_email || 'welfare@khcww.org')}</p>
+                  <p style="margin:3px 0 0 0;">Tel: ${safeHtml(orgSettings?.organization_phone || '+254 712 345 678')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Receipt Title -->
+          <div style="text-align:center;margin-bottom:15px;">
+            <p style="font-size:11px;font-weight:bold;color:#f97316;letter-spacing:2px;margin:0;">PENALTY WALLET WITHDRAWAL RECEIPT</p>
+          </div>
+
+          <!-- Receipt Details -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:11px;color:#6B7280;line-height:1.6;margin-bottom:10px;">
+              <p style="margin:0;">Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <p style="margin:3px 0 0 0;">Reference: ${safeHtml(withdrawal.id.substring(0, 12))}</p>
+            </div>
+
+            <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:15px;">
+              <tr style="background:#f3f4f6;">
+                <td style="padding:8px;font-weight:600;color:#374151;width:35%;border:1px solid #e5e7eb;">Receipt ID:</td>
+                <td style="padding:8px;color:#1f2937;border:1px solid #e5e7eb;font-family:monospace;">${safeHtml(withdrawal.id.substring(0, 12))}...</td>
+              </tr>
+              <tr>
+                <td style="padding:8px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Withdrawal Amount:</td>
+                <td style="padding:8px;color:#059669;font-weight:700;border:1px solid #e5e7eb;">KES ${withdrawal.amount.toLocaleString()}</td>
+              </tr>
+              <tr style="background:#f3f4f6;">
+                <td style="padding:8px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Reason:</td>
+                <td style="padding:8px;color:#1f2937;border:1px solid #e5e7eb;">${safeHtml(withdrawal.reason)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status:</td>
+                <td style="padding:8px;border:1px solid #e5e7eb;"><span style="background:#dbeafe;color:#1e40af;padding:3px 6px;border-radius:3px;font-size:10px;font-weight:600;">${safeHtml(withdrawal.status.toUpperCase())}</span></td>
+              </tr>
+              <tr style="background:#f3f4f6;">
+                <td style="padding:8px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Date Issued:</td>
+                <td style="padding:8px;color:#1f2937;border:1px solid #e5e7eb;">${safeHtml(new Date(withdrawal.created_at).toLocaleString())}</td>
+              </tr>
+              ${withdrawal.phone_number ? `
+              <tr>
+                <td style="padding:8px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Transfer To:</td>
+                <td style="padding:8px;color:#1f2937;border:1px solid #e5e7eb;font-family:monospace;">${safeHtml(withdrawal.phone_number)}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+
+          <!-- Approvals Section -->
+          <div style="margin-top:30px;padding-top:20px;border-top:2px solid #e5e7eb;">
+            <p style="font-size:11px;font-weight:bold;margin:0 0 15px 0;">APPROVAL SIGNATURES</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;font-size:10px;">
+              ${approvalsHtml}
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="margin-top:30px;padding-top:15px;border-top:1px solid #e5e7eb;text-align:center;">
+            <div style="font-size:10px;color:#6B7280;line-height:1.6;">
+              <p style="margin:0;font-weight:600;">${safeHtml(orgSettings?.organization_name || 'KHCWW WELFARE')}</p>
+              <p style="margin:3px 0 0 0;">${safeHtml(orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA')}</p>
+              <p style="margin:3px 0 0 0;word-break:break-all;">Email: ${safeHtml(orgSettings?.organization_email || 'welfare@khcww.org')} | Tel: ${safeHtml(orgSettings?.organization_phone || '+254 712 345 678')}</p>
+            </div>
+          </div>
         </div>
       `;
 
@@ -424,7 +523,7 @@ export default function PenaltyWallet() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-600" />
+              <TrendingUp className="h-5 w-5 text-green-600" />
               Request Penalty Wallet Withdrawal
             </DialogTitle>
             <DialogDescription>
@@ -445,7 +544,7 @@ export default function PenaltyWallet() {
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700">Withdrawal Amount</label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <TrendingUp className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   type="number"
                   placeholder="Enter amount"
@@ -496,12 +595,12 @@ export default function PenaltyWallet() {
 
             {/* Info Box */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
-              <p className="text-sm font-semibold text-amber-900">⚠️ Important</p>
+              <p className="text-sm font-semibold text-amber-900">âš ï¸ Important</p>
               <ul className="text-xs text-amber-800 space-y-1">
-                <li>• Requires approval from 3 signatories</li>
-                <li>• Funds will be transferred to the M-Pesa number provided</li>
-                <li>• Transfer happens automatically after all approvals</li>
-                <li>• Receipt will be generated with all signatures</li>
+                <li>â€¢ Requires approval from 3 signatories</li>
+                <li>â€¢ Funds will be transferred to the M-Pesa number provided</li>
+                <li>â€¢ Transfer happens automatically after all approvals</li>
+                <li>â€¢ Receipt will be generated with all signatures</li>
               </ul>
             </div>
 
@@ -665,3 +764,4 @@ export default function PenaltyWallet() {
     </div>
   );
 }
+

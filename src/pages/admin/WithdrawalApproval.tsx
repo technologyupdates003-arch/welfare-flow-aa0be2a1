@@ -97,7 +97,6 @@ export default function WithdrawalApproval() {
               )
             `
             )
-            .in('status', ['pending', 'submitted', 'approved'])
             .order('created_at', { ascending: false }),
           supabase
             .from('donation_withdrawals')
@@ -122,7 +121,6 @@ export default function WithdrawalApproval() {
               )
             `
             )
-            .in('status', ['pending', 'submitted', 'approved'])
             .order('created_at', { ascending: false })
         ]);
 
@@ -299,7 +297,20 @@ export default function WithdrawalApproval() {
       const walletTable = selectedWithdrawal.type === 'penalty' ? 'penalty_wallet' : 'donation_wallet';
 
       if (allApproved) {
-        // All signatories approved - trigger B2C transfer
+        // All signatories approved - check if already completed (idempotency)
+        const { data: withdrawalStatus } = await supabase
+          .from(withdrawalTable)
+          .select('status')
+          .eq('id', selectedWithdrawal.id)
+          .single();
+
+        if (withdrawalStatus?.status === 'completed') {
+          toast.info('This withdrawal has already been completed');
+          setProcessing(false);
+          return;
+        }
+
+        // Trigger B2C transfer
         toast.loading('Processing B2C transfer...');
 
         const b2cResult = await initiateB2CWithdrawal({
@@ -320,14 +331,6 @@ export default function WithdrawalApproval() {
               submitted_at: new Date().toISOString(),
             })
             .eq('id', selectedWithdrawal.id);
-
-          // Update wallet balance
-          await (supabase.rpc as any)('increment', {
-            table_name: walletTable,
-            row_id: (await supabase.from(walletTable).select('id').single()).data?.id,
-            amount: -selectedWithdrawal.amount,
-            field_name: 'total_withdrawn'
-          });
 
           toast.success(
             `✅ Withdrawal completed! KES ${selectedWithdrawal.amount.toLocaleString()} transferred to ${selectedWithdrawal.phone_number}`
@@ -361,6 +364,7 @@ export default function WithdrawalApproval() {
       setShowApprovalDialog(false);
       setSelectedWithdrawal(null);
       setRejectionReason('');
+      setProcessing(false);
 
       const { data: updatedWithdrawals } = await supabase
         .from('penalty_withdrawals')
