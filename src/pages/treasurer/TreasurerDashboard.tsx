@@ -159,7 +159,7 @@ export default function TreasurerDashboard() {
       const anyRejected = allSignatories?.some((s: any) => s.status === 'rejected');
 
       if (allApproved) {
-        toast.loading('Processing B2C transfer...');
+        const toastId = toast.loading('Processing B2C transfer...');
 
         const b2cResult = await initiateB2CWithdrawal({
           withdrawalId: selectedWithdrawal.id,
@@ -169,6 +169,8 @@ export default function TreasurerDashboard() {
           adminName: user.email || 'Admin',
           walletType: isDonation ? 'donation' : 'penalty',
         } as any);
+
+        toast.dismiss(toastId);
 
         if (b2cResult.success) {
           await supabase
