@@ -90,43 +90,23 @@ export default function PenaltyWallet() {
           .select('*')
           .single();
 
-        // Calculate wallet balance from penalties and penalty_payment_records
-        const { data: penaltiesData, error: penaltiesError } = await supabase
-          .from('penalties')
-          .select('amount, is_paid');
+        const { data: walletRow, error: walletError } = await supabase
+          .from('penalty_wallet')
+          .select('total_balance, total_received, total_withdrawn')
+          .limit(1)
+          .maybeSingle();
 
-        const { data: verifiedPaymentsData, error: verifiedPaymentsError } = await supabase
-          .from('penalty_payment_records')
-          .select('amount, status');
-
-        const { data: completedWithdrawalsData, error: completedWithdrawalsError } = await supabase
-          .from('penalty_withdrawals')
-          .select('amount')
-          .eq('status', 'completed');
-
-        if (penaltiesError || verifiedPaymentsError || completedWithdrawalsError) {
-          console.error('Error fetching wallet data:', { penaltiesError, verifiedPaymentsError, completedWithdrawalsError });
+        if (walletError) {
+          console.error('Error fetching wallet data:', walletError);
         }
 
         // Store org settings for use in receipt generation
         setOrgSettings(orgSettings);
 
-        // Calculate totals
-        const totalBalance = (penaltiesData || [])
-          .filter((p: any) => !p.is_paid)
-          .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-
-        const totalReceived = (verifiedPaymentsData || [])
-          .filter((p: any) => p.status === 'verified')
-          .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-
-        const totalWithdrawn = (completedWithdrawalsData || [])
-          .reduce((sum: number, w: any) => sum + Number(w.amount), 0);
-
         const walletData = {
-          total_balance: totalBalance,
-          total_received: totalReceived,
-          total_withdrawn: totalWithdrawn,
+          total_balance: Number(walletRow?.total_balance || 0),
+          total_received: Number(walletRow?.total_received || 0),
+          total_withdrawn: Number(walletRow?.total_withdrawn || 0),
         };
 
         setWallet(walletData);
