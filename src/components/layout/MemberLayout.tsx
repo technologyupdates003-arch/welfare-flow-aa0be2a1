@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+﻿import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, Newspaper, Bell, LogOut, Calendar, Download, User, Users, 
-  Menu, X, FileText, Shield, AlertCircle, DollarSign
+  Menu, X, FileText, Shield, AlertCircle, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
@@ -20,9 +20,10 @@ const getMemberNavItems = (role: string | null) => {
     { to: "/member/documents", icon: FileText, label: "Documents" },
     { to: "/member/beneficiaries", icon: Users, label: "Beneficiaries" },
     { to: "/member/downloads", icon: Download, label: "Downloads" },
-    { to: "/member/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" },
+    // Only show withdrawal receipts for users with roles (not plain members)
+    ...(role && role !== "member" ? [{ to: "/member/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" }] : []),
     { to: "/member/pay-penalty", icon: AlertCircle, label: "Pay Penalty" },
-    { to: "/member/donate", icon: DollarSign, label: "Donate" },
+    { to: "/member/donate", icon: TrendingUp, label: "Contribute" },
     { to: "/member/notifications", icon: Bell, label: "Alerts", showBadge: true },
     { to: "/member/profile", icon: User, label: "Profile" },
   ];
@@ -235,3 +236,4 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+

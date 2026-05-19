@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 const supabase: any = supabaseClient;
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2, Banknote } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2, Banknote } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -177,7 +177,7 @@ export default function TreasurerDashboard() {
             .eq('id', selectedWithdrawal.id);
 
           toast.success(
-            `✅ Withdrawal completed! KES ${selectedWithdrawal.amount.toLocaleString()} transferred to ${selectedWithdrawal.phone_number}`
+            `âœ… Withdrawal completed! KES ${selectedWithdrawal.amount.toLocaleString()} transferred to ${selectedWithdrawal.phone_number}`
           );
         } else {
           await supabase
@@ -210,7 +210,7 @@ export default function TreasurerDashboard() {
       setProcessing(false);
     }
   };
-  // Fetch financial summary — aligned with Admin Dashboard StatsCards
+  // Fetch financial summary â€” aligned with Admin Dashboard StatsCards
   const { data: financialSummary } = useQuery({
     queryKey: ["treasurer-financial-summary"],
     queryFn: async () => {
@@ -365,7 +365,7 @@ export default function TreasurerDashboard() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (prompt.toLowerCase().includes("forecast") || prompt.toLowerCase().includes("predict")) {
-      return `📊 FINANCIAL FORECAST:
+      return `ðŸ“Š FINANCIAL FORECAST:
 
 Based on current trends:
 - Monthly Average Income: Ksh ${(summary?.monthlyContributions || 0).toLocaleString()}
@@ -377,7 +377,7 @@ Based on current trends:
 - Risk Factors: Collection delays, unexpected expenses
 - Recommendations: Maintain 3-month reserve, accelerate collections`;
     } else if (prompt.toLowerCase().includes("optimize") || prompt.toLowerCase().includes("improve")) {
-      return `💡 OPTIMIZATION RECOMMENDATIONS:
+      return `ðŸ’¡ OPTIMIZATION RECOMMENDATIONS:
 
 1. COLLECTION EFFICIENCY:
    - Implement automated payment reminders
@@ -399,7 +399,7 @@ Based on current trends:
    - Track KPIs consistently
    - Share transparency reports with members`;
     } else {
-      return `📈 DASHBOARD INSIGHTS:
+      return `ðŸ“ˆ DASHBOARD INSIGHTS:
 
 CURRENT FINANCIAL HEALTH:
 - Total Balance: Ksh ${(summary?.totalBalance || 0).toLocaleString()}
@@ -409,7 +409,7 @@ CURRENT FINANCIAL HEALTH:
 KEY METRICS:
 - Monthly Income: Ksh ${(summary?.monthlyContributions || 0).toLocaleString()}
 - Monthly Expenses: Ksh ${(summary?.monthlyExpenses || 0).toLocaleString()}
-- Balance Trend: ${(summary?.netBalance || 0) > 0 ? "Positive ✓" : "Negative ✗"}
+- Balance Trend: ${(summary?.netBalance || 0) > 0 ? "Positive âœ“" : "Negative âœ—"}
 
 NEXT STEPS:
 - Review pending transactions
@@ -485,7 +485,7 @@ NEXT STEPS:
           { label: "Total Balance", value: `Ksh ${(financialSummary?.totalBalance || 0).toLocaleString()}`, icon: Wallet, sub: "Updated today", accent: "from-primary/30 to-primary-glow/10" },
           { label: "Contributions (Month)", value: `Ksh ${(financialSummary?.monthlyContributions || 0).toLocaleString()}`, icon: TrendingUp, sub: "Income", accent: "from-success/30 to-success/5", subIcon: TrendingUp },
           { label: "Expenses (Month)", value: `Ksh ${(financialSummary?.monthlyExpenses || 0).toLocaleString()}`, icon: TrendingDown, sub: "Outflow", accent: "from-destructive/30 to-destructive/5", subIcon: TrendingDown },
-          { label: "Net Balance", value: `Ksh ${(financialSummary?.netBalance || 0).toLocaleString()}`, icon: DollarSign, sub: "This month", accent: (financialSummary?.netBalance || 0) >= 0 ? "from-success/30 to-success/5" : "from-destructive/30 to-destructive/5" },
+          { label: "Net Balance", value: `Ksh ${(financialSummary?.netBalance || 0).toLocaleString()}`, icon: TrendingUp, sub: "This month", accent: (financialSummary?.netBalance || 0) >= 0 ? "from-success/30 to-success/5" : "from-destructive/30 to-destructive/5" },
         ]}
       />
 
@@ -744,3 +744,4 @@ NEXT STEPS:
     </div>
   );
 }
+

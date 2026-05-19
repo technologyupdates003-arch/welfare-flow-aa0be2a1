@@ -16,6 +16,18 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReadableStreamDefaultController } from "node:stream/web";
 
+// Capitalize each word in a name properly
+const capitalizeNames = (name: string): string => {
+  if (!name) return "";
+  return name
+    .split(/\s+/)
+    .map(word => {
+      if (word.length === 0) return "";
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+};
+
 export default function MemberBeneficiaries() {
   const { memberId } = useAuth();
   const queryClient = useQueryClient();
@@ -158,7 +170,7 @@ export default function MemberBeneficiaries() {
       }
     }
 
-    return cleanedName;
+    return capitalizeNames(cleanedName);
   };
 
   const getRelationshipKey = (relationship: string) => {
@@ -377,7 +389,7 @@ export default function MemberBeneficiaries() {
                             </div>
                             {req.request_type === "add" ? (
                               <div className="mt-2">
-                                <p className="font-medium">{req.beneficiary_name}</p>
+                                <p className="font-medium">{capitalizeNames(req.beneficiary_name)}</p>
                                 <p className="text-sm text-muted-foreground capitalize">{req.beneficiary_relationship}</p>
                                 {req.beneficiary_phone && <p className="text-sm text-muted-foreground">{req.beneficiary_phone}</p>}
                               </div>
@@ -424,13 +436,12 @@ export default function MemberBeneficiaries() {
                   <SelectItem value="spouse">Spouse</SelectItem>
                   <SelectItem value="child">Child</SelectItem>
                   <SelectItem value="parent">Parent</SelectItem>
-                  <SelectItem value="sibling">Sibling</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="next_of_kin">Next of Kin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Phone (optional)</Label><Input value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))} /></div>
-            <div><Label>ID Number (optional)</Label><Input value={addForm.id_number} onChange={e => setAddForm(f => ({ ...f, id_number: e.target.value }))} /></div>
+            <div><Label>Phone {addForm.relationship === "next_of_kin" ? "*" : "(optional)"}</Label><Input value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))} placeholder={addForm.relationship === "next_of_kin" ? "Required for Next of Kin" : "Optional"} /></div>
+            <div><Label>ID Number {addForm.relationship === "next_of_kin" ? "*" : "(optional)"}</Label><Input value={addForm.id_number} onChange={e => setAddForm(f => ({ ...f, id_number: e.target.value }))} placeholder={addForm.relationship === "next_of_kin" ? "Required for Next of Kin" : "Optional"} /></div>
             <div>
               <Label>Reason for Adding *</Label>
               <Textarea 
@@ -440,9 +451,19 @@ export default function MemberBeneficiaries() {
                 rows={3}
               />
             </div>
+            {addForm.relationship === "next_of_kin" && (!addForm.phone || !addForm.id_number) && (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded text-sm text-orange-800">
+                Phone number and ID number are required for Next of Kin beneficiaries.
+              </div>
+            )}
             <Button 
               onClick={() => submitAddRequest.mutate()} 
-              disabled={!addForm.name || !addForm.reason || submitAddRequest.isPending} 
+              disabled={
+                !addForm.name || 
+                !addForm.reason || 
+                (addForm.relationship === "next_of_kin" && (!addForm.phone || !addForm.id_number)) ||
+                submitAddRequest.isPending
+              } 
               className="w-full"
             >
               {submitAddRequest.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

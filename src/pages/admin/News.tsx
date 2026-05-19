@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -126,6 +127,21 @@ export default function AdminNews() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const archiveNews = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("news")
+        .update({ status })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["news"] });
+      toast.success("Announcement status updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const handleEdit = (newsItem: any) => {
     setSelectedNews(newsItem);
     setTitle(newsItem.title);
@@ -173,7 +189,14 @@ export default function AdminNews() {
         {news?.map(n => (
           <Card key={n.id}>
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
-              <CardTitle className="text-base">{n.title}</CardTitle>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">{n.title}</CardTitle>
+                  <Badge variant={n.status === "active" ? "default" : "secondary"}>
+                    {n.status === "active" ? "Active" : "Archived"}
+                  </Badge>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
@@ -181,6 +204,14 @@ export default function AdminNews() {
                   onClick={() => handleEdit(n)}
                 >
                   <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => archiveNews.mutate({ id: n.id, status: n.status === "active" ? "archived" : "active" })}
+                  className={n.status === "active" ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
+                >
+                  {n.status === "active" ? "Archive" : "Restore"}
                 </Button>
                 <Button
                   variant="ghost"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Lock, Eye, MessageSquare, Copy, RefreshCw, AlertCircle,
   CheckCircle, Loader2, Mail, Phone, Calendar, User, CreditCard, Shield,
-  Activity, DollarSign, MapPin, Clock, Settings
+  Activity, TrendingUp, MapPin, Clock, Settings
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -270,7 +270,7 @@ export default function SuperAdminMemberDetail() {
                   <CardTitle className="text-sm font-medium text-green-100">Total Contributions</CardTitle>
                   <div className="text-lg font-bold mt-1">KES {member.total_contributions?.toLocaleString() || "0"}</div>
                 </div>
-                <DollarSign className="h-8 w-8 text-foreground/70" />
+                <TrendingUp className="h-8 w-8 text-foreground/70" />
               </div>
             </CardHeader>
           </Card>
@@ -374,7 +374,7 @@ export default function SuperAdminMemberDetail() {
                     <div className="p-4 bg-muted/50 rounded-lg border border-border">
                       <Label className="text-muted-foreground text-sm">Total Contributions</Label>
                       <p className="font-semibold text-green-400 text-lg mt-1 flex items-center gap-2">
-                        <DollarSign className="h-4 w-4" />
+                        <TrendingUp className="h-4 w-4" />
                         KES {member.total_contributions?.toLocaleString() || "0"}
                       </p>
                     </div>

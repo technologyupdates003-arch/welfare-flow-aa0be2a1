@@ -80,16 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(newSession);
     setUser(newSession?.user ?? null);
     
-    // Debug: Log the user object
-    if (newSession?.user) {
-      console.log("Auth session user:", {
-        id: newSession.user.id,
-        email: newSession.user.email,
-        phone: newSession.user.phone,
-        user_metadata: newSession.user.user_metadata,
-      });
-    }
-    
     if (newSession?.user) {
       const [{ primaryRole, allRoles }, userMemberId] = await Promise.all([
         fetchRoles(newSession.user.id),

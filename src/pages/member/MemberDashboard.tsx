@@ -1,6 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -21,11 +21,16 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function MemberDashboard() {
-  const { memberId } = useAuth();
+  const { memberId, roles } = useAuth();
   const [payOpen, setPayOpen] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [payPhone, setPayPhone] = useState("");
   const [paying, setPaying] = useState(false);
+
+  // Check if user has a role (not just a regular member)
+  const hasRole = useMemo(() => {
+    return roles.some(r => r && r !== "member");
+  }, [roles]);
 
   const handlePayNow = async () => {
     const amt = Number(payAmount);

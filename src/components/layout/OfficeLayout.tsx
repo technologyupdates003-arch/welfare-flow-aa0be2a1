@@ -1,9 +1,9 @@
-import { ReactNode, useState } from "react";
+﻿import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, DollarSign, FileSpreadsheet,
+  LayoutDashboard, Users, TrendingUp, FileSpreadsheet,
   Newspaper, Bell, LogOut, Menu, X,
   AlertTriangle, CreditCard, Send, Calendar, FileText, Settings,
   Shield, Award, Eye, UserCheck, FileSignature, Wrench

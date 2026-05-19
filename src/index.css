@@ -112,6 +112,8 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent zoom on mobile while allowing pinch-to-zoom */
+    touch-action: manipulation;
   }
   body {
     @apply text-foreground antialiased;
@@ -119,6 +121,8 @@
     background: var(--gradient-bg);
     background-attachment: fixed;
     min-height: 100vh;
+    /* Prevent double-tap zoom on mobile */
+    touch-action: manipulation;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', 'Inter', sans-serif;

@@ -11,6 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, Loader2, Users, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+// Capitalize each word in a name properly
+const capitalizeNames = (name: string): string => {
+  if (!name) return "";
+  return name
+    .split(/\s+/)
+    .map(word => {
+      if (word.length === 0) return "";
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+};
+
 export default function Beneficiaries() {
   const queryClient = useQueryClient();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -24,7 +36,8 @@ export default function Beneficiaries() {
       const { data, error } = await supabase
         .from("beneficiaries")
         .select(`id, member_id, name, relationship, phone, id_number, member:members(name, phone)`)
-        .order("name");
+        .order("member_id", { ascending: true })
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -84,6 +97,19 @@ export default function Beneficiaries() {
     const beneficiaryName = beneficiary.name?.toLowerCase() || "";
     return memberName.includes(search) || beneficiaryName.includes(search);
   });
+
+  // Group beneficiaries by member
+  const groupedByMember = filteredBeneficiaries.reduce((groups: any, beneficiary: any) => {
+    const memberId = beneficiary.member_id;
+    if (!groups[memberId]) {
+      groups[memberId] = {
+        member: beneficiary.member,
+        beneficiaries: []
+      };
+    }
+    groups[memberId].beneficiaries.push(beneficiary);
+    return groups;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -152,47 +178,44 @@ export default function Beneficiaries() {
             </div>
           ) : beneficiaries.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No beneficiaries found.</div>
-          ) : filteredBeneficiaries.length === 0 ? (
+          ) : Object.keys(groupedByMember).length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No beneficiaries match this member search.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Relationship</TableHead>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBeneficiaries.map((beneficiary: any) => (
-                    <TableRow key={beneficiary.id}>
-                      <TableCell className="font-medium">{beneficiary.name || "Unknown"}</TableCell>
-                      <TableCell className="capitalize">{beneficiary.relationship || "Unknown"}</TableCell>
-                      <TableCell>{beneficiary.member?.name || "-"}</TableCell>
-                      <TableCell className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button size="sm" variant="outline" onClick={() => openEditDialog(beneficiary)}>
-                            <Pencil className="mr-1 h-4 w-4" /> Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => deleteBeneficiary.mutate(beneficiary.id)}
-                          >
-                            <Trash2 className="mr-1 h-4 w-4" /> Remove
-                          </Button>
+            <div className="space-y-6">
+              {Object.entries(groupedByMember).map(([memberId, group]: any) => (
+                <Card key={memberId} className="border-l-4 border-l-primary">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">{capitalizeNames(group.member?.name) || "Unknown Member"}</CardTitle>
+                    <CardDescription className="text-sm">{group.member?.phone || "No phone"} • {group.beneficiaries.length} beneficiary(ies)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {group.beneficiaries.map((beneficiary: any) => (
+                        <div key={beneficiary.id} className="flex items-start justify-between gap-3 p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div className="flex-1">
+                            <p className="font-medium">{capitalizeNames(beneficiary.name) || "Unknown"}</p>
+                            <p className="text-sm text-muted-foreground capitalize">{beneficiary.relationship || "Unknown"}</p>
+                            {beneficiary.phone && <p className="text-xs text-muted-foreground mt-1">📱 {beneficiary.phone}</p>}
+                            {beneficiary.id_number && <p className="text-xs text-muted-foreground">🆔 {beneficiary.id_number}</p>}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => openEditDialog(beneficiary)}>
+                              <Pencil className="mr-1 h-4 w-4" /> Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteBeneficiary.mutate(beneficiary.id)}
+                            >
+                              <Trash2 className="mr-1 h-4 w-4" /> Remove
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {beneficiary.phone ? <div>Phone: {beneficiary.phone}</div> : null}
-                          {beneficiary.id_number ? <div>ID: {beneficiary.id_number}</div> : null}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </CardContent>

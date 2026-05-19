@@ -38,21 +38,38 @@ export default function Donate() {
 
   const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedCampaignId) || campaigns[0] || null;
 
-  const { data: activeCampaigns = [] } = useQuery<DonationCampaign[]>({
+  const { data: activeCampaigns = [], isLoading, error: queryError } = useQuery<DonationCampaign[]>({
     queryKey: ["active-donation-campaigns"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("donation_campaigns")
-        .select("*")
-        .eq("active", true)
-        .order("created_at", { ascending: false });
-      const list = (data || []) as any as DonationCampaign[];
-      setCampaigns(list);
-      if (!selectedCampaignId && list.length > 0) {
-        setSelectedCampaignId(list[0].id);
+      try {
+        console.log("Fetching active donation campaigns...");
+        const { data, error } = await supabase
+          .from("donation_campaigns")
+          .select("*")
+          .eq("active", true)
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching campaigns:", error);
+          toast.error("Unable to load funds drives: " + error.message);
+          return [];
+        }
+        
+        console.log("Successfully fetched campaigns:", data);
+        const list = (data || []) as any as DonationCampaign[];
+        setCampaigns(list);
+        if (!selectedCampaignId && list.length > 0) {
+          setSelectedCampaignId(list[0].id);
+        }
+        return list;
+      } catch (err) {
+        console.error("Exception fetching campaigns:", err);
+        toast.error("Failed to load funds drives: " + (err instanceof Error ? err.message : "Unknown error"));
+        return [];
       }
-      return list;
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   useEffect(() => {
@@ -154,14 +171,14 @@ export default function Donate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Donation Wallet</h1>
-        <p className="text-gray-600 mt-2">Choose a donation request and pay via M-Pesa STK Push.</p>
+        <h1 className="text-3xl font-bold">Funds Drive</h1>
+        <p className="text-gray-600 mt-2">Choose a funds drive and contribute via M-Pesa STK Push.</p>
       </div>
 
       {paymentStatus === "success" && (
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription>Donation prompt sent successfully. Check your phone to complete payment.</AlertDescription>
+          <AlertDescription>Contribution prompt sent successfully. Check your phone to complete payment.</AlertDescription>
         </Alert>
       )}
       {paymentStatus === "error" && (
@@ -171,11 +188,26 @@ export default function Donate() {
         </Alert>
       )}
 
-      {campaigns.length === 0 ? (
+      {campaigns.length === 0 && isLoading ? (
         <Card>
-          <CardContent className="space-y-3">
-            <CardTitle>No active donation campaigns</CardTitle>
-            <CardDescription>There are no donation requests available right now. Check back later.</CardDescription>
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+            <CardTitle className="text-center">Loading funds drives...</CardTitle>
+          </CardContent>
+        </Card>
+      ) : campaigns.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            <CardTitle>No active funds drives</CardTitle>
+            <CardDescription>There are no funds drives available right now. Check back later.</CardDescription>
+            {queryError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>Error loading funds drives. Please try again.</AlertDescription>
+              </Alert>
+            )}
             <Link to="/member">
               <Button>Go back to dashboard</Button>
             </Link>
@@ -186,8 +218,8 @@ export default function Donate() {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Donation Campaigns</CardTitle>
-                <CardDescription>Select a campaign and pay the requested amount.</CardDescription>
+                <CardTitle>Funds Drives</CardTitle>
+                <CardDescription>Select a funds drive and pay the requested amount.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {campaigns.map((campaign) => (
@@ -218,13 +250,13 @@ export default function Donate() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Selected Donation</CardTitle>
+              <CardTitle>Selected Funds Drive</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {selectedCampaign ? (
                 <>
                   <div className="space-y-2">
-                    <p className="text-sm text-slate-500">Campaign</p>
+                    <p className="text-sm text-slate-500">Funds Drive</p>
                     <p className="font-semibold text-lg">{selectedCampaign.title}</p>
                     <p className="text-sm text-slate-600">{selectedCampaign.description}</p>
                   </div>
@@ -253,16 +285,16 @@ export default function Donate() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
                       </>
                     ) : (
-                      `Donate KES ${Number(selectedCampaign.amount).toLocaleString()}`
+                      `Contribute KES ${Number(selectedCampaign.amount).toLocaleString()}`
                     )}
                   </Button>
 
                   <div className="rounded-2xl bg-blue-50 p-3 text-sm text-blue-800">
-                    Your donation will be requested through M-Pesa STK push. Complete the prompt on your phone to proceed.
+                    Your contribution will be requested through M-Pesa STK push. Complete the prompt on your phone to proceed.
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-slate-600">Select a campaign to continue.</p>
+                <p className="text-sm text-slate-600">Select a funds drive to continue.</p>
               )}
             </CardContent>
           </Card>

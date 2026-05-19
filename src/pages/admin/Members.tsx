@@ -576,8 +576,7 @@ export default function Members() {
                       <SelectItem value="spouse">Spouse</SelectItem>
                       <SelectItem value="child">Child</SelectItem>
                       <SelectItem value="parent">Parent</SelectItem>
-                      <SelectItem value="sibling">Sibling</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="next_of_kin">Next of Kin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

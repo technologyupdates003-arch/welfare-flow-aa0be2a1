@@ -1,11 +1,11 @@
-import { ReactNode, useState } from "react";
+﻿import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Users, DollarSign, FileSpreadsheet,
+  LayoutDashboard, Users, TrendingUp, FileSpreadsheet,
   Newspaper, Bell, LogOut, Menu, X,
   AlertTriangle, CreditCard, Send, Calendar, FileText, Settings,
   Shield, Award, Eye, UserCheck, FileSignature, Wrench, AlertCircle, Target
@@ -45,16 +45,16 @@ const getNavItems = (role: string) => {
       return [
         ...baseItems,
         { to: "/admin/members", icon: Users, label: "Members" },
-        { to: "/admin/contributions", icon: DollarSign, label: "Contributions" },
+        { to: "/admin/contributions", icon: TrendingUp, label: "Contributions" },
         { to: "/admin/import", icon: FileSpreadsheet, label: "Excel Import" },
         { to: "/admin/beneficiary-import", icon: Users, label: "Beneficiary Import" },
         { to: "/admin/beneficiaries", icon: UserCheck, label: "Beneficiary Dashboard" },
         { to: "/admin/payments", icon: CreditCard, label: "Payments" },
         { to: "/admin/unmatched", icon: AlertTriangle, label: "Unmatched" },
         { to: "/admin/penalty-payments", icon: AlertCircle, label: "Verify Penalties" },
-        { to: "/admin/penalty-wallet", icon: DollarSign, label: "Penalty Wallet" },
-        { to: "/admin/donations", icon: DollarSign, label: "Donation Wallet" },
-        { to: "/admin/donation-campaigns", icon: Target, label: "Donation Campaigns" },
+        { to: "/admin/penalty-wallet", icon: TrendingUp, label: "Penalty Wallet" },
+        { to: "/admin/donations", icon: TrendingUp, label: "Funds Wallet" },
+        { to: "/admin/donation-campaigns", icon: Target, label: "Funds Drives" },
         { to: "/admin/withdrawal-approval", icon: FileSignature, label: "Withdrawal Approvals" },
         { to: "/admin/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" },
         { to: "/admin/sms", icon: Send, label: "Bulk SMS" },

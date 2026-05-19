@@ -11,6 +11,7 @@ export default function MemberEvents() {
       const { data, error } = await supabase
         .from("events")
         .select("*")
+        .eq("status", "active")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -32,7 +33,6 @@ export default function MemberEvents() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">{ev.title}</CardTitle>
-                <Badge variant={ev.status === "active" ? "default" : "secondary"}>{ev.status}</Badge>
               </div>
               <p className="text-xs text-muted-foreground">{typeLabel(ev.event_type)} · {format(new Date(ev.created_at), "dd MMM yyyy")}</p>
             </CardHeader>

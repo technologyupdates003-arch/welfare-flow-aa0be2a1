@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Calendar } from "lucide-react";
+import { Plus, Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -111,6 +111,18 @@ export default function Events() {
     },
   });
 
+  const deleteEvent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Event deleted successfully");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const statusColor = (s: string) => s === "active" ? "default" : s === "closed" ? "secondary" : "destructive";
   const typeLabel = (t: string) => t === "funeral" ? "⚰️ Funeral" : t === "fee" ? "💰 Fee" : "📋 " + t;
 
@@ -161,8 +173,7 @@ export default function Events() {
                         <SelectItem value="spouse">Spouse of Member</SelectItem>
                         <SelectItem value="child">Child of Member</SelectItem>
                         <SelectItem value="parent">Parent of Member</SelectItem>
-                        <SelectItem value="sibling">Sibling of Member</SelectItem>
-                        <SelectItem value="other_relative">Other Relative</SelectItem>
+                        <SelectItem value="next_of_kin">Next of Kin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -239,9 +250,22 @@ export default function Events() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{format(new Date(ev.created_at), "dd MMM yyyy")}</TableCell>
                     <TableCell>
-                      {ev.status === "active" && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: ev.id, status: "closed" })}>Close</Button>
-                      )}
+                      <div className="flex gap-2">
+                        {ev.status === "active" && (
+                          <Button variant="outline" size="sm" onClick={() => updateStatus.mutate({ id: ev.id, status: "closed" })}>
+                            Close
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => deleteEvent.mutate(ev.id)}
+                          disabled={deleteEvent.isPending}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

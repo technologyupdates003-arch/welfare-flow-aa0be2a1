@@ -213,77 +213,138 @@ export default function WithdrawalReceipts() {
           </DialogHeader>
           {open && (
             <>
-              <div ref={printRef} className="bg-white text-foreground p-4">
-                <h1 className="text-2xl font-bold">KHCWW Welfare</h1>
-                <p className="muted text-xs text-muted-foreground">
-                  Official Withdrawal Receipt
-                </p>
-                <div className="mt-4 space-y-1 text-sm">
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Receipt No.</span>
-                    <span>{open.id.slice(0, 8).toUpperCase()}</span>
+              <div ref={printRef} className="bg-white text-foreground p-4" style={{ fontFamily: 'Arial, sans-serif' }}>
+                {/* Memo Letterhead */}
+                <div style={{ border: '2px solid #1f2937', padding: '20px', marginBottom: '20px', background: '#f9fafb', borderRadius: '8px' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '900', color: '#1f2937', letterSpacing: '1px' }}>KHCWW WELFARE</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Kenyatta Hospital Community Welfare Wing</div>
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Official Withdrawal Receipt</div>
                   </div>
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Wallet</span>
-                    <span className="capitalize">{open.type} wallet</span>
-                  </div>
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Amount</span>
-                    <span>KES {Number(open.amount).toLocaleString()}</span>
-                  </div>
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Reason</span>
-                    <span>{open.reason}</span>
-                  </div>
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Recipient Phone</span>
-                    <span>{open.phone_number || "—"}</span>
-                  </div>
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Date Issued</span>
-                    <span>{new Date(open.submitted_at || open.created_at).toLocaleString()}</span>
-                  </div>
-                  <div className="row flex justify-between border-b py-1">
-                    <span className="font-medium">Status</span>
-                    <span className="uppercase">{open.status}</span>
+                  <div style={{ borderTop: '1px solid #d1d5db', borderBottom: '1px solid #d1d5db', padding: '10px 0', margin: '15px 0', textAlign: 'center', fontSize: '11px', color: '#6b7280' }}>
+                    <div>📍 Nairobi, Kenya | 📞 +254 (0) 20 XXXX XXXX | 📧 welfare@khcww.org</div>
                   </div>
                 </div>
 
-                <h3 className="mt-6 mb-2 font-semibold">Authorising Signatories</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {["chairperson", "secretary", "treasurer"].map((role) => {
-                    const s = open.signatories.find((x) => x.signatory_role === role);
-                    return (
-                      <div key={role} className="sig border rounded-md p-3">
-                        <div className="text-xs uppercase text-muted-foreground">{role}</div>
-                        <div className="font-medium text-sm mt-1">
-                          {s?.full_name || "—"}
-                        </div>
-                        {s?.signature_url ? (
-                          <img
-                            src={s.signature_url}
-                            alt={`${role} signature`}
-                            className="h-14 object-contain mt-2"
-                            crossOrigin="anonymous"
-                          />
-                        ) : (
-                          <div className="h-14 mt-2 flex items-center text-xs text-muted-foreground italic">
-                            No signature on file
+                {/* Receipt Header */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>
+                    {open.type === 'penalty' ? 'PENALTY WALLET' : 'FUNDS WALLET'} WITHDRAWAL RECEIPT
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af' }}>Generated: {new Date().toLocaleString()}</div>
+                </div>
+
+                {/* Receipt Details */}
+                <div style={{ background: '#f3f4f6', padding: '15px', borderRadius: '6px', marginBottom: '20px', fontSize: '12px', lineHeight: '1.8' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', width: '40%' }}>Receipt ID:</td>
+                        <td style={{ padding: '8px', color: '#1f2937', fontFamily: 'monospace' }}>{open.id.substring(0, 12)}...</td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Withdrawal Amount:</td>
+                        <td style={{ padding: '8px', color: '#059669', fontWeight: '700', fontSize: '14px' }}>KES {Number(open.amount).toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Wallet Type:</td>
+                        <td style={{ padding: '8px', color: '#1f2937', textTransform: 'capitalize' }}>{open.type} wallet</td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Withdrawal Reason:</td>
+                        <td style={{ padding: '8px', color: '#1f2937' }}>{open.reason}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Status:</td>
+                        <td style={{ padding: '8px' }}>
+                          <span style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' }}>
+                            {open.status}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr style={{ background: '#fff' }}>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Date Issued:</td>
+                        <td style={{ padding: '8px', color: '#1f2937' }}>{new Date(open.submitted_at || open.created_at).toLocaleString()}</td>
+                      </tr>
+                      {open.phone_number && (
+                        <tr>
+                          <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Transfer To:</td>
+                          <td style={{ padding: '8px', color: '#1f2937', fontFamily: 'monospace' }}>{open.phone_number}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Approvals Section */}
+                <div style={{ marginTop: '30px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '15px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>
+                    APPROVAL SIGNATURES
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                    {["chairperson", "secretary", "treasurer"].map((role) => {
+                      const s = open.signatories.find((x) => x.signatory_role === role);
+                      return (
+                        <div key={role} style={{ border: '1px solid #e5e7eb', padding: '12px', borderRadius: '6px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px' }}>
+                            {role}
                           </div>
-                        )}
-                        <div className="text-[10px] text-muted-foreground mt-1">
-                          {s?.approved_at
-                            ? `Approved ${new Date(s.approved_at).toLocaleString()}`
-                            : "Not approved"}
+                          <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>
+                            {s?.full_name || '—'}
+                          </div>
+                          {s?.signature_url ? (
+                            <img
+                              src={s.signature_url}
+                              alt={`${role} signature`}
+                              style={{ maxWidth: '100%', maxHeight: '60px', margin: '8px auto', display: 'block' }}
+                              crossOrigin="anonymous"
+                            />
+                          ) : (
+                            <div style={{ height: '60px', borderTop: '1px solid #d1d5db', marginTop: '8px' }}></div>
+                          )}
+                          <div style={{ fontSize: '9px', color: '#9ca3af', marginTop: '8px' }}>
+                            {s?.approved_at
+                              ? `Approved ${new Date(s.approved_at).toLocaleString()}`
+                              : "Pending"}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <p className="muted text-[10px] text-muted-foreground mt-6 text-center">
-                  This receipt is system-generated upon successful B2C transfer.
-                </p>
+                {/* Footer */}
+                <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px solid #1f2937' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '10px', color: '#6b7280', textAlign: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Prepared By</div>
+                      <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Approved By</div>
+                      <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Date</div>
+                      <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ background: '#f3f4f6', padding: '15px', borderRadius: '6px', marginTop: '20px', fontSize: '9px', color: '#6b7280', lineHeight: '1.6' }}>
+                    <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>IMPORTANT NOTES:</div>
+                    <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                      <li>This receipt is valid only with authorized signatures</li>
+                      <li>Keep this receipt for your records and audit purposes</li>
+                      <li>For disputes or inquiries, contact the Finance Department within 30 days</li>
+                      <li>All withdrawals are subject to KHCWW Welfare policies and regulations</li>
+                    </ul>
+                  </div>
+
+                  <div style={{ textAlign: 'center', marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #e5e7eb', fontSize: '9px', color: '#9ca3af' }}>
+                    <p style={{ margin: '0' }}>KHCWW Welfare System | Confidential Document</p>
+                    <p style={{ margin: '5px 0 0 0' }}>© 2026 Kenyatta Hospital Community Welfare Wing. All Rights Reserved.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">

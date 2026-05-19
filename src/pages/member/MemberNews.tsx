@@ -6,7 +6,11 @@ export default function MemberNews() {
   const { data: news } = useQuery({
     queryKey: ["news"],
     queryFn: async () => {
-      const { data } = await supabase.from("news").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("news")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
       return data || [];
     },
   });

@@ -604,6 +604,7 @@ function AppRoutes() {
       <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
       <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
       <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+      <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
       <Route path="*" element={<Navigate to="/member" replace />} />
     </Routes>
   );
@@ -614,7 +615,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <InstallBanner />
           <AppRoutes />

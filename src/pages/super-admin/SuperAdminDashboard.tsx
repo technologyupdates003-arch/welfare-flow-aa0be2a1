@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3, Users, AlertTriangle, Lock, MessageSquare, Activity,
   Eye, RefreshCw, Search, Download, Filter, Loader2, TrendingUp,
-  DollarSign, UserCheck, Calendar, Mail, Phone, MapPin, CreditCard
+  UserCheck, Calendar, Mail, Phone, MapPin, CreditCard
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -138,12 +138,12 @@ export default function SuperAdminDashboard() {
           </Badge>
         </div>
 
-        {/* Stats Cards Row — glassmorphism */}
+        {/* Stats Cards Row â€” glassmorphism */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[
             { label: "Total Members", value: members.length.toLocaleString(), icon: Users, sub: `${activeMembers} active`, accent: "from-primary/30 to-primary-glow/10" },
             { label: "Active Members", value: activeMembers.toLocaleString(), icon: UserCheck, sub: `${recentMembers} new this month`, accent: "from-success/30 to-success/5" },
-            { label: "Contributions", value: `KES ${totalContributions.toLocaleString()}`, icon: DollarSign, sub: `${contributions.length} txns`, accent: "from-primary/30 to-primary-glow/10" },
+            { label: "Contributions", value: `KES ${totalContributions.toLocaleString()}`, icon: TrendingUp, sub: `${contributions.length} txns`, accent: "from-primary/30 to-primary-glow/10" },
             { label: "System Health", value: errorCount === 0 ? "Healthy" : `${errorCount} Issues`, icon: Activity, sub: `${memberAccessLogs.length} access logs`, accent: "from-secondary/30 to-secondary/5" },
           ].map((s, i) => (
             <Card key={i} className="glass border-white/40 overflow-hidden relative group hover:shadow-glass-lg transition-all">
@@ -328,7 +328,7 @@ export default function SuperAdminDashboard() {
                 <CardContent>
                   <div className="h-64 flex items-center justify-center text-muted-foreground">
                     <div className="text-center">
-                      <DollarSign className="h-12 w-12 mx-auto mb-4" />
+                      <TrendingUp className="h-12 w-12 mx-auto mb-4" />
                       <p>Contribution trends chart would go here</p>
                       <p className="text-sm mt-2">Total: KES {totalContributions.toLocaleString()}</p>
                     </div>
