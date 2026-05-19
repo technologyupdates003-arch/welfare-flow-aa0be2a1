@@ -311,7 +311,7 @@ export default function WithdrawalApproval() {
         }
 
         // Trigger B2C transfer
-        toast.loading('Processing B2C transfer...');
+        const toastId = toast.loading('Processing B2C transfer...');
 
         const b2cResult = await initiateB2CWithdrawal({
           withdrawalId: selectedWithdrawal.id,
@@ -321,6 +321,8 @@ export default function WithdrawalApproval() {
           adminName: user.email || 'Admin',
           walletType: selectedWithdrawal.type,
         });
+
+        toast.dismiss(toastId);
 
         if (b2cResult.success) {
           // Update withdrawal status to completed

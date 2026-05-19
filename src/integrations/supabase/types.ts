@@ -1220,6 +1220,7 @@ export type Database = {
           reschedule_reason: string | null
           rescheduled_date: string | null
           scheduled_date: string | null
+          status: string | null
           title: string
           updated_at: string
         }
@@ -1231,6 +1232,7 @@ export type Database = {
           reschedule_reason?: string | null
           rescheduled_date?: string | null
           scheduled_date?: string | null
+          status?: string | null
           title: string
           updated_at?: string
         }
@@ -1242,6 +1244,7 @@ export type Database = {
           reschedule_reason?: string | null
           rescheduled_date?: string | null
           scheduled_date?: string | null
+          status?: string | null
           title?: string
           updated_at?: string
         }

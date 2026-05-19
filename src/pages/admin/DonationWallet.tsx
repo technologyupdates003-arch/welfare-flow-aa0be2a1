@@ -90,37 +90,23 @@ export default function DonationWallet() {
           .select('*')
           .single();
 
-        // Calculate wallet balance from donation_payment_records
-        const { data: donationsData, error: donationsError } = await supabase
-          .from('donation_payment_records')
-          .select('amount, status');
+        const { data: walletRow, error: walletError } = await supabase
+          .from('donation_wallet')
+          .select('total_balance, total_received, total_withdrawn')
+          .limit(1)
+          .maybeSingle();
 
-        const { data: completedWithdrawalsData, error: completedWithdrawalsError } = await supabase
-          .from('donation_withdrawals')
-          .select('amount')
-          .eq('status', 'completed');
-
-        if (donationsError || completedWithdrawalsError) {
-          console.error('Error fetching wallet data:', { donationsError, completedWithdrawalsError });
+        if (walletError) {
+          console.error('Error fetching wallet data:', walletError);
         }
 
         // Store org settings for use in receipt generation
         setOrgSettings(orgSettings);
 
-        // Calculate totals
-        const totalBalance = (donationsData || [])
-          .filter((d: any) => d.status === 'verified')
-          .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
-
-        const totalReceived = totalBalance; // Same as total_balance for donations
-
-        const totalWithdrawn = (completedWithdrawalsData || [])
-          .reduce((sum: number, w: any) => sum + Number(w.amount), 0);
-
         const walletData = {
-          total_balance: totalBalance,
-          total_received: totalReceived,
-          total_withdrawn: totalWithdrawn,
+          total_balance: Number(walletRow?.total_balance || 0),
+          total_received: Number(walletRow?.total_received || 0),
+          total_withdrawn: Number(walletRow?.total_withdrawn || 0),
         };
 
         setWallet(walletData);

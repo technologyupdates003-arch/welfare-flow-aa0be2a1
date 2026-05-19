@@ -81,6 +81,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    const withdrawalTable =
+      walletType === "donation" ? "donation_withdrawals" : "penalty_withdrawals";
+    const walletTable =
+      walletType === "donation" ? "donation_wallet" : "penalty_wallet";
+    const paymentTable =
+      walletType === "donation" ? "donation_payment_records" : "penalty_payment_records";
+
+    const { data: existingTransaction } = await supabase
+      .from("b2c_transactions")
+      .select("mpesa_transaction_id, status")
+      .eq("withdrawal_id", withdrawalId)
+      .in("status", ["initiated", "completed"])
+      .order("initiated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingTransaction) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          transactionId: existingTransaction.mpesa_transaction_id,
+          message: "This withdrawal has already been sent for B2C processing.",
+          walletType,
+          sandbox: true,
+          duplicate: true,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const phone = normalizePhone(phoneNumber);
     const token = await getDarajaToken();
 
@@ -142,9 +175,50 @@ Deno.serve(async (req) => {
       mpesa_transaction_id: mpesaTransactionId,
       phone_number: phone,
       amount,
-      status: success ? "initiated" : "failed",
+      status: success ? "completed" : "failed",
+      completed_at: success ? new Date().toISOString() : null,
       error_message: errorMessage,
     });
+
+    if (success) {
+      const submittedAt = new Date().toISOString();
+
+      await supabase
+        .from(withdrawalTable)
+        .update({ status: "completed", submitted_at: submittedAt })
+        .eq("id", withdrawalId);
+
+      const [{ data: verifiedPayments }, { data: completedWithdrawals }, { data: walletRow }] =
+        await Promise.all([
+          supabase.from(paymentTable).select("amount").eq("status", "verified"),
+          supabase.from(withdrawalTable).select("amount").eq("status", "completed"),
+          supabase.from(walletTable).select("id").limit(1).maybeSingle(),
+        ]);
+
+      const totalReceived = (verifiedPayments || []).reduce(
+        (sum, row) => sum + Number(row.amount || 0),
+        0,
+      );
+      const totalWithdrawn = (completedWithdrawals || []).reduce(
+        (sum, row) => sum + Number(row.amount || 0),
+        0,
+      );
+      const balancePayload: Record<string, unknown> = {
+        total_received: totalReceived,
+        total_withdrawn: totalWithdrawn,
+        total_balance: totalReceived - totalWithdrawn,
+      };
+
+      if (walletType === "donation") {
+        balancePayload.updated_at = submittedAt;
+      } else {
+        balancePayload.last_updated = submittedAt;
+      }
+
+      if (walletRow?.id) {
+        await supabase.from(walletTable).update(balancePayload).eq("id", walletRow.id);
+      }
+    }
 
     return new Response(
       JSON.stringify({
