@@ -21,6 +21,7 @@ import Payments from "@/pages/admin/Payments";
 import UnmatchedPayments from "@/pages/admin/UnmatchedPayments";
 import BulkSms from "@/pages/admin/BulkSms";
 import AdminEvents from "@/pages/admin/Events";
+import Schedule from "@/pages/admin/Schedule";
 import AdminDocuments from "@/pages/admin/Documents";
 import AdminNews from "@/pages/admin/News";
 import AdminMeetingMinutes from "@/pages/admin/MeetingMinutes";

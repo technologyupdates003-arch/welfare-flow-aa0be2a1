@@ -24,7 +24,7 @@ export default function MemoHistory() {
     queryFn: async () => {
       const { data } = await supabase
         .from("memos")
-        .select(`*, memo_recipients ( id, delivered_at, seen_at, downloaded_at, members (name, email) )`)
+        .select(`*, memo_recipients ( id, delivered_at, seen_at, downloaded_at, members (name) )`)
         .order("created_at", { ascending: false });
       return data || [];
     },

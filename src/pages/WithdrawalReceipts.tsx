@@ -113,17 +113,18 @@ export default function WithdrawalReceipts() {
   const handlePrint = () => {
     if (!printRef.current) return;
     const html = printRef.current.innerHTML;
-    const w = window.open("", "_blank", "width=900,height=900");
+    const w = window.open("", "_blank", "width=400,height=600");
     if (!w) return;
     w.document.write(`<html><head><title>Withdrawal Receipt</title>
       <style>
-        body{font-family:Arial,sans-serif;padding:32px;color:#111}
-        h1{margin:0 0 8px} .muted{color:#555;font-size:12px}
-        .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}
-        .sig{margin-top:24px;padding:12px;border:1px solid #ddd;border-radius:8px}
-        .sig img{max-height:60px;display:block;margin-top:6px}
-        .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px}
-      </style></head><body>${html}</body></html>`);
+        body{font-family:Arial,sans-serif;padding:12px;color:#111;max-width:400px;margin:0 auto}
+        .receipt{width:100%;max-width:400px}
+        h1{margin:0;font-size:14px} .muted{color:#555;font-size:10px}
+        .row{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;border-bottom:1px solid #eee}
+        .sig{margin-top:12px;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:9px}
+        .sig img{max-height:40px;display:block;margin-top:4px}
+        .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;font-size:9px}
+      </style></head><body><div class="receipt">${html}</div></body></html>`);
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);
@@ -132,15 +133,31 @@ export default function WithdrawalReceipts() {
   const handleDownload = async () => {
     if (!printRef.current || !open) return;
     try {
+      // Wait for all images to load
+      const images = printRef.current.querySelectorAll('img');
+      await Promise.all(
+        Array.from(images).map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) {
+                resolve(null);
+              } else {
+                img.onload = () => resolve(null);
+                img.onerror = () => resolve(null);
+              }
+            })
+        )
+      );
+
       const mod: any = await import("html2pdf.js");
       const html2pdf = mod.default || mod;
       await html2pdf()
         .set({
-          margin: 10,
+          margin: [8, 8, 8, 8],
           filename: `receipt-${open.type}-${open.id.slice(0, 8)}.pdf`,
           image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+          jsPDF: { unit: "mm", format: [210, 297], orientation: "portrait" },
         })
         .from(printRef.current)
         .save();
@@ -216,107 +233,109 @@ export default function WithdrawalReceipts() {
           </DialogHeader>
           {open && (
             <>
-              <div ref={printRef} className="bg-white text-foreground p-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                <div style={{ borderBottom: '4px solid #f97316', paddingBottom: '16px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+              <div ref={printRef} className="bg-white text-foreground" style={{ fontFamily: "'Times New Roman', Times, serif", padding: '20px', maxWidth: '210mm' }}>
+                {/* Header with Logo */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', paddingBottom: '15px', borderBottom: '3px solid #f97316' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     {orgSettings?.logo_url ? (
-                      <img src={orgSettings.logo_url} alt="Organization logo" style={{ height: '80px', width: '80px', objectFit: 'contain', flexShrink: 0 }} />
+                      <img src={orgSettings.logo_url} alt="Organization logo" style={{ height: '60px', width: '60px', objectFit: 'contain' }} />
                     ) : null}
-                    <div style={{ flex: 1, textAlign: 'right' }}>
-                      <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
-                        {orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE"}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', lineHeight: 1.5 }}>
-                        <div>{orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH'}</div>
-                        <div style={{ color: '#ea580c', fontWeight: 600 }}>Email: {orgSettings?.organization_email || 'Khcww2020@gmail.com'}</div>
-                        <div>Tel: {orgSettings?.organization_phone || '+254 712 345 678'}</div>
-                      </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '5px' }}>
+                      {orgSettings?.organization_name || "KHCWW"}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: '1.5' }}>
+                      <div>{orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH'}</div>
+                      <div style={{ color: '#f97316', fontWeight: '600' }}>Email: {orgSettings?.organization_email || 'Khcww2020@gmail.com'}</div>
+                      <div>Tel: {orgSettings?.organization_phone || '+254 712 345 678'}</div>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ textAlign: 'center', marginBottom: '16px', fontSize: '12px', fontWeight: 700, color: '#f97316', letterSpacing: '3px' }}>
+                {/* Receipt Title */}
+                <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '11px', fontWeight: 'bold', color: '#f97316', letterSpacing: '2px' }}>
                   KHCWW OFFICIAL WITHDRAWAL RECEIPT
                 </div>
 
+                {/* Receipt Type */}
                 <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937', marginBottom: '2px' }}>
-                    {open.type === 'penalty' ? 'PENALTY WALLET' : 'FUNDS WALLET'} WITHDRAWAL RECEIPT
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#9ca3af' }}>Generated: {new Date().toLocaleString()}</div>
+                  <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827', margin: '0 0 5px 0' }}>
+                    {open.type === 'penalty' ? 'PENALTY WALLET WITHDRAWAL RECEIPT' : 'FUNDS WALLET WITHDRAWAL RECEIPT'}
+                  </h2>
+                  <div style={{ fontSize: '10px', color: '#6b7280' }}>Generated: {new Date().toLocaleString()}</div>
                 </div>
 
-                {/* Receipt Details */}
-                <div style={{ background: '#f3f4f6', padding: '15px', borderRadius: '6px', marginBottom: '20px', fontSize: '12px', lineHeight: '1.8' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                {/* Receipt Details Table */}
+                <div style={{ marginBottom: '20px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                     <tbody>
-                      <tr>
-                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', width: '40%' }}>Receipt ID:</td>
-                        <td style={{ padding: '8px', color: '#1f2937', fontFamily: 'monospace' }}>{open.id.substring(0, 12)}...</td>
-                      </tr>
-                      <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Withdrawal Amount:</td>
-                        <td style={{ padding: '8px', color: '#059669', fontWeight: '700', fontSize: '14px' }}>KES {Number(open.amount).toLocaleString()}</td>
+                      <tr style={{ background: '#f3f4f6' }}>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', width: '35%', border: '1px solid #e5e7eb' }}>Receipt ID:</td>
+                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb', fontFamily: 'monospace' }}>{open.id.substring(0, 12)}...</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Wallet Type:</td>
-                        <td style={{ padding: '8px', color: '#1f2937', textTransform: 'capitalize' }}>{open.type} wallet</td>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Withdrawal Amount:</td>
+                        <td style={{ padding: '8px', color: '#059669', fontWeight: '700', border: '1px solid #e5e7eb' }}>KES {Number(open.amount).toLocaleString()}</td>
                       </tr>
-                      <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Withdrawal Reason:</td>
-                        <td style={{ padding: '8px', color: '#1f2937' }}>{open.reason}</td>
+                      <tr style={{ background: '#f3f4f6' }}>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Wallet Type:</td>
+                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{open.type === 'penalty' ? 'Penalty Wallet' : 'Funds Wallet'}</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Status:</td>
-                        <td style={{ padding: '8px' }}>
-                          <span style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' }}>
-                            {open.status}
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Withdrawal Reason:</td>
+                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{open.reason}</td>
+                      </tr>
+                      <tr style={{ background: '#f3f4f6' }}>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Status:</td>
+                        <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>
+                          <span style={{ background: '#dbeafe', color: '#1e40af', padding: '3px 6px', borderRadius: '3px', fontWeight: '600', fontSize: '10px' }}>
+                            {open.status.toUpperCase()}
                           </span>
                         </td>
                       </tr>
-                      <tr style={{ background: '#fff' }}>
-                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Date Issued:</td>
-                        <td style={{ padding: '8px', color: '#1f2937' }}>{new Date(open.submitted_at || open.created_at).toLocaleString()}</td>
+                      <tr>
+                        <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Date Issued:</td>
+                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{new Date(open.submitted_at || open.created_at).toLocaleString()}</td>
                       </tr>
                       {open.phone_number && (
-                        <tr>
-                          <td style={{ padding: '8px', fontWeight: '600', color: '#374151' }}>Transfer To:</td>
-                          <td style={{ padding: '8px', color: '#1f2937', fontFamily: 'monospace' }}>{open.phone_number}</td>
+                        <tr style={{ background: '#f3f4f6' }}>
+                          <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Transfer To:</td>
+                          <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb', fontFamily: 'monospace' }}>{open.phone_number}</td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
 
-                <div style={{ marginTop: '30px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', marginBottom: '15px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' }}>
+                {/* Approval Signatures */}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#111827', marginBottom: '15px', paddingBottom: '8px', borderBottom: '1px solid #111827' }}>
                     APPROVAL SIGNATURES
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
                     {["chairperson", "secretary", "treasurer"].map((role) => {
                       const s = open.signatories.find((x) => x.signatory_role === role);
                       return (
-                        <div key={role} style={{ border: '1px solid #e5e7eb', padding: '12px', borderRadius: '6px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', marginBottom: '8px' }}>
+                        <div key={role} style={{ textAlign: 'center', borderTop: '1px solid #111827', paddingTop: '10px' }}>
+                          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#111827', textTransform: 'uppercase', marginBottom: '8px' }}>
                             {role}
                           </div>
-                          <div style={{ fontSize: '12px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>
+                          <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px', minHeight: '16px' }}>
                             {s?.full_name || '—'}
                           </div>
                           {s?.signature_url ? (
                             <img
                               src={s.signature_url}
                               alt={`${role} signature`}
-                              style={{ maxWidth: '100%', maxHeight: '60px', margin: '8px auto', display: 'block' }}
+                              style={{ maxWidth: '100%', maxHeight: '40px', margin: '5px auto', display: 'block' }}
                               crossOrigin="anonymous"
                             />
                           ) : (
-                            <div style={{ height: '60px', borderTop: '1px solid #d1d5db', marginTop: '8px' }}></div>
+                            <div style={{ height: '40px', borderTop: '1px solid #111827', marginTop: '5px' }}></div>
                           )}
-                          <div style={{ fontSize: '9px', color: '#9ca3af', marginTop: '8px' }}>
-                            {s?.approved_at
-                              ? `Approved ${new Date(s.approved_at).toLocaleString()}`
-                              : "Pending"}
+                          <div style={{ fontSize: '9px', color: '#6b7280', marginTop: '5px' }}>
+                            {s?.approved_at ? `Approved ${new Date(s.approved_at).toLocaleString()}` : '○'}
                           </div>
                         </div>
                       );
@@ -324,43 +343,34 @@ export default function WithdrawalReceipts() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px solid #1f2937' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '10px', color: '#6b7280', textAlign: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Prepared By</div>
-                      <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Approved By</div>
-                      <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Date</div>
-                      <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '8px', height: '40px' }}></div>
-                    </div>
+                {/* Footer with Stamp */}
+                <div style={{ marginTop: '30px', paddingTop: '15px', borderTop: '2px solid #111827', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>Prepared By</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>Approved By</div>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold' }}>Date</div>
                   </div>
-
                   {orgSettings?.stamp_url ? (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                      <img src={orgSettings.stamp_url} alt="Official stamp" style={{ height: '90px', width: '90px', objectFit: 'contain', opacity: 0.9 }} />
+                    <div style={{ textAlign: 'right' }}>
+                      <img src={orgSettings.stamp_url} alt="Organization stamp" style={{ maxHeight: '80px', maxWidth: '100px', objectFit: 'contain' }} />
                     </div>
                   ) : null}
-                  
-                  <div style={{ background: '#f3f4f6', padding: '15px', borderRadius: '6px', marginTop: '20px', fontSize: '9px', color: '#6b7280', lineHeight: '1.6' }}>
-                    <div style={{ fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>IMPORTANT NOTES:</div>
-                    <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                      <li>This receipt is valid only with authorized signatures</li>
-                      <li>Keep this receipt for your records and audit purposes</li>
-                      <li>For disputes or inquiries, contact the Finance Department within 30 days</li>
-                      <li>All withdrawals are subject to KHCWW Welfare policies and regulations</li>
-                    </ul>
-                  </div>
+                </div>
 
-                  <div style={{ textAlign: 'center', marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #e5e7eb', fontSize: '9px', color: '#9ca3af' }}>
-                    <p style={{ margin: '0', fontWeight: 600, color: '#1f2937' }}>{orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE"}</p>
-                    <p style={{ margin: '5px 0 0 0' }}>{orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH'}</p>
-                    <p style={{ margin: '5px 0 0 0' }}>Email: {orgSettings?.organization_email || 'Khcww2020@gmail.com'} | Tel: {orgSettings?.organization_phone || '+254 712 345 678'}</p>
-                  </div>
+                {/* Important Notes */}
+                <div style={{ marginTop: '20px', padding: '12px', background: '#f3f4f6', borderRadius: '4px', fontSize: '9px', color: '#6b7280', lineHeight: '1.5' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>IMPORTANT NOTES:</div>
+                  <div>This receipt is valid only with authorized signatures</div>
+                  <div>Keep this receipt for your records and audit purposes</div>
+                  <div>For disputes or inquiries, contact the Finance Department within 30 days</div>
+                  <div>All withdrawals are subject to KHCWW Welfare policies and regulations</div>
+                </div>
+
+                {/* Bottom Footer */}
+                <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '9px', color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: '10px' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '3px' }}>{orgSettings?.organization_name || "KHCWW"}</div>
+                  <div>{orgSettings?.organization_address || 'P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH'}</div>
+                  <div>Email: {orgSettings?.organization_email || 'Khcww2020@gmail.com'} | Tel: {orgSettings?.organization_phone || '+254 712 345 678'}</div>
                 </div>
               </div>
 

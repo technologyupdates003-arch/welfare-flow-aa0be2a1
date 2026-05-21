@@ -1,0 +1,17 @@
+{
+  "name": "KIRINYAGA HCWW",
+  "short_name": "KIRINYAGA HCWW",
+  "description": "Kirinyaga Health Care Workers Welfare Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

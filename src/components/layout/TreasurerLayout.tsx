@@ -7,6 +7,7 @@ import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, 
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
+import AIAssistant from "@/components/chat/AIAssistant";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -232,6 +233,9 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
 
       {/* Floating Chat Bubble */}
       <FloatingChatBubble />
+      
+      {/* AI Assistant */}
+      <AIAssistant />
     </div>
   );
 }
