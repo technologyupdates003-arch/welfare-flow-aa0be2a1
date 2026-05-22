@@ -80,7 +80,7 @@ SELECT
   EXTRACT(MONTH FROM NOW())::int,
   EXTRACT(YEAR FROM NOW())::int,
   (NOW() + INTERVAL '30 days')::date,
-  'verified',
+  'paid',
   NOW() - (INTERVAL '1 day' * floor(random() * 30))
 FROM members m
 WHERE m.is_active = true
@@ -109,11 +109,12 @@ FROM generate_series(1, 25)
 ON CONFLICT DO NOTHING;
 
 -- Insert mock B2C transactions
-INSERT INTO b2c_transactions (withdrawal_id, amount, phone_number, mpesa_charge, status, initiated_at, completed_at)
+INSERT INTO b2c_transactions (withdrawal_id, amount, phone_number, mpesa_transaction_id, mpesa_charge, status, initiated_at, completed_at)
 SELECT 
   pw.id,
   pw.amount,
   pw.phone_number,
+  'TXN' || LPAD((floor(random() * 999999))::text, 6, '0'),
   ROUND(pw.amount * 0.01)::numeric,
   'completed',
   pw.created_at,
