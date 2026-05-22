@@ -81,12 +81,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    const withdrawalTable =
-      walletType === "donation" ? "donation_withdrawals" : "penalty_withdrawals";
-    const walletTable =
-      walletType === "donation" ? "donation_wallet" : "penalty_wallet";
-    const paymentTable =
-      walletType === "donation" ? "donation_payment_records" : "penalty_payment_records";
+    const WALLETS = {
+      penalty: {
+        withdrawalTable: "penalty_withdrawals",
+        walletTable: "penalty_wallet",
+        paymentTable: "penalty_payment_records",
+        updatedAtField: "last_updated",
+      },
+      donation: {
+        withdrawalTable: "donation_withdrawals",
+        walletTable: "donation_wallet",
+        paymentTable: "donation_payment_records",
+        updatedAtField: "updated_at",
+      },
+      operational: {
+        withdrawalTable: "operational_withdrawals",
+        walletTable: "operational_wallet",
+        paymentTable: "operational_payment_records",
+        updatedAtField: "updated_at",
+      },
+    } as const;
+
+    const cfg = WALLETS[walletType as keyof typeof WALLETS] ?? WALLETS.penalty;
+    const { withdrawalTable, walletTable, paymentTable, updatedAtField } = cfg;
+
 
     const { data: existingTransaction } = await supabase
       .from("b2c_transactions")
