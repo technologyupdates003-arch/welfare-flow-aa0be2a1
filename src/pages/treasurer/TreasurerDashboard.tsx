@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2, Banknote } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, AlertTriangle, Clock, CheckCircle, XCircle, Sparkles, FileText, Loader2, Banknote, Download } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { GlassStatsGrid } from "@/components/dashboard/GlassStatCard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { initiateB2CWithdrawal } from "@/lib/b2c";
+import html2pdf from "html2pdf.js";
 
 export default function TreasurerDashboard() {
   const { user } = useAuth();
@@ -22,6 +23,8 @@ export default function TreasurerDashboard() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -420,6 +423,261 @@ NEXT STEPS:
     }
   };
 
+  // Generate comprehensive system report
+  const generateSystemReport = async () => {
+    setReportLoading(true);
+    try {
+      // Fetch all data needed for the report
+      const [
+        walletData,
+        contributionsData,
+        penaltiesData,
+        penaltyWithdrawalsData,
+        donationWithdrawalsData,
+        operationalWithdrawalsData,
+        expensesData,
+        orgSettings,
+      ] = await Promise.all([
+        // Wallets
+        Promise.all([
+          supabase.from("penalty_wallet").select("*").single(),
+          supabase.from("donation_wallet").select("*").single(),
+          supabase.from("operational_wallet").select("*").single(),
+        ]),
+        // Contributions
+        supabase.from("contributions").select("*").order("created_at", { ascending: false }),
+        // Penalties
+        supabase.from("penalties").select("*").order("created_at", { ascending: false }),
+        // Withdrawals
+        supabase.from("penalty_withdrawals").select("*").order("created_at", { ascending: false }),
+        supabase.from("donation_withdrawals").select("*").order("created_at", { ascending: false }),
+        supabase.from("operational_withdrawals").select("*").order("created_at", { ascending: false }),
+        // Expenses
+        supabase.from("expenses").select("*").order("created_at", { ascending: false }),
+        // Organization settings
+        supabase.from("organization_settings").select("*").single(),
+      ]);
+
+      const [penaltyWallet, donationWallet, operationalWallet] = walletData;
+      const orgName = orgSettings.data?.organization_name || "Organization";
+      const reportDate = new Date().toLocaleDateString();
+
+      // Generate HTML report
+      const reportHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>System Financial Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #0B1F3A; padding-bottom: 20px; }
+            .header h1 { margin: 0; color: #0B1F3A; }
+            .header p { margin: 5px 0; color: #666; }
+            .section { margin-bottom: 30px; page-break-inside: avoid; }
+            .section-title { background-color: #0B1F3A; color: white; padding: 10px 15px; margin-bottom: 15px; font-size: 16px; font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            th { background-color: #f0f0f0; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: bold; }
+            td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+            tr:hover { background-color: #f9f9f9; }
+            .summary-box { background-color: #f0f7ff; border-left: 4px solid #0B1F3A; padding: 15px; margin-bottom: 15px; }
+            .summary-box h3 { margin-top: 0; color: #0B1F3A; }
+            .amount { text-align: right; font-weight: bold; }
+            .positive { color: #10B981; }
+            .negative { color: #EF4444; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${orgName}</h1>
+            <p>Comprehensive Financial Report</p>
+            <p>Generated on ${reportDate}</p>
+          </div>
+
+          <!-- WALLET SUMMARY -->
+          <div class="section">
+            <div class="section-title">📊 WALLET SUMMARY</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Wallet Type</th>
+                  <th class="amount">Total Received</th>
+                  <th class="amount">Total Withdrawn</th>
+                  <th class="amount">Current Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Penalty Wallet</td>
+                  <td class="amount">Ksh ${(penaltyWallet.data?.total_received || 0).toLocaleString()}</td>
+                  <td class="amount">Ksh ${(penaltyWallet.data?.total_withdrawn || 0).toLocaleString()}</td>
+                  <td class="amount positive">Ksh ${(penaltyWallet.data?.total_balance || 0).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td>Fund Drive Wallet</td>
+                  <td class="amount">Ksh ${(donationWallet.data?.total_received || 0).toLocaleString()}</td>
+                  <td class="amount">Ksh ${(donationWallet.data?.total_withdrawn || 0).toLocaleString()}</td>
+                  <td class="amount positive">Ksh ${(donationWallet.data?.total_balance || 0).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td>Operational Wallet</td>
+                  <td class="amount">Ksh ${(operationalWallet.data?.total_received || 0).toLocaleString()}</td>
+                  <td class="amount">Ksh ${(operationalWallet.data?.total_withdrawn || 0).toLocaleString()}</td>
+                  <td class="amount positive">Ksh ${(operationalWallet.data?.total_balance || 0).toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="summary-box">
+              <h3>Total System Balance</h3>
+              <p class="amount positive" style="font-size: 20px;">Ksh ${(
+                (penaltyWallet.data?.total_balance || 0) +
+                (donationWallet.data?.total_balance || 0) +
+                (operationalWallet.data?.total_balance || 0)
+              ).toLocaleString()}</p>
+            </div>
+          </div>
+
+          <!-- CONTRIBUTIONS -->
+          <div class="section">
+            <div class="section-title">💰 CONTRIBUTIONS (${contributionsData.data?.length || 0} records)</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Member</th>
+                  <th class="amount">Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(contributionsData.data || []).slice(0, 20).map((c: any) => `
+                  <tr>
+                    <td>${new Date(c.created_at).toLocaleDateString()}</td>
+                    <td>${c.member_id || 'N/A'}</td>
+                    <td class="amount">Ksh ${parseFloat(c.amount).toLocaleString()}</td>
+                    <td>${c.status}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <p style="font-size: 12px; color: #666;">Showing latest 20 records. Total: ${contributionsData.data?.length || 0}</p>
+          </div>
+
+          <!-- PENALTIES -->
+          <div class="section">
+            <div class="section-title">⚠️ PENALTIES (${penaltiesData.data?.length || 0} records)</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Member</th>
+                  <th class="amount">Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(penaltiesData.data || []).slice(0, 20).map((p: any) => `
+                  <tr>
+                    <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                    <td>${p.member_id || 'N/A'}</td>
+                    <td class="amount">Ksh ${parseFloat(p.amount).toLocaleString()}</td>
+                    <td>${p.is_paid ? 'Paid' : 'Pending'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PAYOUTS -->
+          <div class="section">
+            <div class="section-title">💸 PAYOUTS (${(penaltyWithdrawalsData.data?.length || 0) + (donationWithdrawalsData.data?.length || 0) + (operationalWithdrawalsData.data?.length || 0)} records)</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Wallet</th>
+                  <th class="amount">Amount</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${[
+                  ...(penaltyWithdrawalsData.data || []).map((w: any) => ({ ...w, type: 'Penalty' })),
+                  ...(donationWithdrawalsData.data || []).map((w: any) => ({ ...w, type: 'Fund Drive' })),
+                  ...(operationalWithdrawalsData.data || []).map((w: any) => ({ ...w, type: 'Operational' })),
+                ].slice(0, 20).map((w: any) => `
+                  <tr>
+                    <td>${new Date(w.created_at).toLocaleDateString()}</td>
+                    <td>${w.type}</td>
+                    <td class="amount">Ksh ${parseFloat(w.amount).toLocaleString()}</td>
+                    <td>${w.reason}</td>
+                    <td>${w.status}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- EXPENSES -->
+          <div class="section">
+            <div class="section-title">📋 EXPENSES (${expensesData.data?.length || 0} records)</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th class="amount">Amount</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(expensesData.data || []).slice(0, 20).map((e: any) => `
+                  <tr>
+                    <td>${new Date(e.created_at).toLocaleDateString()}</td>
+                    <td>${e.category}</td>
+                    <td class="amount negative">-Ksh ${parseFloat(e.amount).toLocaleString()}</td>
+                    <td>${e.payment_method}</td>
+                    <td>${e.status}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="footer">
+            <p>This is an automated system report. For questions, contact the treasurer.</p>
+            <p>Report generated on ${new Date().toLocaleString()}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Generate PDF
+      const element = document.createElement('div');
+      element.innerHTML = reportHTML;
+      
+      const opt = {
+        margin: 10,
+        filename: `Financial-Report-${reportDate}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+      };
+
+      html2pdf().set(opt).from(element).save();
+      toast.success("Report generated and downloaded successfully!");
+      setReportOpen(false);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error("Failed to generate report");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <DashboardHeader
@@ -429,8 +687,52 @@ NEXT STEPS:
         badge="Financial Control"
       />
 
-      {/* AI Assistant Button */}
-      <div className="flex justify-end">
+      {/* AI Assistant Button and Generate Report Button */}
+      <div className="flex justify-end gap-3">
+        <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="text-sm md:text-base">
+              <Download className="h-4 w-4 mr-2" />
+              Generate Report
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Generate System Report</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                This will generate a comprehensive PDF report including:
+              </p>
+              <ul className="text-sm space-y-2 ml-4">
+                <li>✓ All wallet balances (Penalty, Fund Drive, Operational)</li>
+                <li>✓ Contributions history</li>
+                <li>✓ Penalties records</li>
+                <li>✓ All payouts and withdrawals</li>
+                <li>✓ Expenses breakdown</li>
+                <li>✓ Financial summary</li>
+              </ul>
+              <Button
+                onClick={generateSystemReport}
+                disabled={reportLoading}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+              >
+                {reportLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Generate & Download PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={aiOpen} onOpenChange={setAiOpen}>
           <DialogTrigger asChild>
             <Button className="gradient-brand text-primary-foreground shadow-brand text-sm md:text-base">

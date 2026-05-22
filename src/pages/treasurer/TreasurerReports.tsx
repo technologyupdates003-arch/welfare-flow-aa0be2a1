@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Download, Plus, Calendar, TrendingUp, DollarSign } from "lucide-react";
+import { FileText, Download, Plus, Calendar, TrendingUp, DollarSign, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import html2pdf from "html2pdf.js";
+import * as XLSX from "xlsx";
 
 export default function TreasurerReports() {
   const { user } = useAuth();
@@ -32,7 +34,7 @@ export default function TreasurerReports() {
     },
   });
 
-  // Generate report mutation
+  // Generate comprehensive report mutation
   const generateReport = useMutation({
     mutationFn: async (params: any) => {
       setGenerating(true);
@@ -53,34 +55,70 @@ export default function TreasurerReports() {
         endDate = new Date(params.year, 11, 31);
       }
 
-      // Fetch contributions for period
+      // Fetch all contributions
       const { data: contributions } = await supabase
         .from("contributions")
-        .select("amount")
+        .select("amount, member_id, created_at")
         .gte("created_at", startDate.toISOString())
         .lte("created_at", endDate.toISOString());
 
-      // Fetch expenses for period
+      // Fetch all expenses
       const { data: expenses } = await supabase
         .from("expenses")
-        .select("amount")
+        .select("amount, category, payment_method, created_at")
         .gte("created_at", startDate.toISOString())
         .lte("created_at", endDate.toISOString());
 
-      // Fetch payouts for period
-      const { data: payouts } = await supabase
-        .from("payouts")
-        .select("amount")
-        .eq("status", "paid")
-        .gte("paid_at", startDate.toISOString())
-        .lte("paid_at", endDate.toISOString());
+      // Fetch penalty withdrawals
+      const { data: penaltyWithdrawals } = await supabase
+        .from("penalty_withdrawals")
+        .select("amount, status, created_at")
+        .eq("status", "completed")
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", endDate.toISOString());
 
+      // Fetch donation withdrawals
+      const { data: donationWithdrawals } = await supabase
+        .from("donation_withdrawals")
+        .select("amount, status, created_at")
+        .eq("status", "completed")
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", endDate.toISOString());
+
+      // Fetch operational withdrawals
+      const { data: operationalWithdrawals } = await supabase
+        .from("operational_withdrawals")
+        .select("amount, status, created_at")
+        .eq("status", "completed")
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", endDate.toISOString());
+
+      // Fetch wallet balances
+      const { data: penaltyWallet } = await supabase
+        .from("penalty_wallet")
+        .select("total_balance, total_received, total_withdrawn")
+        .single();
+
+      const { data: donationWallet } = await supabase
+        .from("donation_wallet")
+        .select("total_balance, total_received, total_withdrawn")
+        .single();
+
+      const { data: operationalWallet } = await supabase
+        .from("operational_wallet")
+        .select("total_balance, total_received, total_withdrawn")
+        .single();
+
+      // Calculate totals
       const totalContributions = contributions?.reduce((sum, c) => sum + parseFloat(c.amount), 0) || 0;
       const totalExpenses = expenses?.reduce((sum, e) => sum + parseFloat(e.amount), 0) || 0;
-      const totalPayouts = payouts?.reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0;
+      const totalPenaltyPayouts = penaltyWithdrawals?.reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0;
+      const totalDonationPayouts = donationWithdrawals?.reduce((sum, d) => sum + parseFloat(d.amount), 0) || 0;
+      const totalOperationalPayouts = operationalWithdrawals?.reduce((sum, o) => sum + parseFloat(o.amount), 0) || 0;
+      const totalPayouts = totalPenaltyPayouts + totalDonationPayouts + totalOperationalPayouts;
       const netBalance = totalContributions - totalExpenses - totalPayouts;
 
-      // Create report record
+      // Create comprehensive report record
       const { error } = await supabase
         .from("financial_reports")
         .insert({
@@ -94,7 +132,18 @@ export default function TreasurerReports() {
           report_data: {
             contributions_count: contributions?.length || 0,
             expenses_count: expenses?.length || 0,
-            payouts_count: payouts?.length || 0,
+            penalty_payouts: totalPenaltyPayouts,
+            donation_payouts: totalDonationPayouts,
+            operational_payouts: totalOperationalPayouts,
+            penalty_wallet_balance: penaltyWallet?.total_balance || 0,
+            donation_wallet_balance: donationWallet?.total_balance || 0,
+            operational_wallet_balance: operationalWallet?.total_balance || 0,
+            penalty_wallet_received: penaltyWallet?.total_received || 0,
+            donation_wallet_received: donationWallet?.total_received || 0,
+            operational_wallet_received: operationalWallet?.total_received || 0,
+            penalty_wallet_withdrawn: penaltyWallet?.total_withdrawn || 0,
+            donation_wallet_withdrawn: donationWallet?.total_withdrawn || 0,
+            operational_wallet_withdrawn: operationalWallet?.total_withdrawn || 0,
           },
           generated_by: user?.id,
         });
@@ -102,12 +151,20 @@ export default function TreasurerReports() {
       if (error) throw error;
       
       setGenerating(false);
-      return { totalContributions, totalExpenses, totalPayouts, netBalance };
+      return { 
+        totalContributions, 
+        totalExpenses, 
+        totalPayouts, 
+        netBalance,
+        penaltyWallet,
+        donationWallet,
+        operationalWallet,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["financial-reports"] });
       setDialogOpen(false);
-      toast.success("Report generated successfully");
+      toast.success("Comprehensive report generated successfully");
     },
     onError: (error: any) => {
       setGenerating(false);
@@ -124,11 +181,138 @@ export default function TreasurerReports() {
   };
 
   const downloadPDF = (report: any) => {
-    toast.info("PDF download feature coming soon");
+    const element = document.createElement("div");
+    element.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 900px;">
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+          <h1 style="margin: 0; color: #111827;">KHCWW Financial Report</h1>
+          <p style="margin: 5px 0; color: #6B7280;">${getReportTitle(report)}</p>
+          <p style="margin: 5px 0; font-size: 12px; color: #6B7280;">
+            Period: ${new Date(report.report_period_start).toLocaleDateString()} - ${new Date(report.report_period_end).toLocaleDateString()}
+          </p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #111827; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px;">Summary</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr style="background-color: #F9FAFB;">
+              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Total Contributions</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: #16A34A;">+Ksh ${parseFloat(report.total_contributions).toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Total Expenses</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: #DC2626;">-Ksh ${parseFloat(report.total_expenses).toLocaleString()}</td>
+            </tr>
+            <tr style="background-color: #F9FAFB;">
+              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Total Payouts</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: #DC2626;">-Ksh ${parseFloat(report.total_payouts).toLocaleString()}</td>
+            </tr>
+            <tr style="background-color: #EFF6FF; font-weight: bold; font-size: 14px;">
+              <td style="padding: 10px; border: 1px solid #E5E7EB;">Net Balance</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: ${parseFloat(report.net_balance) >= 0 ? '#16A34A' : '#DC2626'};">Ksh ${parseFloat(report.net_balance).toLocaleString()}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #111827; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px;">Wallet Balances</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr style="background-color: #F9FAFB;">
+              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: left;">Wallet</th>
+              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Received</th>
+              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Withdrawn</th>
+              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Balance</th>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Penalty Wallet</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.penalty_wallet_received || 0).toLocaleString()}</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.penalty_wallet_withdrawn || 0).toLocaleString()}</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; font-weight: bold;">Ksh ${(report.report_data?.penalty_wallet_balance || 0).toLocaleString()}</td>
+            </tr>
+            <tr style="background-color: #F9FAFB;">
+              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Fund Drive Wallet</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.donation_wallet_received || 0).toLocaleString()}</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.donation_wallet_withdrawn || 0).toLocaleString()}</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; font-weight: bold;">Ksh ${(report.report_data?.donation_wallet_balance || 0).toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Operational Wallet</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.operational_wallet_received || 0).toLocaleString()}</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.operational_wallet_withdrawn || 0).toLocaleString()}</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; font-weight: bold;">Ksh ${(report.report_data?.operational_wallet_balance || 0).toLocaleString()}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #111827; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px;">Payouts Breakdown</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            <tr style="background-color: #F9FAFB;">
+              <td style="padding: 10px; border: 1px solid #E5E7EB;">Penalty Wallet Payouts</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.penalty_payouts || 0).toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #E5E7EB;">Fund Drive Wallet Payouts</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.donation_payouts || 0).toLocaleString()}</td>
+            </tr>
+            <tr style="background-color: #F9FAFB;">
+              <td style="padding: 10px; border: 1px solid #E5E7EB;">Operational Wallet Payouts</td>
+              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.operational_payouts || 0).toLocaleString()}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB; font-size: 12px; color: #6B7280;">
+          <p>Generated on: ${new Date().toLocaleString()}</p>
+          <p>This is an automatically generated report from the KHCWW Financial Management System</p>
+        </div>
+      </div>
+    `;
+
+    const opt = {
+      margin: 10,
+      filename: `KHCWW_Report_${report.report_period_start}_to_${report.report_period_end}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+    toast.success("PDF downloaded successfully");
   };
 
   const downloadExcel = (report: any) => {
-    toast.info("Excel download feature coming soon");
+    const workbook = XLSX.utils.book_new();
+
+    // Summary sheet
+    const summaryData = [
+      ["KHCWW Financial Report"],
+      [getReportTitle(report)],
+      [`Period: ${new Date(report.report_period_start).toLocaleDateString()} - ${new Date(report.report_period_end).toLocaleDateString()}`],
+      [],
+      ["Summary"],
+      ["Total Contributions", parseFloat(report.total_contributions)],
+      ["Total Expenses", parseFloat(report.total_expenses)],
+      ["Total Payouts", parseFloat(report.total_payouts)],
+      ["Net Balance", parseFloat(report.net_balance)],
+      [],
+      ["Wallet Balances"],
+      ["Wallet", "Received", "Withdrawn", "Balance"],
+      ["Penalty Wallet", report.report_data?.penalty_wallet_received || 0, report.report_data?.penalty_wallet_withdrawn || 0, report.report_data?.penalty_wallet_balance || 0],
+      ["Fund Drive Wallet", report.report_data?.donation_wallet_received || 0, report.report_data?.donation_wallet_withdrawn || 0, report.report_data?.donation_wallet_balance || 0],
+      ["Operational Wallet", report.report_data?.operational_wallet_received || 0, report.report_data?.operational_wallet_withdrawn || 0, report.report_data?.operational_wallet_balance || 0],
+      [],
+      ["Payouts Breakdown"],
+      ["Penalty Wallet Payouts", report.report_data?.penalty_payouts || 0],
+      ["Fund Drive Wallet Payouts", report.report_data?.donation_payouts || 0],
+      ["Operational Wallet Payouts", report.report_data?.operational_payouts || 0],
+    ];
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+    XLSX.writeFile(workbook, `KHCWW_Report_${report.report_period_start}_to_${report.report_period_end}.xlsx`);
+    toast.success("Excel file downloaded successfully");
   };
 
   const getReportTitle = (report: any) => {
@@ -284,6 +468,23 @@ export default function TreasurerReports() {
                   <span className={`text-sm font-bold ${parseFloat(report.net_balance) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     Ksh {parseFloat(report.net_balance).toLocaleString()}
                   </span>
+                </div>
+              </div>
+
+              {/* Wallet Balances */}
+              <div className="space-y-2 py-3 border-y border-[#E5E7EB]">
+                <p className="text-xs font-semibold text-[#111827] mb-2">Wallet Balances</p>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#6B7280]">Penalty</span>
+                  <span className="font-semibold text-[#111827]">Ksh {(report.report_data?.penalty_wallet_balance || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#6B7280]">Fund Drive</span>
+                  <span className="font-semibold text-[#111827]">Ksh {(report.report_data?.donation_wallet_balance || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#6B7280]">Operational</span>
+                  <span className="font-semibold text-[#111827]">Ksh {(report.report_data?.operational_wallet_balance || 0).toLocaleString()}</span>
                 </div>
               </div>
 
