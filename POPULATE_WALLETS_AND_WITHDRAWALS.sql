@@ -3,8 +3,7 @@ UPDATE penalty_wallet
 SET 
   total_received = 500000,
   total_withdrawn = 150000,
-  total_balance = 350000,
-  updated_at = NOW()
+  total_balance = 350000
 WHERE id = (SELECT id FROM penalty_wallet LIMIT 1);
 
 -- Populate Donation/Fund Drive Wallet with mock data
@@ -12,8 +11,7 @@ UPDATE donation_wallet
 SET 
   total_received = 750000,
   total_withdrawn = 200000,
-  total_balance = 550000,
-  updated_at = NOW()
+  total_balance = 550000
 WHERE id = (SELECT id FROM donation_wallet LIMIT 1);
 
 -- Populate Operational Wallet with mock data
@@ -21,8 +19,7 @@ UPDATE operational_wallet
 SET 
   total_received = 300000,
   total_withdrawn = 80000,
-  total_balance = 220000,
-  updated_at = NOW()
+  total_balance = 220000
 WHERE id = (SELECT id FROM operational_wallet LIMIT 1);
 
 -- Insert mock penalty withdrawals
