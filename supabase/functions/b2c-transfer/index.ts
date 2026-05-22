@@ -188,13 +188,34 @@ Deno.serve(async (req) => {
         "M-Pesa sandbox not configured (MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET).";
     }
 
+    // Try to parse Safaricom charges out of the immediate response (production
+    // returns them on the callback; sandbox usually returns 0). We capture
+    // whatever is available now and let the callback handler enrich later.
+    let mpesaCharge = 0;
+    let mpesaReceipt: string | null = null;
+    try {
+      const rp = bankResponse?.Result?.ResultParameters?.ResultParameter;
+      if (Array.isArray(rp)) {
+        for (const p of rp) {
+          if (p?.Key === "B2CChargesPaidAccountAvailableFunds") {
+            // best-effort: this is the *remaining* charges-account balance, not
+            // the charge itself, so we don't blindly assign it.
+          }
+          if (p?.Key === "TransactionReceipt") mpesaReceipt = String(p.Value);
+        }
+      }
+    } catch (_) { /* ignore */ }
+
     await supabase.from("b2c_transactions").insert({
       withdrawal_id: withdrawalId,
-      mpesa_transaction_id: mpesaTransactionId,
+      mpesa_transaction_id: mpesaReceipt ?? mpesaTransactionId,
       phone_number: phone,
       amount,
+      mpesa_charge: mpesaCharge,
+      wallet_type: walletType,
       status: success ? "completed" : "failed",
       completed_at: success ? new Date().toISOString() : null,
+      transaction_completed_at: success ? new Date().toISOString() : null,
       error_message: errorMessage,
     });
 
@@ -214,29 +235,38 @@ Deno.serve(async (req) => {
         ]);
 
       const totalReceived = (verifiedPayments || []).reduce(
-        (sum, row) => sum + Number(row.amount || 0),
-        0,
-      );
+        (sum, row) => sum + Number(row.amount || 0), 0);
       const totalWithdrawn = (completedWithdrawals || []).reduce(
-        (sum, row) => sum + Number(row.amount || 0),
-        0,
-      );
+        (sum, row) => sum + Number(row.amount || 0), 0);
+
       const balancePayload: Record<string, unknown> = {
         total_received: totalReceived,
         total_withdrawn: totalWithdrawn,
         total_balance: totalReceived - totalWithdrawn,
+        [updatedAtField]: submittedAt,
       };
-
-      if (walletType === "donation") {
-        balancePayload.updated_at = submittedAt;
-      } else {
-        balancePayload.last_updated = submittedAt;
-      }
 
       if (walletRow?.id) {
         await supabase.from(walletTable).update(balancePayload).eq("id", walletRow.id);
       }
+
+      // Write to unified ledger so wallet statements + reports stay in sync.
+      await supabase.from("wallet_transactions").insert({
+        wallet_type: walletType,
+        direction: "out",
+        source: "b2c",
+        reference_id: withdrawalId,
+        reference_table: withdrawalTable,
+        party_phone: phone,
+        gross_amount: amount,
+        mpesa_charge: mpesaCharge,
+        net_amount: Number(amount) + mpesaCharge,
+        mpesa_receipt: mpesaReceipt ?? mpesaTransactionId,
+        status: "completed",
+        notes: reason ?? null,
+      });
     }
+
 
     return new Response(
       JSON.stringify({
