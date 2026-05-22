@@ -73,12 +73,13 @@ SELECT
 FROM generate_series(1, 12);
 
 -- Insert mock contributions (if not already present)
-INSERT INTO contributions (member_id, amount, month, year, status, created_at)
+INSERT INTO contributions (member_id, amount, month, year, due_date, status, created_at)
 SELECT 
   m.id,
   (ARRAY[1000, 2000, 3000, 5000, 10000])[floor(random() * 5 + 1)],
   EXTRACT(MONTH FROM NOW())::int,
   EXTRACT(YEAR FROM NOW())::int,
+  (NOW() + INTERVAL '30 days')::date,
   'verified',
   NOW() - (INTERVAL '1 day' * floor(random() * 30))
 FROM members m
