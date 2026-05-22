@@ -22,7 +22,8 @@ export default function ExpensesPayouts() {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState("");
-  const [selectedWallet, setSelectedWallet] = useState<"penalty" | "operational">("penalty");
+  const [selectedWallet, setSelectedWallet] = useState<"penalty" | "donation" | "operational">("penalty");
+  const [expenseWallet, setExpenseWallet] = useState<"penalty" | "donation" | "operational">("operational");
   const [payoutType, setPayoutType] = useState<"wedding" | "death" | "retirement" | "emergency">("wedding");
   const [deathRelation, setDeathRelation] = useState<"member" | "child" | "parent" | "spouse">("member");
   const [payoutAmount, setPayoutAmount] = useState("");
@@ -34,7 +35,8 @@ export default function ExpensesPayouts() {
     amount: "",
     description: "",
     recipientName: "",
-    paymentMethod: "",
+    recipientPhone: "",
+    paymentMethod: "b2c",
     referenceNumber: "",
   });
 
@@ -75,11 +77,11 @@ export default function ExpensesPayouts() {
     },
   });
 
-  // Fetch payouts from both penalty and operational withdrawals
+  // Fetch payouts from penalty, donation, and operational withdrawals
   const { data: payouts = [] } = useQuery({
     queryKey: ["payouts"],
     queryFn: async () => {
-      const [penaltyData, operationalData] = await Promise.all([
+      const [penaltyData, donationData, operationalData] = await Promise.all([
         supabase
           .from("penalty_withdrawals")
           .select(`
@@ -92,6 +94,24 @@ export default function ExpensesPayouts() {
             created_at,
             phone_number,
             withdrawal_signatories (
+              id,
+              signatory_role,
+              status
+            )
+          `)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("donation_withdrawals")
+          .select(`
+            id,
+            amount,
+            reason,
+            status,
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            donation_withdrawal_signatories (
               id,
               signatory_role,
               status
@@ -119,9 +139,10 @@ export default function ExpensesPayouts() {
       ]);
 
       const penalty = penaltyData.data?.map((p: any) => ({ ...p, wallet_type: "penalty", signatories: p.withdrawal_signatories })) || [];
+      const donation = donationData.data?.map((d: any) => ({ ...d, wallet_type: "donation", signatories: d.donation_withdrawal_signatories })) || [];
       const operational = operationalData.data?.map((o: any) => ({ ...o, wallet_type: "operational", signatories: o.operational_withdrawal_signatories })) || [];
 
-      return [...penalty, ...operational].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return [...penalty, ...donation, ...operational].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
@@ -171,9 +192,13 @@ export default function ExpensesPayouts() {
       // Determine withdrawal table based on wallet type
       const withdrawalTable = data.walletType === "operational" 
         ? "operational_withdrawals" 
+        : data.walletType === "donation"
+        ? "donation_withdrawals"
         : "penalty_withdrawals";
       const signatoriesTable = data.walletType === "operational"
         ? "operational_withdrawal_signatories"
+        : data.walletType === "donation"
+        ? "donation_withdrawal_signatories"
         : "penalty_withdrawal_signatories";
 
       // Create withdrawal record
@@ -226,26 +251,104 @@ export default function ExpensesPayouts() {
   // Approve payout mutation - removed, now handled by withdrawal approval page
   // The signatory approval flow is centralized in the WithdrawalApproval page
 
-  // Create expense mutation
+  // Create expense mutation - now supports B2C withdrawal with signatories
   const createExpense = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase
-        .from("expenses")
-        .insert({
-          expense_type: data.expenseType,
-          category: data.category,
-          amount: data.amount,
-          description: data.description,
-          recipient_name: data.recipientName,
-          payment_method: data.paymentMethod,
-          reference_number: data.referenceNumber,
+      // If payment method is B2C, create withdrawal with signatories
+      if (data.paymentMethod === "b2c") {
+        // Validate phone number
+        if (!validatePhoneNumber(data.recipientPhone)) {
+          throw new Error("Invalid phone number format. Use format: 0712345678 or +254712345678");
+        }
+
+        // Get signatory roles from organization settings
+        const { data: orgSettings } = await supabase
+          .from("organization_settings")
+          .select("signatory_roles")
+          .single();
+
+        const signatoryRoles = orgSettings?.signatory_roles || ["chairperson", "secretary"];
+
+        // Determine withdrawal table based on wallet type
+        const withdrawalTable = data.expenseWallet === "operational" 
+          ? "operational_withdrawals" 
+          : data.expenseWallet === "donation"
+          ? "donation_withdrawals"
+          : "penalty_withdrawals";
+        const signatoriesTable = data.expenseWallet === "operational"
+          ? "operational_withdrawal_signatories"
+          : data.expenseWallet === "donation"
+          ? "donation_withdrawal_signatories"
+          : "penalty_withdrawal_signatories";
+
+        // Create withdrawal record for expense
+        const { data: withdrawal, error: withdrawalError } = await supabase
+          .from(withdrawalTable)
+          .insert({
+            amount: data.amount,
+            reason: `Expense: ${data.category} - ${data.description}`,
+            phone_number: data.recipientPhone,
+            status: "pending",
+            requested_by: user?.id,
+            submitted_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (withdrawalError) throw withdrawalError;
+
+        // Create signatory records
+        const signatoryRecords = signatoryRoles.map((role: string) => ({
+          withdrawal_id: withdrawal.id,
+          signatory_role: role,
           status: "pending",
-          created_by: user?.id,
-        });
-      if (error) throw error;
+        }));
+
+        const { error: signatoryError } = await supabase
+          .from(signatoriesTable)
+          .insert(signatoryRecords);
+
+        if (signatoryError) throw signatoryError;
+
+        // Also create expense record for tracking
+        const { error: expenseError } = await supabase
+          .from("expenses")
+          .insert({
+            expense_type: data.expenseType,
+            category: data.category,
+            amount: data.amount,
+            description: data.description,
+            recipient_name: data.recipientName,
+            payment_method: "b2c",
+            reference_number: withdrawal.id,
+            status: "pending",
+            created_by: user?.id,
+          });
+
+        if (expenseError) throw expenseError;
+      } else {
+        // For cash/bank expenses, just record directly
+        const { error } = await supabase
+          .from("expenses")
+          .insert({
+            expense_type: data.expenseType,
+            category: data.category,
+            amount: data.amount,
+            description: data.description,
+            recipient_name: data.recipientName,
+            payment_method: data.paymentMethod,
+            reference_number: data.referenceNumber,
+            status: "completed",
+            created_by: user?.id,
+          });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["penalty-withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["donation-withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["operational-withdrawals"] });
       setExpenseDialogOpen(false);
       setExpenseForm({
         expenseType: "operational",
@@ -253,7 +356,8 @@ export default function ExpensesPayouts() {
         amount: "",
         description: "",
         recipientName: "",
-        paymentMethod: "",
+        recipientPhone: "",
+        paymentMethod: "b2c",
         referenceNumber: "",
       });
       toast.success("Expense recorded successfully");
@@ -300,7 +404,7 @@ export default function ExpensesPayouts() {
               Add Expense
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Record New Expense</DialogTitle>
             </DialogHeader>
@@ -352,7 +456,7 @@ export default function ExpensesPayouts() {
               </div>
 
               <div>
-                <Label>Payment Method</Label>
+                <Label>Payment Method *</Label>
                 <Select
                   value={expenseForm.paymentMethod}
                   onValueChange={(value) => setExpenseForm({ ...expenseForm, paymentMethod: value })}
@@ -361,22 +465,59 @@ export default function ExpensesPayouts() {
                     <SelectValue placeholder="Select method..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="b2c">B2C (M-Pesa) - Requires Approval</SelectItem>
                     <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="mpesa">M-Pesa</SelectItem>
                     <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                     <SelectItem value="cheque">Cheque</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label>Reference Number</Label>
-                <Input
-                  value={expenseForm.referenceNumber}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, referenceNumber: e.target.value })}
-                  placeholder="Transaction/Receipt number"
-                />
-              </div>
+              {/* Show wallet and phone only for B2C */}
+              {expenseForm.paymentMethod === "b2c" && (
+                <>
+                  <div>
+                    <Label>Source Wallet *</Label>
+                    <Select
+                      value={expenseWallet}
+                      onValueChange={(value: any) => setExpenseWallet(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="penalty">Penalty Wallet</SelectItem>
+                        <SelectItem value="donation">Fund Drive Wallet</SelectItem>
+                        <SelectItem value="operational">Operational Wallet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Recipient Phone Number *</Label>
+                    <Input
+                      value={expenseForm.recipientPhone}
+                      onChange={(e) => setExpenseForm({ ...expenseForm, recipientPhone: e.target.value })}
+                      placeholder="0712345678 or +254712345678"
+                    />
+                    <p className="text-xs text-[#6B7280] mt-1">
+                      Phone number where M-Pesa will be sent
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Show reference number for non-B2C methods */}
+              {expenseForm.paymentMethod !== "b2c" && (
+                <div>
+                  <Label>Reference Number</Label>
+                  <Input
+                    value={expenseForm.referenceNumber}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, referenceNumber: e.target.value })}
+                    placeholder="Transaction/Receipt number"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label>Description</Label>
@@ -399,7 +540,12 @@ export default function ExpensesPayouts() {
                 <Button
                   onClick={() => createExpense.mutate(expenseForm)}
                   className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-                  disabled={!expenseForm.category || !expenseForm.amount || createExpense.isPending}
+                  disabled={
+                    !expenseForm.category || 
+                    !expenseForm.amount || 
+                    (expenseForm.paymentMethod === "b2c" && !expenseForm.recipientPhone) ||
+                    createExpense.isPending
+                  }
                 >
                   {createExpense.isPending ? "Recording..." : "Record Expense"}
                 </Button>
@@ -432,6 +578,12 @@ export default function ExpensesPayouts() {
                       <div className="flex items-center gap-2">
                         <Wallet className="h-4 w-4" />
                         Penalty Wallet
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="donation">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4" />
+                        Fund Drive Wallet
                       </div>
                     </SelectItem>
                     <SelectItem value="operational">
@@ -676,6 +828,7 @@ export default function ExpensesPayouts() {
                         <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Category</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Type</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Recipient</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Method</th>
                         <th className="text-right py-3 px-4 text-sm font-semibold text-[#6B7280]">Amount</th>
                         <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">Status</th>
                       </tr>
@@ -696,6 +849,11 @@ export default function ExpensesPayouts() {
                           </td>
                           <td className="py-3 px-4 text-sm text-[#6B7280]">
                             {expense.recipient_name || "-"}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant="secondary" className="capitalize text-xs">
+                              {expense.payment_method === "b2c" ? "B2C (M-Pesa)" : expense.payment_method}
+                            </Badge>
                           </td>
                           <td className="py-3 px-4 text-right text-sm font-medium text-red-600">
                             -Ksh {parseFloat(expense.amount).toLocaleString()}
