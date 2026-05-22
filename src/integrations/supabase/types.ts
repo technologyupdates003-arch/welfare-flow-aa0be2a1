@@ -104,11 +104,17 @@ export type Database = {
           error_message: string | null
           id: string
           initiated_at: string
+          mpesa_charge: number
           mpesa_transaction_id: string
           phone_number: string
+          recipient_name: string | null
           status: string
+          transaction_completed_at: string | null
           updated_at: string
+          utility_account_balance: number | null
+          wallet_type: string
           withdrawal_id: string
+          working_account_balance: number | null
         }
         Insert: {
           amount: number
@@ -117,11 +123,17 @@ export type Database = {
           error_message?: string | null
           id?: string
           initiated_at?: string
+          mpesa_charge?: number
           mpesa_transaction_id: string
           phone_number: string
+          recipient_name?: string | null
           status?: string
+          transaction_completed_at?: string | null
           updated_at?: string
+          utility_account_balance?: number | null
+          wallet_type?: string
           withdrawal_id: string
+          working_account_balance?: number | null
         }
         Update: {
           amount?: number
@@ -130,11 +142,17 @@ export type Database = {
           error_message?: string | null
           id?: string
           initiated_at?: string
+          mpesa_charge?: number
           mpesa_transaction_id?: string
           phone_number?: string
+          recipient_name?: string | null
           status?: string
+          transaction_completed_at?: string | null
           updated_at?: string
+          utility_account_balance?: number | null
+          wallet_type?: string
           withdrawal_id?: string
+          working_account_balance?: number | null
         }
         Relationships: [
           {
@@ -682,14 +700,19 @@ export type Database = {
           description: string | null
           expense_type: string
           id: string
+          mpesa_charge: number
           paid_at: string | null
           paid_by: string | null
           payment_method: string | null
+          phone_number: string | null
           recipient_member_id: string | null
           recipient_name: string | null
           reference_number: string | null
           status: string | null
           updated_at: string | null
+          wallet_type: string
+          withdrawal_id: string | null
+          withdrawal_table: string | null
         }
         Insert: {
           amount: number
@@ -701,14 +724,19 @@ export type Database = {
           description?: string | null
           expense_type: string
           id?: string
+          mpesa_charge?: number
           paid_at?: string | null
           paid_by?: string | null
           payment_method?: string | null
+          phone_number?: string | null
           recipient_member_id?: string | null
           recipient_name?: string | null
           reference_number?: string | null
           status?: string | null
           updated_at?: string | null
+          wallet_type?: string
+          withdrawal_id?: string | null
+          withdrawal_table?: string | null
         }
         Update: {
           amount?: number
@@ -720,14 +748,19 @@ export type Database = {
           description?: string | null
           expense_type?: string
           id?: string
+          mpesa_charge?: number
           paid_at?: string | null
           paid_by?: string | null
           payment_method?: string | null
+          phone_number?: string | null
           recipient_member_id?: string | null
           recipient_name?: string | null
           reference_number?: string | null
           status?: string | null
           updated_at?: string | null
+          wallet_type?: string
+          withdrawal_id?: string | null
+          withdrawal_table?: string | null
         }
         Relationships: [
           {
@@ -1330,6 +1363,170 @@ export type Database = {
           signature_url?: string | null
           updated_at?: string | null
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      operational_payment_records: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          member_id: string | null
+          mpesa_transaction_id: string | null
+          notes: string | null
+          payment_ref: string | null
+          source: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          member_id?: string | null
+          mpesa_transaction_id?: string | null
+          notes?: string | null
+          payment_ref?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          member_id?: string | null
+          mpesa_transaction_id?: string | null
+          notes?: string | null
+          payment_ref?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      operational_wallet: {
+        Row: {
+          id: string
+          total_balance: number
+          total_received: number
+          total_withdrawn: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          total_balance?: number
+          total_received?: number
+          total_withdrawn?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          total_balance?: number
+          total_received?: number
+          total_withdrawn?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      operational_withdrawal_signatories: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          id: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          signatory_role: string
+          signatory_user_id: string | null
+          signature_url: string | null
+          status: string
+          updated_at: string
+          withdrawal_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          signatory_role: string
+          signatory_user_id?: string | null
+          signature_url?: string | null
+          status?: string
+          updated_at?: string
+          withdrawal_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          signatory_role?: string
+          signatory_user_id?: string | null
+          signature_url?: string | null
+          status?: string
+          updated_at?: string
+          withdrawal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_withdrawal_signatories_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "operational_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_withdrawals: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          expense_type: string | null
+          id: string
+          phone_number: string | null
+          reason: string
+          recipient_name: string | null
+          requested_by: string | null
+          status: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          expense_type?: string | null
+          id?: string
+          phone_number?: string | null
+          reason: string
+          recipient_name?: string | null
+          requested_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          expense_type?: string | null
+          id?: string
+          phone_number?: string | null
+          reason?: string
+          recipient_name?: string | null
+          requested_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1965,6 +2162,72 @@ export type Database = {
           is_active?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          direction: string
+          gross_amount: number
+          id: string
+          mpesa_charge: number
+          mpesa_receipt: string | null
+          net_amount: number
+          notes: string | null
+          occurred_at: string
+          party_name: string | null
+          party_phone: string | null
+          reference_id: string | null
+          reference_table: string | null
+          running_balance: number
+          source: string
+          status: string
+          system_fee: number
+          wallet_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          gross_amount?: number
+          id?: string
+          mpesa_charge?: number
+          mpesa_receipt?: string | null
+          net_amount?: number
+          notes?: string | null
+          occurred_at?: string
+          party_name?: string | null
+          party_phone?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+          running_balance?: number
+          source: string
+          status?: string
+          system_fee?: number
+          wallet_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          gross_amount?: number
+          id?: string
+          mpesa_charge?: number
+          mpesa_receipt?: string | null
+          net_amount?: number
+          notes?: string | null
+          occurred_at?: string
+          party_name?: string | null
+          party_phone?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+          running_balance?: number
+          source?: string
+          status?: string
+          system_fee?: number
+          wallet_type?: string
         }
         Relationships: []
       }
