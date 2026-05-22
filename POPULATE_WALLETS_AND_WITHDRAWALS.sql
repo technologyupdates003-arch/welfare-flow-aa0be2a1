@@ -67,7 +67,7 @@ SELECT
   'Expense for ' || (ARRAY['Office', 'Transport', 'Utilities', 'Maintenance'])[floor(random() * 4 + 1)],
   (ARRAY['John Supplier', 'Jane Vendor', 'ABC Company', 'XYZ Services'])[floor(random() * 4 + 1)],
   (ARRAY['cash', 'bank_transfer', 'cheque'])[floor(random() * 3 + 1)],
-  'completed',
+  'pending',
   (SELECT id FROM auth.users LIMIT 1),
   NOW() - (INTERVAL '1 day' * floor(random() * 30))
 FROM generate_series(1, 12);
