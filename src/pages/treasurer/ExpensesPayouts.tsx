@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, DollarSign, TrendingDown, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
+import { Plus, DollarSign, TrendingDown, CheckCircle, Clock, XCircle, AlertCircle, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { validatePhoneNumber } from "@/lib/b2c";
 
 export default function ExpensesPayouts() {
   const { user } = useAuth();
@@ -21,10 +22,12 @@ export default function ExpensesPayouts() {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState("");
+  const [selectedWallet, setSelectedWallet] = useState<"penalty" | "operational">("penalty");
   const [payoutType, setPayoutType] = useState<"wedding" | "death" | "retirement" | "emergency">("wedding");
   const [deathRelation, setDeathRelation] = useState<"member" | "child" | "parent" | "spouse">("member");
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutReason, setPayoutReason] = useState("");
+  const [payoutPhone, setPayoutPhone] = useState("");
   const [expenseForm, setExpenseForm] = useState({
     expenseType: "operational",
     category: "",
@@ -72,18 +75,53 @@ export default function ExpensesPayouts() {
     },
   });
 
-  // Fetch payouts
+  // Fetch payouts from both penalty and operational withdrawals
   const { data: payouts = [] } = useQuery({
     queryKey: ["payouts"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("payouts")
-        .select(`
-          *,
-          members (name, phone)
-        `)
-        .order("created_at", { ascending: false });
-      return data || [];
+      const [penaltyData, operationalData] = await Promise.all([
+        supabase
+          .from("penalty_withdrawals")
+          .select(`
+            id,
+            amount,
+            reason,
+            status,
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            withdrawal_signatories (
+              id,
+              signatory_role,
+              status
+            )
+          `)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("operational_withdrawals")
+          .select(`
+            id,
+            amount,
+            reason,
+            status,
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            operational_withdrawal_signatories (
+              id,
+              signatory_role,
+              status
+            )
+          `)
+          .order("created_at", { ascending: false }),
+      ]);
+
+      const penalty = penaltyData.data?.map((p: any) => ({ ...p, wallet_type: "penalty", signatories: p.withdrawal_signatories })) || [];
+      const operational = operationalData.data?.map((o: any) => ({ ...o, wallet_type: "operational", signatories: o.operational_withdrawal_signatories })) || [];
+
+      return [...penalty, ...operational].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
@@ -110,54 +148,83 @@ export default function ExpensesPayouts() {
     return rules[type as keyof typeof rules] ?? 0;
   };
 
-  // Create payout mutation
+  // Create payout mutation - now creates withdrawal with signatories
   const createPayout = useMutation({
     mutationFn: async (data: any) => {
       const eligibleAmount = data.payoutType === "death"
         ? getEligibleAmount(`death_${data.deathRelation}`)
         : getEligibleAmount(data.payoutType);
 
-      const { error } = await supabase
-        .from("payouts")
+      // Validate phone number
+      if (!validatePhoneNumber(data.phone)) {
+        throw new Error("Invalid phone number format. Use format: 0712345678 or +254712345678");
+      }
+
+      // Get signatory roles from organization settings
+      const { data: orgSettings } = await supabase
+        .from("organization_settings")
+        .select("signatory_roles")
+        .single();
+
+      const signatoryRoles = orgSettings?.signatory_roles || ["chairperson", "secretary"];
+
+      // Determine withdrawal table based on wallet type
+      const withdrawalTable = data.walletType === "operational" 
+        ? "operational_withdrawals" 
+        : "penalty_withdrawals";
+      const signatoriesTable = data.walletType === "operational"
+        ? "operational_withdrawal_signatories"
+        : "penalty_withdrawal_signatories";
+
+      // Create withdrawal record
+      const { data: withdrawal, error: withdrawalError } = await supabase
+        .from(withdrawalTable)
         .insert({
-          member_id: data.memberId,
-          payout_type: data.payoutType,
           amount: data.amount,
-          eligible_amount: eligibleAmount,
           reason: data.reason,
+          phone_number: data.phone,
           status: "pending",
-          created_by: user?.id,
-        });
-      if (error) throw error;
+          requested_by: user?.id,
+          submitted_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (withdrawalError) throw withdrawalError;
+
+      // Create signatory records
+      const signatoryRecords = signatoryRoles.map((role: string) => ({
+        withdrawal_id: withdrawal.id,
+        signatory_role: role,
+        status: "pending",
+      }));
+
+      const { error: signatoryError } = await supabase
+        .from(signatoriesTable)
+        .insert(signatoryRecords);
+
+      if (signatoryError) throw signatoryError;
+
+      return withdrawal;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payouts"] });
+      queryClient.invalidateQueries({ queryKey: ["penalty-withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["operational-withdrawals"] });
       setPayoutDialogOpen(false);
-      toast.success("Payout request created successfully");
+      setSelectedMember("");
+      setPayoutAmount("");
+      setPayoutReason("");
+      setPayoutPhone("");
+      toast.success("Payout request created and sent for signatory approval");
     },
     onError: (error: any) => {
       toast.error(error.message);
     },
   });
 
-  // Approve payout mutation
-  const approvePayout = useMutation({
-    mutationFn: async (payoutId: string) => {
-      const { error } = await supabase
-        .from("payouts")
-        .update({
-          status: "approved",
-          approved_by: user?.id,
-          approved_at: new Date().toISOString(),
-        })
-        .eq("id", payoutId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payouts"] });
-      toast.success("Payout approved");
-    },
-  });
+  // Approve payout mutation - removed, now handled by withdrawal approval page
+  // The signatory approval flow is centralized in the WithdrawalApproval page
 
   // Create expense mutation
   const createExpense = useMutation({
@@ -350,9 +417,33 @@ export default function ExpensesPayouts() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Create Member Payout</DialogTitle>
+              <DialogTitle>Create Member Payout with B2C</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {/* Wallet Selection */}
+              <div>
+                <Label>Source Wallet *</Label>
+                <Select value={selectedWallet} onValueChange={(value: any) => setSelectedWallet(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="penalty">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4" />
+                        Penalty Wallet
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="operational">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4" />
+                        Operational Wallet
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Member Selection */}
               <div>
                 <Label>Select Member *</Label>
@@ -368,6 +459,19 @@ export default function ExpensesPayouts() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <Label>Phone Number for B2C *</Label>
+                <Input
+                  value={payoutPhone}
+                  onChange={(e) => setPayoutPhone(e.target.value)}
+                  placeholder="0712345678 or +254712345678"
+                />
+                <p className="text-xs text-[#6B7280] mt-1">
+                  Phone number where M-Pesa will be sent
+                </p>
               </div>
 
               {/* Event Type */}
@@ -454,13 +558,15 @@ export default function ExpensesPayouts() {
                 </Button>
                 <Button
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  disabled={!selectedMember || !payoutAmount || createPayout.isPending}
+                  disabled={!selectedMember || !payoutAmount || !payoutPhone || createPayout.isPending}
                   onClick={() => createPayout.mutate({
                     memberId: selectedMember,
                     payoutType,
                     amount: parseFloat(payoutAmount),
-                    reason: payoutReason || `${payoutType === "death" ? `Death payout (${deathRelation})` : `${payoutType.charAt(0).toUpperCase() + payoutType.slice(1)} payout`} `,
+                    reason: payoutReason || `${payoutType === "death" ? `Death payout (${deathRelation})` : `${payoutType.charAt(0).toUpperCase() + payoutType.slice(1)} payout`}`,
                     deathRelation,
+                    phone: payoutPhone,
+                    walletType: selectedWallet,
                   })}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -483,60 +589,67 @@ export default function ExpensesPayouts() {
         <TabsContent value="payouts">
           <Card className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-[#111827]">Member Payouts</CardTitle>
+              <CardTitle className="text-lg font-bold text-[#111827]">Trigger Payouts (B2C)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#E5E7EB]">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Date</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Member</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Event Type</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-[#6B7280]">Amount</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">Status</th>
-                      <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payouts.map((payout: any) => (
-                      <tr key={payout.id} className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F9FAFB]">
-                        <td className="py-3 px-4 text-sm text-[#111827]">
-                          {new Date(payout.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div>
-                            <p className="text-sm font-medium text-[#111827]">{payout.members?.name}</p>
-                            <p className="text-xs text-[#6B7280]">{payout.members?.phone}</p>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge variant="outline" className="capitalize">
-                            {payout.payout_type}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right text-sm font-medium text-[#111827]">
-                          Ksh {parseFloat(payout.amount).toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {getStatusBadge(payout.status)}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {payout.status === "pending" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => approvePayout.mutate(payout.id)}
-                            >
-                              Approve
-                            </Button>
-                          )}
-                        </td>
+              {payouts.length === 0 ? (
+                <div className="text-center py-12 text-[#6B7280]">
+                  <DollarSign className="h-12 w-12 mx-auto mb-4 text-[#6B7280]" />
+                  <p>No payouts created yet</p>
+                  <p className="text-sm mt-2">Click "Trigger Payout" to create a new B2C payout</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#E5E7EB]">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Date</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Wallet</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Phone</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#6B7280]">Reason</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-[#6B7280]">Amount</th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">Approvals</th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-[#6B7280]">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {payouts.map((payout: any) => {
+                        const approvedCount = payout.signatories?.filter((s: any) => s.status === "approved").length || 0;
+                        const totalSignatories = payout.signatories?.length || 0;
+                        return (
+                          <tr key={payout.id} className="border-b border-[#E5E7EB] last:border-0 hover:bg-[#F9FAFB]">
+                            <td className="py-3 px-4 text-sm text-[#111827]">
+                              {new Date(payout.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant="outline" className="capitalize">
+                                {payout.wallet_type}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-[#111827]">
+                              {payout.phone_number}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-[#6B7280]">
+                              {payout.reason}
+                            </td>
+                            <td className="py-3 px-4 text-right text-sm font-medium text-[#111827]">
+                              Ksh {parseFloat(payout.amount).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <Badge variant="secondary" className="text-xs">
+                                {approvedCount}/{totalSignatories}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {getStatusBadge(payout.status)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
