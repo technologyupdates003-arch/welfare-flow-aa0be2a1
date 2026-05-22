@@ -75,6 +75,8 @@ import TreasurerDocuments from "@/pages/treasurer/TreasurerDocuments";
 import TreasurerReports from "@/pages/treasurer/TreasurerReports";
 import TreasurerSettings from "@/pages/treasurer/TreasurerSettings";
 import BankSync from "@/pages/treasurer/BankSync";
+import OperationalWallet from "@/pages/treasurer/OperationalWallet";
+import WalletReports from "@/pages/treasurer/WalletReports";
 import SystemTroubleshooting from "@/pages/super-admin/SystemTroubleshooting";
 import AuditLogs from "@/pages/super-admin/AuditLogs";
 import SecuritySettings from "@/pages/super-admin/SecuritySettings";
@@ -152,6 +154,8 @@ function AppRoutes() {
         <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
+        <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         
@@ -221,6 +225,8 @@ function AppRoutes() {
         <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
+        <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         
@@ -279,6 +285,8 @@ function AppRoutes() {
         <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
+        <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         

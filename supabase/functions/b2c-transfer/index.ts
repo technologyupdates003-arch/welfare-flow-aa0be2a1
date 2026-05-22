@@ -265,6 +265,26 @@ Deno.serve(async (req) => {
         status: "completed",
         notes: reason ?? null,
       });
+
+      // Also update the wallet balance for operational wallet
+      if (walletType === "operational") {
+        const { data: walletRow } = await supabase
+          .from("operational_wallet")
+          .select("id, total_withdrawn, total_balance, total_received")
+          .limit(1)
+          .maybeSingle();
+
+        if (walletRow?.id) {
+          const newWithdrawn = (walletRow.total_withdrawn || 0) + Number(amount) + mpesaCharge;
+          const newBalance = (walletRow.total_received || 0) - newWithdrawn;
+
+          await supabase.from("operational_wallet").update({
+            total_withdrawn: newWithdrawn,
+            total_balance: newBalance,
+            updated_at: submittedAt,
+          }).eq("id", walletRow.id);
+        }
+      }
     }
 
 

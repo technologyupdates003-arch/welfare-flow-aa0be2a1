@@ -27,7 +27,7 @@ interface WithdrawalRequest {
   created_at: string;
   phone_number?: string;
   signatories: SignatoryInfo[];
-  type: 'penalty' | 'donation'; // Add type to distinguish
+  type: 'penalty' | 'donation' | 'operational'; // Add operational type
 }
 
 interface SignatoryInfo {
@@ -72,8 +72,8 @@ export default function WithdrawalApproval() {
         if (rolesError) throw rolesError;
         setUserRoles(rolesData || []);
 
-        // Get withdrawal requests where user is a signatory (both penalty and donation)
-        const [penaltyWithdrawals, donationWithdrawals] = await Promise.all([
+        // Get withdrawal requests where user is a signatory (penalty, donation, and operational)
+        const [penaltyWithdrawals, donationWithdrawals, operationalWithdrawals] = await Promise.all([
           supabase
             .from('penalty_withdrawals')
             .select(
@@ -121,16 +121,42 @@ export default function WithdrawalApproval() {
               )
             `
             )
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('operational_withdrawals')
+            .select(
+              `
+              id,
+              amount,
+              reason,
+              status,
+              requested_by,
+              submitted_at,
+              created_at,
+              phone_number,
+              operational_withdrawal_signatories (
+                id,
+                signatory_role,
+                status,
+                signature_url,
+                approved_at,
+                rejected_at,
+                signatory_user_id
+              )
+            `
+            )
             .order('created_at', { ascending: false })
         ]);
 
         if (penaltyWithdrawals.error) throw penaltyWithdrawals.error;
         if (donationWithdrawals.error) throw donationWithdrawals.error;
+        if (operationalWithdrawals.error) throw operationalWithdrawals.error;
 
         // Combine and mark types
         const allWithdrawals = [
           ...(penaltyWithdrawals.data || []).map(w => ({ ...w, type: 'penalty' as const, signatories: w.withdrawal_signatories })),
-          ...(donationWithdrawals.data || []).map(w => ({ ...w, type: 'donation' as const, signatories: w.donation_withdrawal_signatories }))
+          ...(donationWithdrawals.data || []).map(w => ({ ...w, type: 'donation' as const, signatories: w.donation_withdrawal_signatories })),
+          ...(operationalWithdrawals.data || []).map(w => ({ ...w, type: 'operational' as const, signatories: w.operational_withdrawal_signatories }))
         ];
 
         // Fetch signatory signatures for all signatories
@@ -368,31 +394,83 @@ export default function WithdrawalApproval() {
       setRejectionReason('');
       setProcessing(false);
 
-      const { data: updatedWithdrawals } = await supabase
-        .from('penalty_withdrawals')
-        .select(
-          `
-          id,
-          amount,
-          reason,
-          status,
-          requested_by,
-          submitted_at,
-          created_at,
-          phone_number,
-          withdrawal_signatories (
+      const [{ data: penaltyData }, { data: donationData }, { data: operationalData }] = await Promise.all([
+        supabase
+          .from('penalty_withdrawals')
+          .select(
+            `
             id,
-            signatory_role,
+            amount,
+            reason,
             status,
-            signature_url,
-            approved_at,
-            rejected_at,
-            signatory_user_id
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            withdrawal_signatories (
+              id,
+              signatory_role,
+              status,
+              signature_url,
+              approved_at,
+              rejected_at,
+              signatory_user_id
+            )
+          `
           )
-        `
-        )
-        .in('status', ['pending', 'submitted', 'approved'])
-        .order('created_at', { ascending: false });
+          .in('status', ['pending', 'submitted', 'approved'])
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('donation_withdrawals')
+          .select(
+            `
+            id,
+            amount,
+            reason,
+            status,
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            donation_withdrawal_signatories (
+              id,
+              signatory_role,
+              status,
+              signature_url,
+              approved_at,
+              rejected_at,
+              signatory_user_id
+            )
+          `
+          )
+          .in('status', ['pending', 'submitted', 'approved'])
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('operational_withdrawals')
+          .select(
+            `
+            id,
+            amount,
+            reason,
+            status,
+            requested_by,
+            submitted_at,
+            created_at,
+            phone_number,
+            operational_withdrawal_signatories (
+              id,
+              signatory_role,
+              status,
+              signature_url,
+              approved_at,
+              rejected_at,
+              signatory_user_id
+            )
+          `
+          )
+          .in('status', ['pending', 'submitted', 'approved'])
+          .order('created_at', { ascending: false })
+      ]);
 
       // Fetch signatory signatures for all signatories
       const { data: signaturesData } = await supabase
@@ -412,15 +490,34 @@ export default function WithdrawalApproval() {
             : s.signatory_role
         ) || signaturesMap.get(s.signatory_role);
 
-      setWithdrawals(
-        updatedWithdrawals?.map((w: any) => ({
+      const allUpdatedWithdrawals = [
+        ...(penaltyData || []).map((w: any) => ({
           ...w,
+          type: 'penalty' as const,
           signatories: w.withdrawal_signatories?.map((s: any) => ({
             ...s,
             signatureInfo: getSignatureInfo(s),
           })),
-        })) || []
-      );
+        })),
+        ...(donationData || []).map((w: any) => ({
+          ...w,
+          type: 'donation' as const,
+          signatories: w.donation_withdrawal_signatories?.map((s: any) => ({
+            ...s,
+            signatureInfo: getSignatureInfo(s),
+          })),
+        })),
+        ...(operationalData || []).map((w: any) => ({
+          ...w,
+          type: 'operational' as const,
+          signatories: w.operational_withdrawal_signatories?.map((s: any) => ({
+            ...s,
+            signatureInfo: getSignatureInfo(s),
+          })),
+        }))
+      ];
+
+      setWithdrawals(allUpdatedWithdrawals);
     } catch (error) {
       console.error('Error processing approval:', error);
       toast.error('Failed to process approval');

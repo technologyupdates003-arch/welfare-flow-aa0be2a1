@@ -52,11 +52,13 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
     { to: "/treasurer/withdrawal-approvals", icon: FileSignature, label: "Withdrawal Approvals" },
     { to: "/treasurer/penalty-wallet", icon: Wallet, label: "Penalty Wallet" },
     { to: "/treasurer/donation-wallet", icon: Wallet, label: "Funds Wallet" },
+    { to: "/treasurer/operational-wallet", icon: Wallet, label: "Operational Wallet" },
     { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
     { to: "/treasurer/memos", icon: FileText, label: "Memos" },
     { to: "/treasurer/documents", icon: FileText, label: "Documents" },
     { to: "/treasurer/reports", icon: BarChart3, label: "Reports" },
+    { to: "/treasurer/wallet-reports", icon: BarChart3, label: "Wallet Reports" },
     { to: "/treasurer/settings", icon: Settings, label: "Settings" },
   ];
 
