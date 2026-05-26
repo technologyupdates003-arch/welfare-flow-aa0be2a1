@@ -220,6 +220,7 @@ function AppRoutes() {
         <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
         <Route path="/treasurer/penalty-wallet" element={<TreasurerLayout><TreasurerPenaltyWallet /></TreasurerLayout>} />
         <Route path="/treasurer/donation-wallet" element={<TreasurerLayout><TreasurerDonationWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/donation-campaigns" element={<TreasurerLayout><DonationCampaigns /></TreasurerLayout>} />
         <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
