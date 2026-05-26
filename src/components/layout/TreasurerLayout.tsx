@@ -52,6 +52,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
     { to: "/treasurer/withdrawal-approvals", icon: FileSignature, label: "Withdrawal Approvals" },
     { to: "/treasurer/penalty-wallet", icon: Wallet, label: "Penalty Wallet" },
     { to: "/treasurer/donation-wallet", icon: Wallet, label: "Funds Wallet" },
+    { to: "/treasurer/donation-campaigns", icon: Target, label: "Funds Drives" },
     { to: "/treasurer/operational-wallet", icon: Wallet, label: "Operational Wallet" },
     { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
