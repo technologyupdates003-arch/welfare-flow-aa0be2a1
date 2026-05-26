@@ -65,6 +65,13 @@ export default function ExpensesPayouts() {
     },
   });
 
+  // Auto-prefill phone number when a member is selected
+  useEffect(() => {
+    if (!selectedMember) return;
+    const m = members.find((x: any) => x.id === selectedMember);
+    if (m?.phone) setPayoutPhone(m.phone);
+  }, [selectedMember, members]);
+
   // Fetch expenses
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses"],
