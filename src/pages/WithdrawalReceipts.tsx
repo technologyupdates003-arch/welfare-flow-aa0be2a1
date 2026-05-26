@@ -343,18 +343,11 @@ export default function WithdrawalReceipts() {
                   </div>
                 </div>
 
-                {/* Footer with Stamp */}
-                <div style={{ marginTop: '30px', paddingTop: '15px', borderTop: '2px solid #111827', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>Prepared By</div>
-                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>Approved By</div>
-                    <div style={{ fontSize: '10px', fontWeight: 'bold' }}>Date</div>
-                  </div>
-                  {orgSettings?.stamp_url ? (
-                    <div style={{ textAlign: 'right' }}>
-                      <img src={orgSettings.stamp_url} alt="Organization stamp" style={{ maxHeight: '80px', maxWidth: '100px', objectFit: 'contain' }} />
-                    </div>
-                  ) : null}
+                {/* Footer Signatures (stamp removed) */}
+                <div style={{ marginTop: '30px', paddingTop: '15px', borderTop: '2px solid #111827' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>Prepared By</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>Approved By</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold' }}>Date</div>
                 </div>
 
                 {/* Important Notes */}

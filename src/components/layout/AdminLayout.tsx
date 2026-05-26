@@ -54,7 +54,7 @@ const getNavItems = (role: string) => {
         { to: "/admin/penalty-payments", icon: AlertCircle, label: "Verify Penalties" },
         { to: "/admin/penalty-wallet", icon: TrendingUp, label: "Penalty Wallet" },
         { to: "/admin/donations", icon: TrendingUp, label: "Funds Wallet" },
-        { to: "/admin/donation-campaigns", icon: Target, label: "Funds Drives" },
+        
         { to: "/admin/withdrawal-approval", icon: FileSignature, label: "Withdrawal Approvals" },
         { to: "/admin/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" },
         { to: "/admin/sms", icon: Send, label: "Bulk SMS" },

@@ -22,6 +22,15 @@ export default function TreasurerReports() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [generating, setGenerating] = useState(false);
 
+  // Fetch org settings for letterhead
+  const { data: orgSettings } = useQuery({
+    queryKey: ["organization-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("organization_settings").select("*").maybeSingle();
+      return data;
+    },
+  });
+
   // Fetch existing reports
   const { data: reports = [] } = useQuery({
     queryKey: ["financial-reports"],
@@ -180,91 +189,100 @@ export default function TreasurerReports() {
     });
   };
 
-  const downloadPDF = (report: any) => {
+  const downloadPDF = async (report: any) => {
+    // Fetch transactions in period with member info (name + phone) instead of raw user ids
+    const start = report.report_period_start;
+    const end = report.report_period_end + "T23:59:59Z";
+
+    const { data: txs } = await supabase
+      .from("wallet_transactions")
+      .select("wallet_type, direction, source, party_name, party_phone, gross_amount, net_amount, status, occurred_at, mpesa_receipt")
+      .gte("occurred_at", start)
+      .lte("occurred_at", end)
+      .order("occurred_at", { ascending: false })
+      .limit(500);
+
+    const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
+    const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
+    const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
+    const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
+    const logoHtml = orgSettings?.organization_logo
+      ? `<img src="${orgSettings.organization_logo}" style="height:60px;width:auto;object-fit:contain;" />`
+      : "";
+    const signatureHtml = orgSettings?.signature_url
+      ? `<div style="margin-top:16px;"><img src="${orgSettings.signature_url}" style="max-height:90px;display:block;"/></div>`
+      : "";
+
+    const txRows = (txs || []).map((t: any) => `
+      <tr>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${new Date(t.occurred_at).toLocaleDateString()}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-transform:capitalize;">${t.wallet_type}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-transform:uppercase;">${t.source}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.party_name || '—'}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.party_phone || '—'}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-align:right;color:${t.direction === 'in' ? '#16A34A' : '#DC2626'};">${t.direction === 'in' ? '+' : '-'} Ksh ${Number(t.net_amount || 0).toLocaleString()}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.mpesa_receipt || '—'}</td>
+      </tr>`).join("");
+
     const element = document.createElement("div");
     element.innerHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 900px;">
-        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
-          <h1 style="margin: 0; color: #111827;">KHCWW Financial Report</h1>
-          <p style="margin: 5px 0; color: #6B7280;">${getReportTitle(report)}</p>
-          <p style="margin: 5px 0; font-size: 12px; color: #6B7280;">
-            Period: ${new Date(report.report_period_start).toLocaleDateString()} - ${new Date(report.report_period_end).toLocaleDateString()}
-          </p>
+      <div style="font-family:'Times New Roman',Times,serif;padding:24px;max-width:900px;background:#fff;">
+        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:center;gap:16px;">
+          ${logoHtml}
+          <div>
+            <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
+            <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">${orgAddress}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Email: ${orgEmail} | Tel: ${orgPhone}</p>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:11px;font-weight:bold;color:#f97316;letter-spacing:3px;margin:0 0 16px;">KHCWW FINANCIAL REPORT</p>
+
+        <h2 style="font-size:15px;font-weight:bold;color:#111827;margin:0 0 6px;">${getReportTitle(report)}</h2>
+        <p style="font-size:11px;color:#6b7280;margin:0 0 18px;">Period: ${new Date(report.report_period_start).toLocaleDateString()} - ${new Date(report.report_period_end).toLocaleDateString()}</p>
+
+        <h3 style="color:#111827;border-bottom:1px solid #E5E7EB;padding-bottom:8px;font-size:13px;">Summary</h3>
+        <table style="width:100%;border-collapse:collapse;margin:10px 0 20px;">
+          <tr style="background:#F9FAFB;"><td style="padding:8px;border:1px solid #E5E7EB;font-weight:bold;font-size:11px;">Total Contributions</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;color:#16A34A;font-size:11px;">+ Ksh ${parseFloat(report.total_contributions).toLocaleString()}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #E5E7EB;font-weight:bold;font-size:11px;">Total Expenses</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;color:#DC2626;font-size:11px;">- Ksh ${parseFloat(report.total_expenses).toLocaleString()}</td></tr>
+          <tr style="background:#F9FAFB;"><td style="padding:8px;border:1px solid #E5E7EB;font-weight:bold;font-size:11px;">Total Payouts</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;color:#DC2626;font-size:11px;">- Ksh ${parseFloat(report.total_payouts).toLocaleString()}</td></tr>
+          <tr style="background:#EFF6FF;font-weight:bold;"><td style="padding:8px;border:1px solid #E5E7EB;font-size:12px;">Net Balance</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:12px;color:${parseFloat(report.net_balance) >= 0 ? '#16A34A' : '#DC2626'};">Ksh ${parseFloat(report.net_balance).toLocaleString()}</td></tr>
+        </table>
+
+        <h3 style="color:#111827;border-bottom:1px solid #E5E7EB;padding-bottom:8px;font-size:13px;">Wallet Balances</h3>
+        <table style="width:100%;border-collapse:collapse;margin:10px 0 20px;">
+          <tr style="background:#F9FAFB;"><th style="padding:8px;border:1px solid #E5E7EB;text-align:left;font-size:11px;">Wallet</th><th style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Received</th><th style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Withdrawn</th><th style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Balance</th></tr>
+          <tr><td style="padding:8px;border:1px solid #E5E7EB;font-weight:bold;font-size:11px;">Penalty</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Ksh ${(report.report_data?.penalty_wallet_received || 0).toLocaleString()}</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Ksh ${(report.report_data?.penalty_wallet_withdrawn || 0).toLocaleString()}</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-weight:bold;font-size:11px;">Ksh ${(report.report_data?.penalty_wallet_balance || 0).toLocaleString()}</td></tr>
+          <tr style="background:#F9FAFB;"><td style="padding:8px;border:1px solid #E5E7EB;font-weight:bold;font-size:11px;">Fund Drive</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Ksh ${(report.report_data?.donation_wallet_received || 0).toLocaleString()}</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Ksh ${(report.report_data?.donation_wallet_withdrawn || 0).toLocaleString()}</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-weight:bold;font-size:11px;">Ksh ${(report.report_data?.donation_wallet_balance || 0).toLocaleString()}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #E5E7EB;font-weight:bold;font-size:11px;">Operational</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Ksh ${(report.report_data?.operational_wallet_received || 0).toLocaleString()}</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-size:11px;">Ksh ${(report.report_data?.operational_wallet_withdrawn || 0).toLocaleString()}</td><td style="padding:8px;border:1px solid #E5E7EB;text-align:right;font-weight:bold;font-size:11px;">Ksh ${(report.report_data?.operational_wallet_balance || 0).toLocaleString()}</td></tr>
+        </table>
+
+        <h3 style="color:#111827;border-bottom:1px solid #E5E7EB;padding-bottom:8px;font-size:13px;">Transactions (${(txs || []).length})</h3>
+        <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+          <tr style="background:#F9FAFB;">
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:left;font-size:10px;">Date</th>
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:left;font-size:10px;">Wallet</th>
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:left;font-size:10px;">Source</th>
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:left;font-size:10px;">Member Name</th>
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:left;font-size:10px;">Phone</th>
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:right;font-size:10px;">Amount</th>
+            <th style="padding:6px;border:1px solid #E5E7EB;text-align:left;font-size:10px;">M-Pesa Ref</th>
+          </tr>
+          ${txRows || `<tr><td colspan="7" style="padding:14px;text-align:center;font-size:11px;color:#6b7280;border:1px solid #E5E7EB;">No transactions in this period</td></tr>`}
+        </table>
+
+        <div style="margin-top:40px;padding-top:14px;border-top:2px solid #111827;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;">
+          <div style="max-width:280px;">
+            <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
+            <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+            ${signatureHtml}
+          </div>
+          <div style="font-size:10px;color:#6b7280;text-align:right;">Generated: ${new Date().toLocaleString()}</div>
         </div>
 
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #111827; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px;">Summary</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-            <tr style="background-color: #F9FAFB;">
-              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Total Contributions</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: #16A34A;">+Ksh ${parseFloat(report.total_contributions).toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Total Expenses</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: #DC2626;">-Ksh ${parseFloat(report.total_expenses).toLocaleString()}</td>
-            </tr>
-            <tr style="background-color: #F9FAFB;">
-              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Total Payouts</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: #DC2626;">-Ksh ${parseFloat(report.total_payouts).toLocaleString()}</td>
-            </tr>
-            <tr style="background-color: #EFF6FF; font-weight: bold; font-size: 14px;">
-              <td style="padding: 10px; border: 1px solid #E5E7EB;">Net Balance</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; color: ${parseFloat(report.net_balance) >= 0 ? '#16A34A' : '#DC2626'};">Ksh ${parseFloat(report.net_balance).toLocaleString()}</td>
-            </tr>
-          </table>
-        </div>
-
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #111827; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px;">Wallet Balances</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-            <tr style="background-color: #F9FAFB;">
-              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: left;">Wallet</th>
-              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Received</th>
-              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Withdrawn</th>
-              <th style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Balance</th>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Penalty Wallet</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.penalty_wallet_received || 0).toLocaleString()}</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.penalty_wallet_withdrawn || 0).toLocaleString()}</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; font-weight: bold;">Ksh ${(report.report_data?.penalty_wallet_balance || 0).toLocaleString()}</td>
-            </tr>
-            <tr style="background-color: #F9FAFB;">
-              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Fund Drive Wallet</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.donation_wallet_received || 0).toLocaleString()}</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.donation_wallet_withdrawn || 0).toLocaleString()}</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; font-weight: bold;">Ksh ${(report.report_data?.donation_wallet_balance || 0).toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; font-weight: bold;">Operational Wallet</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.operational_wallet_received || 0).toLocaleString()}</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.operational_wallet_withdrawn || 0).toLocaleString()}</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right; font-weight: bold;">Ksh ${(report.report_data?.operational_wallet_balance || 0).toLocaleString()}</td>
-            </tr>
-          </table>
-        </div>
-
-        <div style="margin-bottom: 30px;">
-          <h2 style="color: #111827; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px;">Payouts Breakdown</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-            <tr style="background-color: #F9FAFB;">
-              <td style="padding: 10px; border: 1px solid #E5E7EB;">Penalty Wallet Payouts</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.penalty_payouts || 0).toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border: 1px solid #E5E7EB;">Fund Drive Wallet Payouts</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.donation_payouts || 0).toLocaleString()}</td>
-            </tr>
-            <tr style="background-color: #F9FAFB;">
-              <td style="padding: 10px; border: 1px solid #E5E7EB;">Operational Wallet Payouts</td>
-              <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: right;">Ksh ${(report.report_data?.operational_payouts || 0).toLocaleString()}</td>
-            </tr>
-          </table>
-        </div>
-
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #E5E7EB; font-size: 12px; color: #6B7280;">
-          <p>Generated on: ${new Date().toLocaleString()}</p>
-          <p>This is an automatically generated report from the KHCWW Financial Management System</p>
+        <div style="margin-top:20px;text-align:center;font-size:9px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:10px;">
+          <div style="font-weight:bold;">${orgName}</div>
+          <div>${orgAddress}</div>
+          <div>Email: ${orgEmail} | Tel: ${orgPhone}</div>
         </div>
       </div>
     `;
@@ -272,12 +290,14 @@ export default function TreasurerReports() {
     const opt = {
       margin: 10,
       filename: `KHCWW_Report_${report.report_period_start}_to_${report.report_period_end}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { orientation: 'portrait' as const, unit: 'mm' as const, format: 'a4' },
     };
 
-    html2pdf().set(opt).from(element).save();
+    document.body.appendChild(element);
+    await html2pdf().set(opt).from(element).save();
+    document.body.removeChild(element);
     toast.success("PDF downloaded successfully");
   };
 
