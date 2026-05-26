@@ -77,7 +77,7 @@ export function WalletStatement({
 
         if (error) throw error;
 
-        setTransactions(data || []);
+        setTransactions((data || []) as WalletTransaction[]);
 
         // Calculate totals
         const inTotal = (data || [])
