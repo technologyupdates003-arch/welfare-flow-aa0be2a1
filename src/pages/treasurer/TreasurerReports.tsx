@@ -22,6 +22,15 @@ export default function TreasurerReports() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [generating, setGenerating] = useState(false);
 
+  // Fetch org settings for letterhead
+  const { data: orgSettings } = useQuery({
+    queryKey: ["organization-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("organization_settings").select("*").maybeSingle();
+      return data;
+    },
+  });
+
   // Fetch existing reports
   const { data: reports = [] } = useQuery({
     queryKey: ["financial-reports"],
