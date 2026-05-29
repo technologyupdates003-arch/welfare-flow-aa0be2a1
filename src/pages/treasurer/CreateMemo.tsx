@@ -128,21 +128,43 @@ export default function CreateMemo() {
         throw new Error("Please select at least one member");
 
       setSaving(true);
-      const { data: memoData, error: memoError } = await supabase
-        .from("memos")
-        .insert({
-          reference_number: referenceNumber,
-          title: formData.title,
-          category: formData.category,
-          content: formData.content,
-          recipient_type: formData.recipientType,
-          status: isDraft ? "draft" : "sent",
-          created_by: user?.id,
-          sent_at: isDraft ? null : new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (memoError) throw memoError;
+      let memoData: any;
+      if (editId) {
+        const { data, error: memoError } = await supabase
+          .from("memos")
+          .update({
+            title: formData.title,
+            category: formData.category,
+            content: formData.content,
+            recipient_type: formData.recipientType,
+            status: isDraft ? "draft" : "sent",
+            sent_at: isDraft ? null : new Date().toISOString(),
+          })
+          .eq("id", editId)
+          .select()
+          .single();
+        if (memoError) throw memoError;
+        memoData = data;
+        // Reset recipients for this memo, then re-add below
+        await supabase.from("memo_recipients").delete().eq("memo_id", editId);
+      } else {
+        const { data, error: memoError } = await supabase
+          .from("memos")
+          .insert({
+            reference_number: referenceNumber,
+            title: formData.title,
+            category: formData.category,
+            content: formData.content,
+            recipient_type: formData.recipientType,
+            status: isDraft ? "draft" : "sent",
+            created_by: user?.id,
+            sent_at: isDraft ? null : new Date().toISOString(),
+          })
+          .select()
+          .single();
+        if (memoError) throw memoError;
+        memoData = data;
+      }
 
       let recipientIds: string[] = [];
       if (formData.recipientType === "all_members") recipientIds = members.map((m: any) => m.id);
