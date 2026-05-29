@@ -19,6 +19,8 @@ import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
 
 export default function CreateMemo() {
   const { user } = useAuth();
+  const { id: editId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const previewRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
@@ -34,6 +36,17 @@ export default function CreateMemo() {
   const [referenceNumber, setReferenceNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+
+  // Current treasurer's full name (for memo signature/authentication)
+  const { data: treasurerName } = useQuery({
+    queryKey: ["treasurer-name", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return "";
+      const { data } = await supabase.from("members").select("name").eq("user_id", user.id).maybeSingle();
+      return data?.name || "";
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: orgSettings } = useQuery({
     queryKey: ["organization-settings"],
