@@ -226,7 +226,7 @@ export default function TreasurerReports() {
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${new Date(t.occurred_at).toLocaleDateString()}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-transform:capitalize;">${t.wallet_type}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-transform:uppercase;">${t.source}</td>
-        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.party_name || '—'}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${resolveName(t)}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.party_phone || '—'}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-align:right;color:${t.direction === 'in' ? '#16A34A' : '#DC2626'};">${t.direction === 'in' ? '+' : '-'} Ksh ${Number(t.net_amount || 0).toLocaleString()}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.mpesa_receipt || '—'}</td>
