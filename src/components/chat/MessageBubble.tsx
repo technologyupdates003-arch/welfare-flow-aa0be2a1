@@ -144,13 +144,39 @@ export default function MessageBubble({
             </div>
           )}
 
-          <p className="whitespace-pre-wrap break-words">{content}</p>
-          <span className={cn("text-[10px] float-right mt-1 ml-3 flex items-center gap-0.5", darkMode ? "text-gray-400" : "text-gray-500")}>
-            {time}
-            {isOwn && <StatusTicks status={status} darkMode={darkMode} isOnline={isOnline} />}
-          </span>
+          {editing ? (
+            <div className="flex flex-col gap-1.5">
+              <textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                rows={2}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitEdit(); }
+                  if (e.key === "Escape") { setEditValue(content); setEditing(false); }
+                }}
+                className={cn(
+                  "w-full resize-y rounded-md px-2 py-1 text-sm outline-none border",
+                  darkMode ? "bg-[#0B141A] text-white border-[#2A3942]" : "bg-white text-gray-900 border-gray-300"
+                )}
+              />
+              <div className="flex items-center gap-2 justify-end">
+                <button onClick={() => { setEditValue(content); setEditing(false); }} className="text-[11px] opacity-70 hover:opacity-100">Cancel</button>
+                <button onClick={submitEdit} className="text-[11px] font-semibold text-primary">Save</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="whitespace-pre-wrap break-words">{content}</p>
+              <span className={cn("text-[10px] float-right mt-1 ml-3 flex items-center gap-0.5", darkMode ? "text-gray-400" : "text-gray-500")}>
+                {edited && <span className="italic mr-0.5">edited</span>}
+                {time}
+                {isOwn && <StatusTicks status={status} darkMode={darkMode} isOnline={isOnline} />}
+              </span>
+            </>
+          )}
 
-          {showActions && (
+          {showActions && !editing && (
             <div className={cn(
               "absolute -top-8 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 shadow-md z-10",
               isOwn ? "right-0" : "left-0",
@@ -164,6 +190,11 @@ export default function MessageBubble({
                   {e}
                 </button>
               ))}
+              {isOwn && canEdit && onEdit && (
+                <button onClick={() => { setEditValue(content); setEditing(true); }} className="p-1 hover:bg-muted/30 rounded-full" title="Edit">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
               {isOwn && onDelete && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -172,6 +203,12 @@ export default function MessageBubble({
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
+                    {canEdit && onEdit && (
+                      <DropdownMenuItem onClick={() => { setEditValue(content); setEditing(true); }}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit message
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={onDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete for everyone
