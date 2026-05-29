@@ -96,10 +96,29 @@ export default function CreateMemo() {
   });
 
   useEffect(() => {
+    if (editId) return; // keep existing reference when editing
     const year = new Date().getFullYear();
     const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
     setReferenceNumber(`KHCWW-MEMO-${year}-${randomNum}`);
-  }, []);
+  }, [editId]);
+
+  // Load existing memo when editing a draft
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      const { data: memo } = await supabase.from("memos").select("*").eq("id", editId).maybeSingle();
+      if (!memo) return;
+      setReferenceNumber(memo.reference_number || "");
+      const { data: recips } = await supabase.from("memo_recipients").select("member_id").eq("memo_id", editId);
+      setFormData({
+        title: memo.title || "",
+        category: memo.category || "general_communication",
+        content: memo.content || "",
+        recipientType: memo.recipient_type || "all_members",
+        selectedMembers: (recips || []).map((r: any) => r.member_id),
+      });
+    })();
+  }, [editId]);
 
   const saveMemo = useMutation({
     mutationFn: async (isDraft: boolean) => {
