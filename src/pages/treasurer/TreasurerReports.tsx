@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, Plus, Calendar, TrendingUp, DollarSign, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
-import * as XLSX from "xlsx";
 
 export default function TreasurerReports() {
   const { user } = useAuth();
