@@ -55,9 +55,17 @@ function StatusTicks({ status, darkMode, isOnline }: { status?: string; darkMode
 }
 
 export default function MessageBubble({
-  content, senderName, isOwn, time, reactions, replyTo, onReply, onReact, onDelete, isOnline, darkMode = false, status, profilePicture, isDeleted = false,
+  content, senderName, isOwn, time, reactions, replyTo, onReply, onReact, onDelete, onEdit, canEdit = false, edited = false, isOnline, darkMode = false, status, profilePicture, isDeleted = false,
 }: MessageBubbleProps) {
   const [showActions, setShowActions] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(content);
+
+  const submitEdit = () => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== content) onEdit?.(trimmed);
+    setEditing(false);
+  };
 
   if (isDeleted) {
     return (
