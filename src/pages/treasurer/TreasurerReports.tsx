@@ -300,39 +300,8 @@ export default function TreasurerReports() {
     toast.success("PDF downloaded successfully");
   };
 
-  const downloadExcel = (report: any) => {
-    const workbook = XLSX.utils.book_new();
 
-    // Summary sheet
-    const summaryData = [
-      ["KHCWW Financial Report"],
-      [getReportTitle(report)],
-      [`Period: ${new Date(report.report_period_start).toLocaleDateString()} - ${new Date(report.report_period_end).toLocaleDateString()}`],
-      [],
-      ["Summary"],
-      ["Total Contributions", parseFloat(report.total_contributions)],
-      ["Total Expenses", parseFloat(report.total_expenses)],
-      ["Total Payouts", parseFloat(report.total_payouts)],
-      ["Net Balance", parseFloat(report.net_balance)],
-      [],
-      ["Wallet Balances"],
-      ["Wallet", "Received", "Withdrawn", "Balance"],
-      ["Penalty Wallet", report.report_data?.penalty_wallet_received || 0, report.report_data?.penalty_wallet_withdrawn || 0, report.report_data?.penalty_wallet_balance || 0],
-      ["Fund Drive Wallet", report.report_data?.donation_wallet_received || 0, report.report_data?.donation_wallet_withdrawn || 0, report.report_data?.donation_wallet_balance || 0],
-      ["Operational Wallet", report.report_data?.operational_wallet_received || 0, report.report_data?.operational_wallet_withdrawn || 0, report.report_data?.operational_wallet_balance || 0],
-      [],
-      ["Payouts Breakdown"],
-      ["Penalty Wallet Payouts", report.report_data?.penalty_payouts || 0],
-      ["Fund Drive Wallet Payouts", report.report_data?.donation_payouts || 0],
-      ["Operational Wallet Payouts", report.report_data?.operational_payouts || 0],
-    ];
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
-
-    XLSX.writeFile(workbook, `KHCWW_Report_${report.report_period_start}_to_${report.report_period_end}.xlsx`);
-    toast.success("Excel file downloaded successfully");
-  };
 
   const getReportTitle = (report: any) => {
     const start = new Date(report.report_period_start);
