@@ -188,6 +188,20 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
 
+  const editMessage = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const { error } = await (supabase as any)
+        .from("messages")
+        .update({ content, edited_at: new Date().toISOString() })
+        .eq("id", messageId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  });
+
+  // Messages can be edited by their author within 15 minutes of sending
+  const EDIT_WINDOW_MS = 15 * 60 * 1000;
+
   const toggleReaction = useMutation({
     mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
       const { data: existing } = await supabase
