@@ -485,16 +485,7 @@ export default function TreasurerReports() {
                   className="flex-1"
                 >
                   <Download className="h-3 w-3 mr-1" />
-                  PDF
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => downloadExcel(report)}
-                  className="flex-1"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Excel
+                  Download PDF
                 </Button>
               </div>
             </CardContent>
