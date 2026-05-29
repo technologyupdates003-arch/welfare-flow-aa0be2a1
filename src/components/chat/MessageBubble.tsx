@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Reply, Check, CheckCheck, MoreVertical, Trash2 } from "lucide-react";
+import { Reply, Check, CheckCheck, MoreVertical, Trash2, Pencil, X as XIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface MessageBubbleProps {
@@ -13,6 +13,9 @@ interface MessageBubbleProps {
   onReply: () => void;
   onReact: (emoji: string) => void;
   onDelete?: () => void;
+  onEdit?: (newContent: string) => void;
+  canEdit?: boolean;
+  edited?: boolean;
   isOnline: boolean;
   darkMode?: boolean;
   status?: string; // sent, delivered, read
