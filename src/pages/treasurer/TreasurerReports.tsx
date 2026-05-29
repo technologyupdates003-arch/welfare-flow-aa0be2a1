@@ -201,6 +201,15 @@ export default function TreasurerReports() {
       .order("occurred_at", { ascending: false })
       .limit(500);
 
+    // Resolve member full names by phone for any transaction missing a name
+    const { data: allMembers } = await supabase.from("members").select("name, phone");
+    const normalizePhone = (p: string) => (p || "").replace(/\D/g, "").slice(-9);
+    const memberByPhone = new Map(
+      (allMembers || []).map((m: any) => [normalizePhone(m.phone), m.name])
+    );
+    const resolveName = (t: any) =>
+      t.party_name || memberByPhone.get(normalizePhone(t.party_phone)) || "—";
+
     const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
     const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
     const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
