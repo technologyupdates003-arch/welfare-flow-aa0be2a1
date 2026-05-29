@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Reply, Check, CheckCheck, MoreVertical, Trash2, Pencil, X as XIcon } from "lucide-react";
+import { Reply, Check, CheckCheck, MoreVertical, Trash2, Pencil } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface MessageBubbleProps {
