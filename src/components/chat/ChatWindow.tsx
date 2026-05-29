@@ -188,6 +188,20 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
 
+  const editMessage = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const { error } = await (supabase as any)
+        .from("messages")
+        .update({ content, edited_at: new Date().toISOString() })
+        .eq("id", messageId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  });
+
+  // Messages can be edited by their author within 15 minutes of sending
+  const EDIT_WINDOW_MS = 15 * 60 * 1000;
+
   const toggleReaction = useMutation({
     mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
       const { data: existing } = await supabase
@@ -228,13 +242,23 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
             // Always use resolvedName which is fetched from members table by user_id
             const senderName = isAdmin ? "Admin" : m.resolvedName;
             
+            const isToday = new Date(m.created_at).toDateString() === new Date().toDateString();
+            const timeLabel = isToday
+              ? format(new Date(m.created_at), "HH:mm")
+              : format(new Date(m.created_at), "dd MMM, HH:mm");
+            const canEdit =
+              m.user_id === user?.id &&
+              m.status !== "deleted" &&
+              Date.now() - new Date(m.created_at).getTime() < EDIT_WINDOW_MS;
+
             return (
               <MessageBubble
                 key={m.id}
                 content={m.content}
                 senderName={senderName}
                 isOwn={m.user_id === user?.id}
-                time={format(new Date(m.created_at), "HH:mm")}
+                time={timeLabel}
+                edited={!!m.edited_at}
                 reactions={groupReactions(m.message_reactions)}
                 replyTo={m.replyMessage ? { 
                   senderName: m.replyRole === 'admin' 
@@ -248,6 +272,8 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
                 darkMode={darkMode}
                 status={m.status}
                 onDelete={m.user_id === user?.id ? () => deleteMessage.mutate(m.id) : undefined}
+                onEdit={canEdit ? (newContent: string) => editMessage.mutate({ messageId: m.id, content: newContent }) : undefined}
+                canEdit={canEdit}
                 isDeleted={m.status === "deleted"}
                 profilePicture={m.resolvedPicture}
               />

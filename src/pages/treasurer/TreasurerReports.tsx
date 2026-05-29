@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, Plus, Calendar, TrendingUp, DollarSign, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
-import * as XLSX from "xlsx";
 
 export default function TreasurerReports() {
   const { user } = useAuth();
@@ -202,6 +201,15 @@ export default function TreasurerReports() {
       .order("occurred_at", { ascending: false })
       .limit(500);
 
+    // Resolve member full names by phone for any transaction missing a name
+    const { data: allMembers } = await supabase.from("members").select("name, phone");
+    const normalizePhone = (p: string) => (p || "").replace(/\D/g, "").slice(-9);
+    const memberByPhone = new Map(
+      (allMembers || []).map((m: any) => [normalizePhone(m.phone), m.name])
+    );
+    const resolveName = (t: any) =>
+      t.party_name || memberByPhone.get(normalizePhone(t.party_phone)) || "—";
+
     const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
     const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
     const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
@@ -218,7 +226,7 @@ export default function TreasurerReports() {
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${new Date(t.occurred_at).toLocaleDateString()}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-transform:capitalize;">${t.wallet_type}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-transform:uppercase;">${t.source}</td>
-        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.party_name || '—'}</td>
+        <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${resolveName(t)}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.party_phone || '—'}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;text-align:right;color:${t.direction === 'in' ? '#16A34A' : '#DC2626'};">${t.direction === 'in' ? '+' : '-'} Ksh ${Number(t.net_amount || 0).toLocaleString()}</td>
         <td style="padding:6px;border:1px solid #E5E7EB;font-size:10px;">${t.mpesa_receipt || '—'}</td>
@@ -301,39 +309,8 @@ export default function TreasurerReports() {
     toast.success("PDF downloaded successfully");
   };
 
-  const downloadExcel = (report: any) => {
-    const workbook = XLSX.utils.book_new();
 
-    // Summary sheet
-    const summaryData = [
-      ["KHCWW Financial Report"],
-      [getReportTitle(report)],
-      [`Period: ${new Date(report.report_period_start).toLocaleDateString()} - ${new Date(report.report_period_end).toLocaleDateString()}`],
-      [],
-      ["Summary"],
-      ["Total Contributions", parseFloat(report.total_contributions)],
-      ["Total Expenses", parseFloat(report.total_expenses)],
-      ["Total Payouts", parseFloat(report.total_payouts)],
-      ["Net Balance", parseFloat(report.net_balance)],
-      [],
-      ["Wallet Balances"],
-      ["Wallet", "Received", "Withdrawn", "Balance"],
-      ["Penalty Wallet", report.report_data?.penalty_wallet_received || 0, report.report_data?.penalty_wallet_withdrawn || 0, report.report_data?.penalty_wallet_balance || 0],
-      ["Fund Drive Wallet", report.report_data?.donation_wallet_received || 0, report.report_data?.donation_wallet_withdrawn || 0, report.report_data?.donation_wallet_balance || 0],
-      ["Operational Wallet", report.report_data?.operational_wallet_received || 0, report.report_data?.operational_wallet_withdrawn || 0, report.report_data?.operational_wallet_balance || 0],
-      [],
-      ["Payouts Breakdown"],
-      ["Penalty Wallet Payouts", report.report_data?.penalty_payouts || 0],
-      ["Fund Drive Wallet Payouts", report.report_data?.donation_payouts || 0],
-      ["Operational Wallet Payouts", report.report_data?.operational_payouts || 0],
-    ];
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
-
-    XLSX.writeFile(workbook, `KHCWW_Report_${report.report_period_start}_to_${report.report_period_end}.xlsx`);
-    toast.success("Excel file downloaded successfully");
-  };
 
   const getReportTitle = (report: any) => {
     const start = new Date(report.report_period_start);
@@ -517,16 +494,7 @@ export default function TreasurerReports() {
                   className="flex-1"
                 >
                   <Download className="h-3 w-3 mr-1" />
-                  PDF
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => downloadExcel(report)}
-                  className="flex-1"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Excel
+                  Download PDF
                 </Button>
               </div>
             </CardContent>

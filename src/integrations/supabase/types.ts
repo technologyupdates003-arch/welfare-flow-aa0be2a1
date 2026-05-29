@@ -1188,6 +1188,7 @@ export type Database = {
           content: string
           conversation_id: string | null
           created_at: string
+          edited_at: string | null
           id: string
           member_id: string | null
           reply_to_id: string | null
@@ -1201,6 +1202,7 @@ export type Database = {
           content: string
           conversation_id?: string | null
           created_at?: string
+          edited_at?: string | null
           id?: string
           member_id?: string | null
           reply_to_id?: string | null
@@ -1214,6 +1216,7 @@ export type Database = {
           content?: string
           conversation_id?: string | null
           created_at?: string
+          edited_at?: string | null
           id?: string
           member_id?: string | null
           reply_to_id?: string | null

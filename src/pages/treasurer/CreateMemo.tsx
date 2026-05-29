@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 const supabase: any = supabaseClient;
 import { useAuth } from "@/lib/auth";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,8 @@ import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
 
 export default function CreateMemo() {
   const { user } = useAuth();
+  const { id: editId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const previewRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
@@ -34,6 +37,17 @@ export default function CreateMemo() {
   const [referenceNumber, setReferenceNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+
+  // Current treasurer's full name (for memo signature/authentication)
+  const { data: treasurerName } = useQuery({
+    queryKey: ["treasurer-name", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return "";
+      const { data } = await supabase.from("members").select("name").eq("user_id", user.id).maybeSingle();
+      return data?.name || "";
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: orgSettings } = useQuery({
     queryKey: ["organization-settings"],
@@ -82,10 +96,29 @@ export default function CreateMemo() {
   });
 
   useEffect(() => {
+    if (editId) return; // keep existing reference when editing
     const year = new Date().getFullYear();
     const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
     setReferenceNumber(`KHCWW-MEMO-${year}-${randomNum}`);
-  }, []);
+  }, [editId]);
+
+  // Load existing memo when editing a draft
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      const { data: memo } = await supabase.from("memos").select("*").eq("id", editId).maybeSingle();
+      if (!memo) return;
+      setReferenceNumber(memo.reference_number || "");
+      const { data: recips } = await supabase.from("memo_recipients").select("member_id").eq("memo_id", editId);
+      setFormData({
+        title: memo.title || "",
+        category: memo.category || "general_communication",
+        content: memo.content || "",
+        recipientType: memo.recipient_type || "all_members",
+        selectedMembers: (recips || []).map((r: any) => r.member_id),
+      });
+    })();
+  }, [editId]);
 
   const saveMemo = useMutation({
     mutationFn: async (isDraft: boolean) => {
@@ -95,21 +128,43 @@ export default function CreateMemo() {
         throw new Error("Please select at least one member");
 
       setSaving(true);
-      const { data: memoData, error: memoError } = await supabase
-        .from("memos")
-        .insert({
-          reference_number: referenceNumber,
-          title: formData.title,
-          category: formData.category,
-          content: formData.content,
-          recipient_type: formData.recipientType,
-          status: isDraft ? "draft" : "sent",
-          created_by: user?.id,
-          sent_at: isDraft ? null : new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (memoError) throw memoError;
+      let memoData: any;
+      if (editId) {
+        const { data, error: memoError } = await supabase
+          .from("memos")
+          .update({
+            title: formData.title,
+            category: formData.category,
+            content: formData.content,
+            recipient_type: formData.recipientType,
+            status: isDraft ? "draft" : "sent",
+            sent_at: isDraft ? null : new Date().toISOString(),
+          })
+          .eq("id", editId)
+          .select()
+          .single();
+        if (memoError) throw memoError;
+        memoData = data;
+        // Reset recipients for this memo, then re-add below
+        await supabase.from("memo_recipients").delete().eq("memo_id", editId);
+      } else {
+        const { data, error: memoError } = await supabase
+          .from("memos")
+          .insert({
+            reference_number: referenceNumber,
+            title: formData.title,
+            category: formData.category,
+            content: formData.content,
+            recipient_type: formData.recipientType,
+            status: isDraft ? "draft" : "sent",
+            created_by: user?.id,
+            sent_at: isDraft ? null : new Date().toISOString(),
+          })
+          .select()
+          .single();
+        if (memoError) throw memoError;
+        memoData = data;
+      }
 
       let recipientIds: string[] = [];
       if (formData.recipientType === "all_members") recipientIds = members.map((m: any) => m.id);
