@@ -324,6 +324,7 @@ export default function CreateMemo() {
                 <img src={orgSettings.signature_url} alt="Treasurer Signature" className="h-12 sm:h-16 object-contain mb-2" />
               )}
               <div className="border-t-2 border-[#111827] pt-1 w-40 sm:w-56">
+                {treasurerName && <p className="text-[10px] sm:text-xs font-bold">{treasurerName}</p>}
                 <p className="text-[10px] sm:text-xs font-bold">Treasurer</p>
                 <p className="text-[10px] sm:text-xs text-[#6B7280] mt-1">Authorized by Treasurer</p>
               </div>
@@ -364,7 +365,7 @@ export default function CreateMemo() {
             <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-gradient-brand truncate">Create Memo</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-gradient-brand truncate">{editId ? "Edit Memo" : "Create Memo"}</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Branded letterhead with live preview</p>
           </div>
         </div>
