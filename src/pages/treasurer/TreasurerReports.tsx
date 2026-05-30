@@ -247,12 +247,13 @@ export default function TreasurerReports() {
     const element = document.createElement("div");
     element.innerHTML = `
       <div style="font-family:'Times New Roman',Times,serif;padding:24px;max-width:900px;background:#fff;">
-        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:center;gap:16px;">
+        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
           ${logoHtml}
-          <div>
+          <div style="text-align:right;">
             <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
             <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">${orgAddress}</p>
-            <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Email: ${orgEmail} | Tel: ${orgPhone}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#f97316;font-weight:600;">Email: ${orgEmail}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Tel: ${orgPhone}</p>
           </div>
         </div>
         <p style="text-align:center;font-size:11px;font-weight:bold;color:#f97316;letter-spacing:3px;margin:0 0 16px;">KHCWW FINANCIAL REPORT</p>
