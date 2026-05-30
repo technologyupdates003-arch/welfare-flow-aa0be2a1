@@ -83,18 +83,24 @@ export default function MemoHistory() {
       const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
       const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
       const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
-      const signatureHtml = orgSettings?.signature_url ? `<div style="margin-top:16px;"><img src="${orgSettings.signature_url}" style="max-height:120px;display:block;"/></div>` : "";
+      const signatureHtml = orgSettings?.signature_url ? `<div style="margin-bottom:6px;"><img src="${orgSettings.signature_url}" style="max-height:70px;display:block;"/></div>` : "";
       const stampHtml = orgSettings?.stamp_url ? `<div style="margin-top:0;max-width:120px;"><img src="${orgSettings.stamp_url}" style="max-height:120px;display:block;"/></div>` : "";
+      const logoUrl = orgSettings?.logo_url || logoImage;
+      const logoHtml = `<img src="${logoUrl}" style="height:72px;width:72px;object-fit:contain;" crossorigin="anonymous" />`;
 
       const container = document.createElement("div");
       container.style.padding = "24px";
       container.style.fontFamily = "'Times New Roman', Times, serif";
       container.style.background = "#ffffff";
       container.innerHTML = `
-        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;">
-          <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
-          <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">${orgAddress}</p>
-          <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Email: ${orgEmail} | Tel: ${orgPhone}</p>
+        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+          ${logoHtml}
+          <div style="text-align:right;">
+            <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
+            <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">${orgAddress}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#f97316;font-weight:600;">Email: ${orgEmail}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Tel: ${orgPhone}</p>
+          </div>
         </div>
         <p style="text-align:center;font-size:11px;font-weight:bold;color:#f97316;letter-spacing:3px;margin:0 0 16px;">KHCWW OFFICIAL MEMO</p>
         <h2 style="font-size:15px;font-weight:bold;color:#111827;margin:0 0 6px;">${memo.title || ""}</h2>
@@ -106,11 +112,19 @@ export default function MemoHistory() {
         <div style="font-size:13px;color:#111827;line-height:1.6;white-space:pre-wrap;">${(memo.content || "").replace(/</g, "&lt;")}</div>
         <div style="margin-top:48px;padding-top:14px;border-top:2px solid #111827;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;">
           <div style="max-width:240px;">
-            <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
-            <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
             ${signatureHtml}
+            <div style="border-top:2px solid #111827;padding-top:4px;width:220px;">
+              ${treasurerName ? `<p style="margin:0;font-size:11px;font-weight:bold;">${treasurerName}</p>` : ""}
+              <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
+              <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+            </div>
           </div>
           ${stampHtml}
+        </div>
+        <div style="margin-top:20px;text-align:center;font-size:9px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:10px;">
+          <div style="font-weight:bold;">${orgName}</div>
+          <div>${orgAddress}</div>
+          <div>Email: ${orgEmail} | Tel: ${orgPhone}</div>
         </div>
       `;
       document.body.appendChild(container);
