@@ -220,7 +220,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
             </Button>
 
             {/* Profile Avatar */}
-            <Avatar className="h-9 w-9 cursor-pointer">
+            <Avatar className="h-9 w-9 cursor-pointer" onClick={() => navigate("/member/profile")} title="My Profile">
               <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
                 {user?.email?.charAt(0).toUpperCase()}
               </AvatarFallback>
