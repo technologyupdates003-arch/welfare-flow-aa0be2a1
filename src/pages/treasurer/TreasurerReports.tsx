@@ -225,11 +225,12 @@ export default function TreasurerReports() {
     const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
     const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
     const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
-    const logoHtml = orgSettings?.organization_logo
-      ? `<img src="${orgSettings.organization_logo}" style="height:60px;width:auto;object-fit:contain;" />`
+    const logoUrl = orgSettings?.logo_url || orgSettings?.organization_logo || "";
+    const logoHtml = logoUrl
+      ? `<img src="${logoUrl}" style="height:72px;width:72px;object-fit:contain;" />`
       : "";
     const signatureHtml = orgSettings?.signature_url
-      ? `<div style="margin-top:16px;"><img src="${orgSettings.signature_url}" style="max-height:90px;display:block;"/></div>`
+      ? `<div style="margin-top:8px;"><img src="${orgSettings.signature_url}" style="max-height:70px;display:block;"/></div>`
       : "";
 
     const txRows = (txs || []).map((t: any) => `
