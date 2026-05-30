@@ -186,6 +186,10 @@ export default function CreateMemo() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["memos"] });
       toast.success(data.status === "draft" ? "Memo saved as draft" : "Memo sent successfully");
+      if (editId) {
+        navigate("/treasurer/memos");
+        return;
+      }
       setFormData({
         title: "",
         category: "general_communication",
