@@ -293,9 +293,12 @@ export default function TreasurerReports() {
 
         <div style="margin-top:40px;padding-top:14px;border-top:2px solid #111827;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;">
           <div style="max-width:280px;">
-            <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
-            <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
             ${signatureHtml}
+            <div style="border-top:2px solid #111827;padding-top:4px;margin-top:6px;width:220px;">
+              ${treasurerName ? `<p style="margin:0;font-size:11px;font-weight:bold;">${treasurerName}</p>` : ""}
+              <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
+              <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+            </div>
           </div>
           <div style="font-size:10px;color:#6b7280;text-align:right;">Generated: ${new Date().toLocaleString()}</div>
         </div>
