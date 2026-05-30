@@ -346,32 +346,69 @@ export default function MemoHistory() {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto glass-strong">
           <DialogHeader><DialogTitle className="pr-6 line-clamp-2">{selectedMemo?.title}</DialogTitle></DialogHeader>
-          {selectedMemo && (
+          {selectedMemo && (() => {
+            const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
+            const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
+            const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
+            const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
+            const memoDate = selectedMemo.sent_at || selectedMemo.created_at;
+            return (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="glass-subtle rounded-lg p-3">
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Reference</p>
-                  <p className="font-mono text-xs mt-1 break-all">{selectedMemo.reference_number}</p>
+              {/* Full branded letterhead — same as memo template */}
+              <div className="bg-white text-[#111827] rounded-xl p-5 sm:p-7 shadow-sm border border-border/40" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                <div className="border-b-4 border-orange-500 pb-3 sm:pb-4 mb-4 sm:mb-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <img src={orgSettings?.logo_url || logoImage} alt="Logo" className="h-14 w-14 sm:h-20 sm:w-20 object-contain shrink-0" />
+                    <div className="flex-1 text-right">
+                      <h1 className="text-sm sm:text-lg font-bold mb-1 leading-tight">{orgName}</h1>
+                      <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-0.5">
+                        <p>{orgAddress}</p>
+                        <p className="text-orange-600 font-medium break-all">Email: {orgEmail}</p>
+                        <p>Tel: {orgPhone}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="glass-subtle rounded-lg p-3">
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Category</p>
-                  <p className="text-xs mt-1">{getCategoryLabel(selectedMemo.category)}</p>
-                </div>
-                <div className="glass-subtle rounded-lg p-3">
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Status</p>
-                  <p className="mt-1">{selectedMemo.status === "draft"
-                    ? <Badge variant="secondary">Draft</Badge>
-                    : <Badge className="bg-success/15 text-success border border-success/30">Sent</Badge>}</p>
-                </div>
-                <div className="glass-subtle rounded-lg p-3">
-                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Date Sent</p>
-                  <p className="text-xs mt-1">{selectedMemo.sent_at ? new Date(selectedMemo.sent_at).toLocaleDateString() : "—"}</p>
-                </div>
-              </div>
 
-              <div className="glass-subtle rounded-xl p-4">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Content</p>
-                <p className="text-sm whitespace-pre-wrap">{selectedMemo.content}</p>
+                <div className="text-center mb-4">
+                  <p className="text-[10px] sm:text-xs font-bold text-orange-500 tracking-widest">KHCWW OFFICIAL MEMO</p>
+                </div>
+
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-sm sm:text-base font-bold mb-2">{selectedMemo.title}</h2>
+                  <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-1 mb-4">
+                    <p>Date: {new Date(memoDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                    <p className="break-all">Reference: {selectedMemo.reference_number}</p>
+                    <p>Category: {getCategoryLabel(selectedMemo.category)}</p>
+                  </div>
+                  <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{selectedMemo.content}</div>
+                </div>
+
+                <div className="mt-10 sm:mt-12 pt-4 sm:pt-6 border-t-2 border-[#E5E7EB]">
+                  <div className="flex justify-between items-end gap-3">
+                    <div>
+                      {orgSettings?.signature_url && (
+                        <img src={orgSettings.signature_url} alt="Treasurer Signature" className="h-12 sm:h-16 object-contain mb-2" />
+                      )}
+                      <div className="border-t-2 border-[#111827] pt-1 w-40 sm:w-56">
+                        {treasurerName && <p className="text-[10px] sm:text-xs font-bold">{treasurerName}</p>}
+                        <p className="text-[10px] sm:text-xs font-bold">Treasurer</p>
+                        <p className="text-[10px] sm:text-xs text-[#6B7280] mt-1">Authorized by Treasurer</p>
+                      </div>
+                    </div>
+                    {orgSettings?.stamp_url && (
+                      <img src={orgSettings.stamp_url} alt="Stamp" className="h-16 w-16 sm:h-24 sm:w-24 object-contain opacity-90 shrink-0" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 sm:mt-8 pt-4 border-t border-[#E5E7EB] text-center">
+                  <div className="text-[10px] sm:text-xs text-[#6B7280] space-y-0.5">
+                    <p className="font-semibold">{orgName}</p>
+                    <p>{orgAddress}</p>
+                    <p className="break-all">Email: {orgEmail} | Tel: {orgPhone}</p>
+                  </div>
+                </div>
               </div>
 
               {selectedMemo.memo_recipients?.length > 0 && (
@@ -396,7 +433,8 @@ export default function MemoHistory() {
                 <Download className="h-4 w-4 mr-2" /> Download PDF
               </Button>
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
