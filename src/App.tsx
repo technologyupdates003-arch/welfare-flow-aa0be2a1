@@ -153,6 +153,7 @@ function AppRoutes() {
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
         <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
+        <Route path="/treasurer/memos/:id/edit" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
         <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
@@ -225,6 +226,7 @@ function AppRoutes() {
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
         <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
+        <Route path="/treasurer/memos/:id/edit" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
         <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
@@ -286,6 +288,7 @@ function AppRoutes() {
         <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
         <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
         <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
+        <Route path="/treasurer/memos/:id/edit" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
         <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
         <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
         <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
