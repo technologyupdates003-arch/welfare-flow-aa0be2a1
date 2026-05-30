@@ -17,10 +17,21 @@ import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
 export default function MemoHistory() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMemo, setSelectedMemo] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "sent" | "draft">("all");
+
+  const { data: treasurerName } = useQuery({
+    queryKey: ["treasurer-name", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return "";
+      const { data } = await supabase.from("members").select("name").eq("user_id", user.id).maybeSingle();
+      return data?.name || "";
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: memos = [], isLoading } = useQuery({
     queryKey: ["memos"],
