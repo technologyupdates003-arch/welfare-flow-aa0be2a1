@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Eye, Download, RotateCcw, Trash2, Search, Plus, FileText, Users, CheckCheck, Mail } from "lucide-react";
+import { Eye, Download, RotateCcw, Trash2, Search, Plus, FileText, Users, CheckCheck, Mail, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MemoHistory() {
@@ -255,6 +255,11 @@ export default function MemoHistory() {
                         </Button>
                       )}
                       {memo.status === "draft" && (
+                        <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => navigate(`/treasurer/memos/${memo.id}/edit`)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {memo.status === "draft" && (
                         <Button size="sm" variant="outline" className="h-8 px-2 text-destructive" onClick={() => deleteMemo.mutate(memo.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -308,6 +313,7 @@ export default function MemoHistory() {
                               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setSelectedMemo(memo); setPreviewOpen(true); }} title="View"><Eye className="h-4 w-4" /></Button>
                               <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Download" onClick={() => downloadMemoPDF(memo)}><Download className="h-4 w-4" /></Button>
                               {memo.status === "sent" && <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => resendMemo.mutate(memo.id)} title="Resend"><RotateCcw className="h-4 w-4" /></Button>}
+                              {memo.status === "draft" && <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => navigate(`/treasurer/memos/${memo.id}/edit`)} title="Edit"><Pencil className="h-4 w-4" /></Button>}
                               {memo.status === "draft" && <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => deleteMemo.mutate(memo.id)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                             </div>
                           </td>
