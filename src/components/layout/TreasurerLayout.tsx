@@ -129,7 +129,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
 
         {/* Bottom Profile Section */}
         <div className="p-3 border-t border-white/10">
-          <div className="flex items-center gap-2 mb-2">
+          <button onClick={() => navigate("/member/profile")} className="flex items-center gap-2 mb-2 w-full text-left hover:bg-white/5 rounded-lg p-1 -m-1 transition-colors" title="My Profile">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-600 text-white text-xs">
                 {user?.email?.charAt(0).toUpperCase()}
@@ -139,7 +139,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
               <p className="text-xs font-medium truncate">{user?.email}</p>
               <p className="text-xs text-orange-400">Treasurer</p>
             </div>
-          </div>
+          </button>
           <Button
             variant="ghost"
             size="sm"
