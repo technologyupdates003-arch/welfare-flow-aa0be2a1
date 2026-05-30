@@ -30,6 +30,17 @@ export default function TreasurerReports() {
     },
   });
 
+  // Current treasurer's full name (for report signature)
+  const { data: treasurerName } = useQuery({
+    queryKey: ["treasurer-name", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return "";
+      const { data } = await supabase.from("members").select("name").eq("user_id", user.id).maybeSingle();
+      return data?.name || "";
+    },
+    enabled: !!user?.id,
+  });
+
   // Fetch existing reports
   const { data: reports = [] } = useQuery({
     queryKey: ["financial-reports"],
@@ -214,11 +225,12 @@ export default function TreasurerReports() {
     const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";
     const orgEmail = orgSettings?.organization_email || "Khcww2020@gmail.com";
     const orgPhone = orgSettings?.organization_phone || "+254 712 345 678";
-    const logoHtml = orgSettings?.organization_logo
-      ? `<img src="${orgSettings.organization_logo}" style="height:60px;width:auto;object-fit:contain;" />`
+    const logoUrl = orgSettings?.logo_url || orgSettings?.organization_logo || "";
+    const logoHtml = logoUrl
+      ? `<img src="${logoUrl}" style="height:72px;width:72px;object-fit:contain;" />`
       : "";
     const signatureHtml = orgSettings?.signature_url
-      ? `<div style="margin-top:16px;"><img src="${orgSettings.signature_url}" style="max-height:90px;display:block;"/></div>`
+      ? `<div style="margin-top:8px;"><img src="${orgSettings.signature_url}" style="max-height:70px;display:block;"/></div>`
       : "";
 
     const txRows = (txs || []).map((t: any) => `
@@ -235,12 +247,13 @@ export default function TreasurerReports() {
     const element = document.createElement("div");
     element.innerHTML = `
       <div style="font-family:'Times New Roman',Times,serif;padding:24px;max-width:900px;background:#fff;">
-        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:center;gap:16px;">
+        <div style="border-bottom:4px solid #f97316;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
           ${logoHtml}
-          <div>
+          <div style="text-align:right;">
             <h1 style="margin:0;font-size:18px;font-weight:bold;color:#111827;">${orgName}</h1>
             <p style="margin:4px 0 0;font-size:11px;color:#6b7280;">${orgAddress}</p>
-            <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Email: ${orgEmail} | Tel: ${orgPhone}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#f97316;font-weight:600;">Email: ${orgEmail}</p>
+            <p style="margin:2px 0 0;font-size:11px;color:#6b7280;">Tel: ${orgPhone}</p>
           </div>
         </div>
         <p style="text-align:center;font-size:11px;font-weight:bold;color:#f97316;letter-spacing:3px;margin:0 0 16px;">KHCWW FINANCIAL REPORT</p>
@@ -280,9 +293,12 @@ export default function TreasurerReports() {
 
         <div style="margin-top:40px;padding-top:14px;border-top:2px solid #111827;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;">
           <div style="max-width:280px;">
-            <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
-            <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
             ${signatureHtml}
+            <div style="border-top:2px solid #111827;padding-top:4px;margin-top:6px;width:220px;">
+              ${treasurerName ? `<p style="margin:0;font-size:11px;font-weight:bold;">${treasurerName}</p>` : ""}
+              <p style="margin:0;font-size:11px;font-weight:bold;">Treasurer</p>
+              <p style="margin:4px 0 0;font-size:10px;color:#6b7280;">Authorized by Treasurer</p>
+            </div>
           </div>
           <div style="font-size:10px;color:#6b7280;text-align:right;">Generated: ${new Date().toLocaleString()}</div>
         </div>
