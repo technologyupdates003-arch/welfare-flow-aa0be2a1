@@ -30,6 +30,17 @@ export default function TreasurerReports() {
     },
   });
 
+  // Current treasurer's full name (for report signature)
+  const { data: treasurerName } = useQuery({
+    queryKey: ["treasurer-name", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return "";
+      const { data } = await supabase.from("members").select("name").eq("user_id", user.id).maybeSingle();
+      return data?.name || "";
+    },
+    enabled: !!user?.id,
+  });
+
   // Fetch existing reports
   const { data: reports = [] } = useQuery({
     queryKey: ["financial-reports"],
