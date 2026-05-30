@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Eye, Download, RotateCcw, Trash2, Search, Plus, FileText, Users, CheckCheck, Mail, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
+import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
+
 
 export default function MemoHistory() {
   const navigate = useNavigate();
