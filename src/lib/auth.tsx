@@ -141,6 +141,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    try {
+      // Re-lock all dashboards so the next user must verify their PIN/biometric
+      const { lockAll } = await import("@/lib/dashboardLock");
+      lockAll();
+    } catch (_) { /* ignore */ }
     await supabase.auth.signOut();
   };
 
