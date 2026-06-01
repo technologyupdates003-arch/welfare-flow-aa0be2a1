@@ -34,18 +34,6 @@ Deno.serve(async (req) => {
 
     const { monthly_contribution_amount, contribution_due_day, penalty_amount, penalty_grace_days } = settings;
 
-    // 2. Get all active members
-    const { data: members } = await supabase
-      .from("members")
-      .select("id, user_id")
-      .eq("is_active", true);
-
-    if (!members || members.length === 0) {
-      return new Response(JSON.stringify({ status: "no_members" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     let generated = 0;
     let overdueMarked = 0;
     let penaltiesApplied = 0;
@@ -53,8 +41,8 @@ Deno.serve(async (req) => {
     let archivedNews = 0;
 
     // 0. Auto-archive events & news whose scheduled (or rescheduled) end date has passed.
-    // This makes them "disappear for good" once their date arrives.
-    const nowIso = now.toISOString();
+    // This makes them "disappear for good" once their date arrives. Runs first so it
+    // happens even when there are no active members.
     try {
       const { data: activeEvents } = await supabase
         .from("events")
@@ -87,6 +75,22 @@ Deno.serve(async (req) => {
       }
     } catch (e) {
       console.error("Archival error:", e);
+    }
+
+    // 2. Get all active members
+    const { data: members } = await supabase
+      .from("members")
+      .select("id, user_id")
+      .eq("is_active", true);
+
+    if (!members || members.length === 0) {
+      return new Response(JSON.stringify({
+        status: "no_members",
+        archivedEvents,
+        archivedNews,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     for (const member of members) {
