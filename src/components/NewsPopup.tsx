@@ -29,6 +29,7 @@ export default function NewsPopup() {
       const { data: allNews } = await supabase
         .from("news")
         .select("*")
+        .eq("status", "active")
         .order("created_at", { ascending: false });
 
       if (!allNews) return [];
@@ -40,9 +41,15 @@ export default function NewsPopup() {
         .eq("user_id", user.id);
 
       const readNewsIds = new Set(readNews?.map(r => r.news_id) || []);
-      
-      // Filter out read news
-      return allNews.filter(news => !readNewsIds.has(news.id));
+      const now = new Date();
+
+      // Filter out read news and any whose scheduled/rescheduled date has passed
+      return allNews.filter(news => {
+        if (readNewsIds.has(news.id)) return false;
+        const end = (news as any).rescheduled_date || (news as any).scheduled_date;
+        if (end && new Date(end) < now) return false;
+        return true;
+      });
     },
     enabled: !!user,
     refetchInterval: 30000, // Check every 30 seconds
