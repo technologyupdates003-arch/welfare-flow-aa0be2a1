@@ -1,6 +1,7 @@
 ﻿import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import DashboardLock from "@/components/DashboardLock";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, TrendingUp, FileSpreadsheet,
@@ -105,6 +106,7 @@ export default function OfficeLayout({ children }: { children: ReactNode }) {
   const roleBadge = getRoleBadge(role || "member");
 
   return (
+    <DashboardLock area="office">
     <div className="flex min-h-screen bg-gray-50">
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -204,5 +206,6 @@ export default function OfficeLayout({ children }: { children: ReactNode }) {
       <FloatingChatBubble />
       <AIAssistant />
     </div>
+    </DashboardLock>
   );
 }
