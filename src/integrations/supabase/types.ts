@@ -383,6 +383,33 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_security: {
+        Row: {
+          created_at: string
+          id: string
+          pin_hash: string | null
+          updated_at: string
+          user_id: string
+          webauthn_credential_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pin_hash?: string | null
+          updated_at?: string
+          user_id: string
+          webauthn_credential_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pin_hash?: string | null
+          updated_at?: string
+          user_id?: string
+          webauthn_credential_id?: string | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
