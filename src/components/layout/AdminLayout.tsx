@@ -1,6 +1,7 @@
 ﻿import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import DashboardLock from "@/components/DashboardLock";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -173,6 +174,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   });
 
   return (
+    <DashboardLock area="admin">
     <div className="flex min-h-screen bg-gray-50">
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -256,5 +258,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <FloatingChatBubble />
       <AIAssistant />
     </div>
+    </DashboardLock>
   );
 }

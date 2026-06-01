@@ -291,7 +291,12 @@ export default function WithdrawalApproval() {
       }
 
       // Update signatory status based on withdrawal type
-      const signatoryTable = selectedWithdrawal.type === 'penalty' ? 'withdrawal_signatories' : 'donation_withdrawal_signatories';
+      const signatoryTable =
+        selectedWithdrawal.type === 'penalty'
+          ? 'withdrawal_signatories'
+          : selectedWithdrawal.type === 'operational'
+            ? 'operational_withdrawal_signatories'
+            : 'donation_withdrawal_signatories';
       const updatePayload: any = {
         status: action === 'approve' ? 'approved' : 'rejected',
         [action === 'approve' ? 'approved_at' : 'rejected_at']: new Date().toISOString(),
@@ -319,8 +324,18 @@ export default function WithdrawalApproval() {
       const anyRejected = allSignatories?.some((s) => s.status === 'rejected');
 
       // Update withdrawal status based on type
-      const withdrawalTable = selectedWithdrawal.type === 'penalty' ? 'penalty_withdrawals' : 'donation_withdrawals';
-      const walletTable = selectedWithdrawal.type === 'penalty' ? 'penalty_wallet' : 'donation_wallet';
+      const withdrawalTable =
+        selectedWithdrawal.type === 'penalty'
+          ? 'penalty_withdrawals'
+          : selectedWithdrawal.type === 'operational'
+            ? 'operational_withdrawals'
+            : 'donation_withdrawals';
+      const walletTable =
+        selectedWithdrawal.type === 'penalty'
+          ? 'penalty_wallet'
+          : selectedWithdrawal.type === 'operational'
+            ? 'operational_wallet'
+            : 'donation_wallet';
 
       if (allApproved) {
         // All signatories approved - check if already completed (idempotency)

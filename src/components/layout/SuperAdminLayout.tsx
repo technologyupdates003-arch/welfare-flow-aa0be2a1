@@ -1,5 +1,6 @@
 import { ReactNode, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import DashboardLock from "@/components/DashboardLock";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -59,6 +60,7 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
     || "Dashboards";
 
   return (
+    <DashboardLock area="super_admin">
     <div className="flex min-h-screen">
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -171,5 +173,6 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
       <FloatingChatBubble />
       <AIAssistant />
     </div>
+    </DashboardLock>
   );
 }

@@ -20,7 +20,7 @@ interface B2CRequest {
   phoneNumber: string;
   reason: string;
   adminName?: string;
-  walletType?: "penalty" | "donation";
+  walletType?: "penalty" | "donation" | "operational";
 }
 
 const DARAJA_BASE =

@@ -38,10 +38,15 @@ export default function EventPopup() {
       const { data } = await supabase
         .from("events")
         .select("*")
+        .eq("status", "active")
         .order("created_at", { ascending: false });
       if (!data) return [];
 
+      const now = new Date();
       return data.filter(event => {
+        // Hide events whose scheduled/rescheduled date has already passed
+        const end = (event as any).rescheduled_date || (event as any).scheduled_date;
+        if (end && new Date(end) < now) return false;
         if (!event.created_at) return false;
         if (!lastSeenAt) return true;
         return new Date(event.created_at) > new Date(lastSeenAt);

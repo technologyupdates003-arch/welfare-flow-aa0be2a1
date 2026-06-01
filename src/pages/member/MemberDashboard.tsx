@@ -101,9 +101,16 @@ export default function MemberDashboard() {
       const { data } = await supabase
         .from("news")
         .select("*")
+        .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(2);
-      return data || [];
+        .limit(10);
+      const now = new Date();
+      return (data || [])
+        .filter((n: any) => {
+          const end = n.rescheduled_date || n.scheduled_date;
+          return !end || new Date(end) >= now;
+        })
+        .slice(0, 2);
     },
   });
 
