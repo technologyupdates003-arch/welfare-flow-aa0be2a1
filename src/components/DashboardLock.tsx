@@ -220,13 +220,13 @@ export default function DashboardLock({ area, children }: DashboardLockProps) {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4 mr-2" />}
                 Unlock
               </Button>
-              {biometricSupported() && hasBiometric && (
+              {bioAvailable && hasBiometric && (
                 <Button variant="outline" className="w-full" onClick={tryBiometric} disabled={busy}>
                   <Fingerprint className="h-4 w-4 mr-2" />
                   Use fingerprint
                 </Button>
               )}
-              {biometricSupported() && !hasBiometric && (
+              {bioAvailable && !hasBiometric && (
                 <Button variant="ghost" size="sm" className="w-full" onClick={handleEnrollBiometric} disabled={busy}>
                   <Fingerprint className="h-4 w-4 mr-2" />
                   Set up fingerprint unlock
