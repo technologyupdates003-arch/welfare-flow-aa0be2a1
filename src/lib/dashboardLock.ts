@@ -62,7 +62,29 @@ export function lockAll(): void {
 
 // ---- Biometric (WebAuthn platform authenticator) ----
 export function biometricSupported(): boolean {
-  return typeof window !== "undefined" && !!window.PublicKeyCredential;
+  return (
+    typeof window !== "undefined" &&
+    !!window.PublicKeyCredential &&
+    typeof navigator !== "undefined" &&
+    !!navigator.credentials
+  );
+}
+
+/**
+ * Checks whether the device actually has a usable platform authenticator
+ * (e.g. a fingerprint or face sensor on the laptop/phone).
+ */
+export async function platformAuthenticatorAvailable(): Promise<boolean> {
+  try {
+    if (!biometricSupported()) return false;
+    if (!window.isSecureContext) return false; // WebAuthn requires HTTPS / localhost
+    if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== "function") {
+      return false;
+    }
+    return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
 }
 
 function bufToBase64Url(buf: ArrayBuffer): string {
