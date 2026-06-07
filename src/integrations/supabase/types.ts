@@ -460,31 +460,40 @@ export type Database = {
       donation_campaigns: {
         Row: {
           active: boolean
+          allow_partial: boolean
           amount: number
           created_at: string
           created_by: string | null
           description: string | null
+          goal_type: string
           id: string
+          target_total: number | null
           title: string
           updated_at: string
         }
         Insert: {
           active?: boolean
+          allow_partial?: boolean
           amount: number
           created_at?: string
           created_by?: string | null
           description?: string | null
+          goal_type?: string
           id?: string
+          target_total?: number | null
           title: string
           updated_at?: string
         }
         Update: {
           active?: boolean
+          allow_partial?: boolean
           amount?: number
           created_at?: string
           created_by?: string | null
           description?: string | null
+          goal_type?: string
           id?: string
+          target_total?: number | null
           title?: string
           updated_at?: string
         }
