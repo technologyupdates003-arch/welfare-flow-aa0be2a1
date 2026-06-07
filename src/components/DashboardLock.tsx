@@ -8,7 +8,7 @@ import {
   setUnlocked,
   registerBiometric,
   verifyBiometric,
-  biometricSupported,
+  platformAuthenticatorAvailable,
 } from "@/lib/dashboardLock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,12 @@ export default function DashboardLock({ area, children }: DashboardLockProps) {
   const [confirmPin, setConfirmPin] = useState("");
   const [mode, setMode] = useState<"unlock" | "setup">("unlock");
   const [busy, setBusy] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
+
+  // Detect a real fingerprint/face sensor on this device.
+  useEffect(() => {
+    platformAuthenticatorAvailable().then(setBioAvailable);
+  }, []);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -183,7 +189,7 @@ export default function DashboardLock({ area, children }: DashboardLockProps) {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
                 Create PIN & Unlock
               </Button>
-              {biometricSupported() && (
+              {bioAvailable && (
                 <Button variant="outline" className="w-full" onClick={handleEnrollBiometric} disabled={busy}>
                   <Fingerprint className="h-4 w-4 mr-2" />
                   {hasBiometric ? "Fingerprint enabled" : "Enable fingerprint (optional)"}
@@ -213,13 +219,13 @@ export default function DashboardLock({ area, children }: DashboardLockProps) {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4 mr-2" />}
                 Unlock
               </Button>
-              {biometricSupported() && hasBiometric && (
+              {bioAvailable && hasBiometric && (
                 <Button variant="outline" className="w-full" onClick={tryBiometric} disabled={busy}>
                   <Fingerprint className="h-4 w-4 mr-2" />
                   Use fingerprint
                 </Button>
               )}
-              {biometricSupported() && !hasBiometric && (
+              {bioAvailable && !hasBiometric && (
                 <Button variant="ghost" size="sm" className="w-full" onClick={handleEnrollBiometric} disabled={busy}>
                   <Fingerprint className="h-4 w-4 mr-2" />
                   Set up fingerprint unlock

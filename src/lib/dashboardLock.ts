@@ -62,7 +62,29 @@ export function lockAll(): void {
 
 // ---- Biometric (WebAuthn platform authenticator) ----
 export function biometricSupported(): boolean {
-  return typeof window !== "undefined" && !!window.PublicKeyCredential;
+  return (
+    typeof window !== "undefined" &&
+    !!window.PublicKeyCredential &&
+    typeof navigator !== "undefined" &&
+    !!navigator.credentials
+  );
+}
+
+/**
+ * Checks whether the device actually has a usable platform authenticator
+ * (e.g. a fingerprint or face sensor on the laptop/phone).
+ */
+export async function platformAuthenticatorAvailable(): Promise<boolean> {
+  try {
+    if (!biometricSupported()) return false;
+    if (!window.isSecureContext) return false; // WebAuthn requires HTTPS / localhost
+    if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== "function") {
+      return false;
+    }
+    return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
 }
 
 function bufToBase64Url(buf: ArrayBuffer): string {
@@ -83,27 +105,48 @@ function base64UrlToBuf(b64: string): ArrayBuffer {
 
 /** Register a platform (fingerprint/face) authenticator and store its credential id. */
 export async function registerBiometric(userId: string, displayName: string): Promise<void> {
+  if (!biometricSupported()) {
+    throw new Error("This browser does not support fingerprint unlock");
+  }
+  if (!window.isSecureContext) {
+    throw new Error("Fingerprint unlock requires a secure (https) connection");
+  }
+  const hasSensor = await platformAuthenticatorAvailable();
+  if (!hasSensor) {
+    throw new Error("No fingerprint/face sensor found on this device");
+  }
+
   const challenge = crypto.getRandomValues(new Uint8Array(32));
-  const cred = (await navigator.credentials.create({
-    publicKey: {
-      challenge,
-      rp: { name: "Welfare App", id: window.location.hostname },
-      user: {
-        id: new TextEncoder().encode(userId),
-        name: displayName || "user",
-        displayName: displayName || "user",
+  let cred: PublicKeyCredential | null;
+  try {
+    cred = (await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: "Welfare App", id: window.location.hostname },
+        user: {
+          id: new TextEncoder().encode(userId),
+          name: displayName || "user",
+          displayName: displayName || "user",
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "required",
+          residentKey: "preferred",
+        },
+        timeout: 60000,
       },
-      pubKeyCredParams: [
-        { type: "public-key", alg: -7 },
-        { type: "public-key", alg: -257 },
-      ],
-      authenticatorSelection: {
-        authenticatorAttachment: "platform",
-        userVerification: "required",
-      },
-      timeout: 60000,
-    },
-  })) as PublicKeyCredential | null;
+    })) as PublicKeyCredential | null;
+  } catch (e: any) {
+    if (e?.name === "NotAllowedError") {
+      throw new Error("Fingerprint setup was cancelled or timed out");
+    }
+    throw new Error(e?.message || "Could not start fingerprint enrollment");
+  }
+
 
   if (!cred) throw new Error("Biometric registration cancelled");
   const credentialId = bufToBase64Url(cred.rawId);

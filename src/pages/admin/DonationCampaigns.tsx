@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -22,13 +22,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Loader2, 
-  AlertCircle, 
-  Plus, 
-  Edit2, 
+import {
+  Loader2,
+  AlertCircle,
+  Plus,
+  Edit2,
   Trash2,
   Target,
+  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,6 +38,9 @@ interface Campaign {
   title: string;
   description?: string;
   amount: number;
+  goal_type: 'fixed' | 'shared';
+  target_total?: number | null;
+  allow_partial: boolean;
   active: boolean;
   created_by: string;
   created_at: string;
@@ -46,6 +50,7 @@ interface Campaign {
 export default function DonationCampaigns() {
   const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -54,23 +59,35 @@ export default function DonationCampaigns() {
   // Form state
   const [campaignTitle, setCampaignTitle] = useState('');
   const [campaignDescription, setCampaignDescription] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
+  const [goalType, setGoalType] = useState<'fixed' | 'shared'>('fixed');
+  const [perMemberAmount, setPerMemberAmount] = useState('');
+  const [targetTotal, setTargetTotal] = useState('');
+  const [allowPartial, setAllowPartial] = useState(true);
   const [isActive, setIsActive] = useState(true);
 
-  // Fetch campaigns
+  // Computed per-member share when using a shared total target
+  const computedShare =
+    goalType === 'shared' && targetTotal && memberCount > 0
+      ? Math.ceil(parseFloat(targetTotal) / memberCount)
+      : 0;
+
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('donation_campaigns')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [{ data, error }, { count }] = await Promise.all([
+        supabase
+          .from('donation_campaigns')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('members')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true),
+      ]);
 
-      if (error) {
-        console.error('Error fetching campaigns:', error);
-        throw error;
-      }
+      if (error) throw error;
       setCampaigns((data as any) || []);
+      setMemberCount(count || 0);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       toast.error('Failed to fetch campaigns');
@@ -83,116 +100,115 @@ export default function DonationCampaigns() {
     fetchCampaigns();
   }, []);
 
-  // Create or update campaign
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!campaignTitle.trim() || !campaignDescription.trim() || !targetAmount) {
+
+    if (!campaignTitle.trim() || !campaignDescription.trim()) {
       toast.error('Please fill in all required fields');
       return;
+    }
+
+    // Determine the per-member amount to store
+    let amountPerMember = 0;
+    let totalTargetValue: number | null = null;
+
+    if (goalType === 'shared') {
+      const total = parseFloat(targetTotal);
+      if (!total || total <= 0) {
+        toast.error('Enter a valid total target amount');
+        return;
+      }
+      if (memberCount <= 0) {
+        toast.error('No active members to split the target across');
+        return;
+      }
+      totalTargetValue = total;
+      amountPerMember = Math.ceil(total / memberCount);
+    } else {
+      const perMember = parseFloat(perMemberAmount);
+      if (!perMember || perMember <= 0) {
+        toast.error('Enter a valid per-member amount');
+        return;
+      }
+      amountPerMember = perMember;
     }
 
     try {
       setSubmitting(true);
 
+      const payload = {
+        title: campaignTitle.trim(),
+        description: campaignDescription.trim(),
+        amount: amountPerMember,
+        goal_type: goalType,
+        target_total: totalTargetValue,
+        allow_partial: allowPartial,
+        active: isActive,
+      };
+
       if (editingId) {
-        // Update campaign
         const { error } = await supabase
           .from('donation_campaigns')
-          .update({
-            title: campaignTitle.trim(),
-            description: campaignDescription.trim(),
-            amount: parseFloat(targetAmount),
-            active: isActive,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ ...payload, updated_at: new Date().toISOString() } as any)
           .eq('id', editingId);
-
-        if (error) {
-          console.error('Campaign update error:', error);
-          throw error;
-        }
-        toast.success('Campaign updated successfully');
+        if (error) throw error;
+        toast.success('Funds drive updated successfully');
       } else {
-        // Create new campaign
-        if (!user?.id) {
-          throw new Error('You must be logged in to create a campaign');
-        }
-
+        if (!user?.id) throw new Error('You must be logged in to create a funds drive');
         const { error } = await supabase
           .from('donation_campaigns')
-          .insert([{
-            title: campaignTitle.trim(),
-            description: campaignDescription.trim(),
-            amount: parseFloat(targetAmount),
-            active: isActive,
-            created_by: user.id,
-          }]);
-
-        if (error) {
-          console.error('Campaign creation error:', error);
-          throw new Error(error.message || 'Failed to create campaign');
-        }
-        
-        toast.success('Campaign created successfully');
+          .insert([{ ...payload, created_by: user.id }] as any);
+        if (error) throw new Error(error.message || 'Failed to create funds drive');
+        toast.success('Funds drive created successfully');
       }
 
-      // Reset form and refresh
       resetForm();
       await fetchCampaigns();
       setShowDialog(false);
     } catch (error: any) {
       console.error('Error saving campaign:', error);
-      const errorMessage = error?.message || 'Failed to save campaign';
-      toast.error(errorMessage);
+      toast.error(error?.message || 'Failed to save funds drive');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Delete campaign
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this campaign?')) return;
-
+    if (!window.confirm('Are you sure you want to delete this funds drive?')) return;
     try {
-      const { error } = await supabase
-        .from('donation_campaigns')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Campaign deletion error:', error);
-        throw error;
-      }
-      toast.success('Campaign deleted successfully');
+      const { error } = await supabase.from('donation_campaigns').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Funds drive deleted successfully');
       await fetchCampaigns();
     } catch (error: any) {
       console.error('Error deleting campaign:', error);
-      const errorMessage = error?.message || 'Failed to delete campaign';
-      toast.error(errorMessage);
+      toast.error(error?.message || 'Failed to delete funds drive');
     }
   };
 
-  // Edit campaign
   const handleEdit = (campaign: Campaign) => {
     setCampaignTitle(campaign.title);
     setCampaignDescription(campaign.description || '');
-    setTargetAmount(campaign.amount.toString());
+    setGoalType(campaign.goal_type || 'fixed');
+    setPerMemberAmount(campaign.amount?.toString() || '');
+    setTargetTotal(campaign.target_total?.toString() || '');
+    setAllowPartial(campaign.allow_partial ?? true);
     setIsActive(campaign.active);
     setEditingId(campaign.id);
     setShowDialog(true);
   };
 
-  // Reset form
   const resetForm = () => {
     setCampaignTitle('');
     setCampaignDescription('');
-    setTargetAmount('');
+    setGoalType('fixed');
+    setPerMemberAmount('');
+    setTargetTotal('');
+    setAllowPartial(true);
     setIsActive(true);
     setEditingId(null);
   };
 
-  // Close dialog
   const handleCloseDialog = () => {
     setShowDialog(false);
     resetForm();
@@ -215,31 +231,30 @@ export default function DonationCampaigns() {
             <Target className="h-8 w-8" />
             Funds Drives
           </h1>
-          <p className="text-gray-600 mt-1">Manage funds drives and track contributions</p>
+          <p className="text-gray-600 mt-1 flex items-center gap-1">
+            <Users className="h-4 w-4" /> {memberCount} active members
+          </p>
         </div>
-        
+
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
             <Button onClick={() => resetForm()} className="gap-2">
               <Plus className="h-4 w-4" />
-              New Campaign
+              New Funds Drive
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? 'Edit Funds Drive' : 'Create New Funds Drive'}
               </DialogTitle>
               <DialogDescription>
-                {editingId 
-                  ? 'Update funds drive details'
-                  : 'Create a new funds drive'}
+                {editingId ? 'Update funds drive details' : 'Create a new funds drive'}
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Campaign Title */}
               <div>
                 <label className="text-sm font-medium">Funds Drive Title *</label>
                 <Input
@@ -250,7 +265,6 @@ export default function DonationCampaigns() {
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="text-sm font-medium">Description *</label>
                 <Textarea
@@ -262,20 +276,81 @@ export default function DonationCampaigns() {
                 />
               </div>
 
-              {/* Target Amount */}
-              <div>
-                <label className="text-sm font-medium">Target Amount (KES) *</label>
-                <Input
-                  type="number"
-                  placeholder="50000"
-                  value={targetAmount}
-                  onChange={(e) => setTargetAmount(e.target.value)}
-                  disabled={submitting}
-                  min="0"
-                />
+              {/* Goal type */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Goal Type *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGoalType('fixed')}
+                    className={`rounded-lg border p-3 text-left text-sm transition ${
+                      goalType === 'fixed' ? 'border-primary bg-primary/5' : 'border-slate-200'
+                    }`}
+                  >
+                    <p className="font-semibold">Fixed amount</p>
+                    <p className="text-xs text-slate-500">Each member pays the same set amount</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGoalType('shared')}
+                    className={`rounded-lg border p-3 text-left text-sm transition ${
+                      goalType === 'shared' ? 'border-primary bg-primary/5' : 'border-slate-200'
+                    }`}
+                  >
+                    <p className="font-semibold">Shared target</p>
+                    <p className="text-xs text-slate-500">Split a total goal across members</p>
+                  </button>
+                </div>
               </div>
 
-              {/* Active Status */}
+              {goalType === 'fixed' ? (
+                <div>
+                  <label className="text-sm font-medium">Amount Per Member (KES) *</label>
+                  <Input
+                    type="number"
+                    placeholder="600"
+                    value={perMemberAmount}
+                    onChange={(e) => setPerMemberAmount(e.target.value)}
+                    disabled={submitting}
+                    min="0"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Total Target Amount (KES) *</label>
+                  <Input
+                    type="number"
+                    placeholder="20000"
+                    value={targetTotal}
+                    onChange={(e) => setTargetTotal(e.target.value)}
+                    disabled={submitting}
+                    min="0"
+                  />
+                  <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+                    Split across <strong>{memberCount}</strong> active members ={' '}
+                    <strong>KES {computedShare.toLocaleString()}</strong> per member.
+                  </div>
+                </div>
+              )}
+
+              {/* Lipa Mdogo Mdogo */}
+              <div className="flex items-start gap-2 rounded-lg border border-slate-200 p-3">
+                <input
+                  type="checkbox"
+                  id="allowPartial"
+                  checked={allowPartial}
+                  onChange={(e) => setAllowPartial(e.target.checked)}
+                  disabled={submitting}
+                  className="mt-1 rounded"
+                />
+                <label htmlFor="allowPartial" className="text-sm">
+                  <span className="font-medium">Allow Lipa Mdogo Mdogo</span>
+                  <span className="block text-xs text-slate-500">
+                    Members can pay in bits (any amount they can afford) until they reach their share.
+                  </span>
+                </label>
+              </div>
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -290,10 +365,10 @@ export default function DonationCampaigns() {
                 </label>
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-2 pt-4">
                 <Button
                   variant="outline"
+                  type="button"
                   onClick={handleCloseDialog}
                   disabled={submitting}
                   className="flex-1"
@@ -310,7 +385,6 @@ export default function DonationCampaigns() {
         </Dialog>
       </div>
 
-      {/* Empty State */}
       {campaigns.length === 0 ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
@@ -320,7 +394,6 @@ export default function DonationCampaigns() {
         </Alert>
       ) : null}
 
-      {/* Campaigns Table */}
       {campaigns.length > 0 && (
         <Card>
           <CardHeader>
@@ -332,9 +405,10 @@ export default function DonationCampaigns() {
               <TableHead>
                 <TableRow>
                   <th>Funds Drive Title</th>
-                  <th>Target Amount</th>
+                  <th>Per Member</th>
+                  <th>Target</th>
+                  <th>Lipa Mdogo</th>
                   <th>Status</th>
-                  <th>Created</th>
                   <th>Actions</th>
                 </TableRow>
               </TableHead>
@@ -342,23 +416,24 @@ export default function DonationCampaigns() {
                 {campaigns.map((campaign) => (
                   <TableRow key={campaign.id}>
                     <TableCell className="font-medium">{campaign.title}</TableCell>
+                    <TableCell>KES {Number(campaign.amount).toLocaleString()}</TableCell>
                     <TableCell>
-                      KES {campaign.amount.toLocaleString()}
+                      {campaign.goal_type === 'shared' && campaign.target_total
+                        ? `KES ${Number(campaign.target_total).toLocaleString()}`
+                        : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={campaign.allow_partial ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'}>
+                        {campaign.allow_partial ? 'Enabled' : 'Off'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={campaign.active ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
                         {campaign.active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {new Date(campaign.created_at).toLocaleDateString()}
-                    </TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(campaign)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(campaign)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
                       <Button
