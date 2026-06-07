@@ -8,7 +8,6 @@ import {
   setUnlocked,
   registerBiometric,
   verifyBiometric,
-  biometricSupported,
   platformAuthenticatorAvailable,
 } from "@/lib/dashboardLock";
 import { Button } from "@/components/ui/button";
