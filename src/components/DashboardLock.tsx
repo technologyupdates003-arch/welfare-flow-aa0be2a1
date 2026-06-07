@@ -32,6 +32,12 @@ export default function DashboardLock({ area, children }: DashboardLockProps) {
   const [confirmPin, setConfirmPin] = useState("");
   const [mode, setMode] = useState<"unlock" | "setup">("unlock");
   const [busy, setBusy] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
+
+  // Detect a real fingerprint/face sensor on this device.
+  useEffect(() => {
+    platformAuthenticatorAvailable().then(setBioAvailable);
+  }, []);
 
   const load = useCallback(async () => {
     if (!user) return;
