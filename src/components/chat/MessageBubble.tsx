@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Reply, Check, CheckCheck, MoreVertical, Trash2, Pencil } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import "@/styles/chat-glassmorphism.css";
 
 interface MessageBubbleProps {
   content: string;
@@ -31,8 +32,8 @@ function StatusTicks({ status, darkMode, isOnline }: { status?: string; darkMode
   if (status === "read") {
     return (
       <div className="flex items-center gap-0.5">
-        <CheckCheck className={cn("h-3.5 w-3.5", "text-blue-500")} />
-        {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
+        <CheckCheck className="h-3.5 w-3.5 text-white opacity-80" />
+        {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-white/60" />}
       </div>
     );
   }
@@ -40,16 +41,16 @@ function StatusTicks({ status, darkMode, isOnline }: { status?: string; darkMode
   if (status === "delivered") {
     return (
       <div className="flex items-center gap-0.5">
-        <CheckCheck className={cn("h-3.5 w-3.5", darkMode ? "text-gray-400" : "text-gray-500")} />
-        {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
+        <CheckCheck className="h-3.5 w-3.5 text-white opacity-70" />
+        {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-white/60" />}
       </div>
     );
   }
   
   return (
     <div className="flex items-center gap-0.5">
-      <Check className={cn("h-3.5 w-3.5", darkMode ? "text-gray-400" : "text-gray-500")} />
-      {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
+      <Check className="h-3.5 w-3.5 text-white opacity-70" />
+      {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-white/60" />}
     </div>
   );
 }
@@ -69,27 +70,25 @@ export default function MessageBubble({
 
   if (isDeleted) {
     return (
-      <div className={cn("flex mb-1 gap-1.5", isOwn ? "flex-row-reverse" : "flex-row")}>
+      <div className={cn("flex mb-3 gap-2.5 message-animate", isOwn ? "flex-row-reverse justify-end" : "flex-row justify-start")}>
         {!isOwn && (
           <div className="flex-shrink-0 mt-auto">
             {profilePicture ? (
-              <img src={profilePicture} alt="" className="h-7 w-7 rounded-full object-cover" />
+              <img src={profilePicture} alt="" className="h-8 w-8 rounded-full object-cover shadow-sm" />
             ) : (
-              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white", darkMode ? "bg-[#00A884]" : "bg-primary")}>
+              <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-gray-400 to-gray-500">
                 {senderName.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
         )}
-        <div className="flex flex-col max-w-[80%]">
+        <div className="flex flex-col max-w-[70%] sm:max-w-[60%] lg:max-w-[50%]">
           <div className={cn(
-            "rounded-lg px-3 py-1.5 text-sm italic opacity-60",
-            isOwn
-              ? darkMode ? "bg-[#005C4B] text-white rounded-tr-none" : "bg-[#DCF8C6] text-gray-900 rounded-tr-none"
-              : darkMode ? "bg-[#1F2C34] text-gray-100 rounded-tl-none" : "bg-white text-gray-900 rounded-tl-none"
+            "rounded-message px-4 py-2.5 text-sm italic opacity-60 glass-card bg-white/30",
+            isOwn ? "rounded-br-none" : "rounded-bl-none"
           )}>
             <p>🚫 This message was deleted</p>
-            <span className={cn("text-[10px] float-right mt-1 ml-3", darkMode ? "text-gray-400" : "text-gray-500")}>
+            <span className="text-[11px] block mt-1 text-gray-500">
               {time}
             </span>
           </div>
@@ -100,7 +99,7 @@ export default function MessageBubble({
 
   return (
     <div
-      className={cn("flex mb-1 gap-1.5", isOwn ? "flex-row-reverse" : "flex-row")}
+      className={cn("flex mb-3 gap-2.5 message-animate", isOwn ? "flex-row-reverse justify-end" : "flex-row justify-start")}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       onTouchStart={() => setShowActions(true)}
@@ -109,43 +108,51 @@ export default function MessageBubble({
       {!isOwn && (
         <div className="flex-shrink-0 mt-auto">
           {profilePicture ? (
-            <img src={profilePicture} alt="" className="h-7 w-7 rounded-full object-cover" />
+            <img src={profilePicture} alt={senderName} className="h-8 w-8 rounded-full object-cover shadow-sm" />
           ) : (
-            <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white", darkMode ? "bg-[#00A884]" : "bg-primary")}>
+            <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-gray-400 to-gray-500 shadow-sm">
               {senderName.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
       )}
 
-      <div className="flex flex-col max-w-[80%]">
-        <div className={cn(
-          "rounded-lg px-3 py-1.5 relative group text-sm shadow-sm",
-          isOwn
-            ? darkMode ? "bg-[#005C4B] text-white rounded-tr-none" : "bg-[#DCF8C6] text-gray-900 rounded-tr-none"
-            : darkMode ? "bg-[#1F2C34] text-gray-100 rounded-tl-none" : "bg-white text-gray-900 rounded-tl-none"
-        )}>
-          {!isOwn && (
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className={cn("text-xs font-semibold", darkMode ? "text-[#00A884]" : "text-primary")}>
-                {senderName}
-              </span>
-              {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
-            </div>
-          )}
+      <div className="flex flex-col max-w-[70%] sm:max-w-[60%] lg:max-w-[50%]">
+        {/* Sender name for group messages */}
+        {!isOwn && (
+          <div className="px-2 mb-1 flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-[#0A84FF]">
+              {senderName}
+            </span>
+            {isOnline && <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />}
+          </div>
+        )}
 
+        {/* Main message bubble */}
+        <div className={cn(
+          "rounded-message px-4 py-2.5 relative group text-sm transition-all duration-200",
+          isOwn
+            ? "message-bubble-sent text-white rounded-br-none"
+            : "message-bubble-received text-gray-900 rounded-bl-none"
+        )}>
+          {/* Reply preview */}
           {replyTo && (
             <div className={cn(
-              "text-xs rounded px-2 py-1 mb-1 border-l-2",
-              darkMode ? "bg-[#0B141A]/50 border-[#00A884] text-gray-300" : "bg-black/5 border-primary/50"
+              "text-xs rounded-md px-2.5 py-1.5 mb-2 border-l-3 backdrop-blur-sm",
+              isOwn
+                ? "bg-white/20 border-white/50 text-white/90"
+                : "bg-black/5 border-[#0A84FF]/50 text-gray-700"
             )}>
-              <span className="font-semibold">{replyTo.senderName}</span>
-              <p className="truncate opacity-70">{replyTo.content}</p>
+              <span className={cn("font-semibold", isOwn ? "text-white" : "text-[#0A84FF]")}>
+                {replyTo.senderName}
+              </span>
+              <p className="truncate opacity-75">{replyTo.content}</p>
             </div>
           )}
 
+          {/* Editing state */}
           {editing ? (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <textarea
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
@@ -156,62 +163,62 @@ export default function MessageBubble({
                   if (e.key === "Escape") { setEditValue(content); setEditing(false); }
                 }}
                 className={cn(
-                  "w-full resize-y rounded-md px-2 py-1 text-sm outline-none border",
-                  darkMode ? "bg-[#0B141A] text-white border-[#2A3942]" : "bg-white text-gray-900 border-gray-300"
+                  "w-full resize-none rounded-md px-2.5 py-1.5 text-sm outline-none border-0 bg-white/20 text-white placeholder-white/60",
+                  "focus:bg-white/30 focus:ring-1 focus:ring-white/50"
                 )}
               />
               <div className="flex items-center gap-2 justify-end">
-                <button onClick={() => { setEditValue(content); setEditing(false); }} className="text-[11px] opacity-70 hover:opacity-100">Cancel</button>
-                <button onClick={submitEdit} className="text-[11px] font-semibold text-primary">Save</button>
+                <button onClick={() => { setEditValue(content); setEditing(false); }} className="text-[11px] opacity-75 hover:opacity-100 font-medium">Cancel</button>
+                <button onClick={submitEdit} className="text-[11px] font-semibold text-white bg-white/20 px-2.5 py-1 rounded-full">Save</button>
               </div>
             </div>
           ) : (
             <>
-              <p className="whitespace-pre-wrap break-words">{content}</p>
-              <span className={cn("text-[10px] float-right mt-1 ml-3 flex items-center gap-0.5", darkMode ? "text-gray-400" : "text-gray-500")}>
-                {edited && <span className="italic mr-0.5">edited</span>}
-                {time}
+              <p className="whitespace-pre-wrap break-words leading-relaxed">{content}</p>
+              <span className={cn("text-[10px] block mt-1.5 flex items-center justify-end gap-1", isOwn ? "text-white/70" : "text-gray-500")}>
+                {edited && <span className="italic">edited</span>}
+                <span>{time}</span>
                 {isOwn && <StatusTicks status={status} darkMode={darkMode} isOnline={isOnline} />}
               </span>
             </>
           )}
 
+          {/* Action buttons - hover menu */}
           {showActions && !editing && (
             <div className={cn(
-              "absolute -top-8 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 shadow-md z-10",
-              isOwn ? "right-0" : "left-0",
-              darkMode ? "bg-[#2A3942]" : "bg-white border border-gray-200"
+              "absolute -top-9 flex items-center gap-1 rounded-full px-1.5 py-1 shadow-lg z-10 glass-card animate-in fade-in slide-in-from-bottom-2 duration-150",
+              isOwn ? "right-0" : "left-0"
             )}>
-              <button onClick={onReply} className="p-1 hover:bg-muted/30 rounded-full">
-                <Reply className="h-3.5 w-3.5" />
+              <button onClick={onReply} className="p-1.5 hover:bg-white/20 rounded-full transition-colors" title="Reply">
+                <Reply className="h-3.5 w-3.5 text-gray-600" />
               </button>
               {quickEmojis.slice(0, 3).map((e) => (
-                <button key={e} onClick={() => onReact(e)} className="p-0.5 hover:scale-125 transition-transform text-sm">
+                <button key={e} onClick={() => onReact(e)} className="p-1 hover:scale-125 transition-transform text-sm" title="React">
                   {e}
                 </button>
               ))}
               {isOwn && canEdit && onEdit && (
-                <button onClick={() => { setEditValue(content); setEditing(true); }} className="p-1 hover:bg-muted/30 rounded-full" title="Edit">
-                  <Pencil className="h-3.5 w-3.5" />
+                <button onClick={() => { setEditValue(content); setEditing(true); }} className="p-1.5 hover:bg-white/20 rounded-full transition-colors" title="Edit">
+                  <Pencil className="h-3.5 w-3.5 text-gray-600" />
                 </button>
               )}
               {isOwn && onDelete && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-1 hover:bg-muted/30 rounded-full">
-                      <MoreVertical className="h-3.5 w-3.5" />
+                    <button className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
+                      <MoreVertical className="h-3.5 w-3.5 text-gray-600" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     {canEdit && onEdit && (
                       <DropdownMenuItem onClick={() => { setEditValue(content); setEditing(true); }}>
                         <Pencil className="h-4 w-4 mr-2" />
-                        Edit message
+                        Edit
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={onDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete for everyone
+                      Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -220,20 +227,22 @@ export default function MessageBubble({
           )}
         </div>
 
+        {/* Reactions */}
         {reactions.length > 0 && (
-          <div className={cn("flex gap-1 mt-0.5 px-2", isOwn ? "justify-end" : "justify-start")}>
+          <div className={cn("flex flex-wrap gap-1 mt-1.5 px-1", isOwn ? "justify-end" : "justify-start")}>
             {reactions.map(({ emoji, count, reacted }) => (
               <button
                 key={emoji}
                 onClick={() => onReact(emoji)}
                 className={cn(
-                  "flex items-center gap-0.5 text-xs rounded-full px-1.5 py-0.5 transition-colors",
+                  "flex items-center gap-0.5 text-xs rounded-full px-2.5 py-1 transition-all duration-150 hover:scale-105",
                   reacted
-                    ? darkMode ? "bg-[#005C4B] text-white" : "bg-primary/20 text-primary"
-                    : darkMode ? "bg-[#2A3942] text-gray-300" : "bg-muted"
+                    ? "glass-card bg-white/80 shadow-md"
+                    : "glass-card bg-white/40 hover:bg-white/60"
                 )}
               >
-                {emoji} {count > 1 && count}
+                <span>{emoji}</span>
+                {count > 1 && <span className="font-semibold text-gray-700">{count}</span>}
               </button>
             ))}
           </div>

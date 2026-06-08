@@ -8,6 +8,7 @@ import NewChatDialog from "@/components/chat/NewChatDialog";
 import { usePresence } from "@/hooks/usePresence";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import "@/styles/chat-glassmorphism.css";
 
 export default function MemberChat() {
   usePresence();
@@ -37,8 +38,7 @@ export default function MemberChat() {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-160px)]">
-      {/* Mobile: toggle between list and chat */}
+    <div className="flex flex-col h-[calc(100vh-160px)] rounded-2xl overflow-hidden bg-gradient-to-br from-[#ECEEF3] via-[#E8EBF1] to-[#F4F6FA]">{/* Mobile: toggle between list and chat */}
       <div className="md:hidden">
         {showList ? (
           <div className="h-full">
