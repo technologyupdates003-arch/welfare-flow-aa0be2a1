@@ -39,26 +39,24 @@ supabase functions deploy member-registration-callback
 supabase functions deploy admin-registration
 ```
 
-### Step 3: Set Environment Variables
+### Step 3: Environment Variables (No New Setup Needed!)
 
-Configure these secrets in your Supabase project:
+**✅ Good news!** The registration API uses the **exact same M-Pesa credentials** that are already configured for operational, penalty, and fund drive wallets:
 
 ```
-# M-Pesa Configuration (should already exist)
-MPESA_CONSUMER_KEY=your_daraja_consumer_key
-MPESA_CONSUMER_SECRET=your_daraja_consumer_secret
-MPESA_SHORTCODE=174379  # or your production shortcode
-MPESA_PASSKEY=your_passkey
-MPESA_BASE_URL=https://sandbox.safaricom.co.ke  # for testing
+# M-Pesa Configuration (SAME as existing wallets)
+MPESA_CONSUMER_KEY=your_daraja_consumer_key        ← Already set ✓
+MPESA_CONSUMER_SECRET=your_daraja_consumer_secret  ← Already set ✓
+MPESA_SHORTCODE=174379                             ← Already set ✓
+MPESA_PASSKEY=your_passkey                         ← Already set ✓
+MPESA_BASE_URL=https://sandbox.safaricom.co.ke     ← Already set ✓
 
-# System Configuration
+# System Configuration (NEW - only if not set)
 SYSTEM_URL=https://your-system-domain.com  # Where members access main system
 WEBSITE_URL=https://your-website-domain.com  # Registration website domain
-
-# SMS Configuration (should already exist)
-SMS_API_KEY=your_sms_api_key
-SMS_API_URL=your_sms_api_url
 ```
+
+**Registration payments flow through the same Daraja API as all other wallet transactions.**
 
 ### Step 4: Update RLS Policies (if needed)
 

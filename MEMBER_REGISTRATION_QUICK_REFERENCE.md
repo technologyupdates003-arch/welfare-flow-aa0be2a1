@@ -78,14 +78,21 @@ supabase functions deploy member-registration-callback
 supabase functions deploy admin-registration
 ```
 
-### 2. Set Environment Variables
-```env
-MPESA_CONSUMER_KEY=your_key
-MPESA_CONSUMER_SECRET=your_secret
-MPESA_SHORTCODE=174379
-MPESA_PASSKEY=your_passkey
-SYSTEM_URL=https://your-system.com
-```
+### 2. Environment Variables (✅ Already Configured!)
+**NO NEW SETUP NEEDED!** The registration API uses the **same M-Pesa credentials** as:
+- Operational wallet (operational-topup)
+- Penalty wallet (coop-stk-push)
+- Fund drive wallet (donation payments)
+
+Existing environment variables:
+- ✓ `MPESA_CONSUMER_KEY` 
+- ✓ `MPESA_CONSUMER_SECRET`
+- ✓ `MPESA_SHORTCODE`
+- ✓ `MPESA_PASSKEY`
+- ✓ `MPESA_BASE_URL`
+
+Optional (if not set):
+- `SYSTEM_URL` - Your system domain for member access links
 
 ### 3. Test Registration Flow
 ```bash
@@ -155,6 +162,22 @@ curl -X POST https://project.supabase.co/functions/v1/member-registration/regist
 ```
 
 ## 💾 Database Tables
+
+### Registration Payment Integration ✨
+
+**Registration payments use existing infrastructure:**
+
+```
+Registration Fee Payment
+├─ API: /member-registration/initiate-payment
+├─ Uses: SAME Daraja credentials as operational/penalty/fund-drive
+├─ Method: STK Push (same as all other wallet payments)
+├─ Receives: M-Pesa callback (same format as operational payments)
+├─ Verified: In existing SMS webhook (sms-webhook function)
+└─ Destination: Operations wallet (same account receiving all payments)
+
+Result: Registration payment shows in payments table and operations wallet!
+```
 
 ### registration_config
 ```sql

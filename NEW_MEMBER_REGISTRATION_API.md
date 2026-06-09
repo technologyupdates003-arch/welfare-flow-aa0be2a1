@@ -7,7 +7,9 @@ Two-domain system where:
 
 ## Registration Requirements
 1. **Retiring Date**: Admin-configured (can't join if don't meet deadline)
-2. **Registration Fee**: STK Push payment (goes to operations wallet)
+2. **Registration Fee**: STK Push payment (goes to operations wallet via existing SMS webhook)
+   - Uses **same Daraja API** as operational, penalty, and fund drive wallets
+   - Payment verified through existing payment matching system
 3. **Department**: Member's working department
 4. **Full Name**: First and Last name
 5. **Phone Number**: For payment and SMS
@@ -246,11 +248,30 @@ Badilisha neno lako baada ya kuingia."
 6. Admin must approve before system access
 
 ## Implementation Order
-1. Create database tables and RLS policies
-2. Create admin config endpoints
-3. Create registration endpoints
-4. Create payment verification logic
-5. Create SMS sending logic
-6. Create admin dashboard for approvals
-7. Create website registration form
-8. Test complete flow
+1. ✅ Database migration (creates registration tables)
+2. ✅ Member registration endpoint (form submission)
+3. ✅ M-Pesa payment initiation (uses existing Daraja credentials)
+4. ✅ Payment callback handler (verifies payment)
+5. ✅ Admin approval endpoints
+6. ✅ SMS integration (uses existing SMS provider)
+7. Create website registration form UI
+8. Create admin dashboard UI
+9. Test complete flow
+10. Go live
+
+## 🔄 Payment Processing
+
+**Important:** Registration payments use the **existing M-Pesa and SMS webhook infrastructure**:
+
+```
+Registration Payment Flow:
+├─ Member initiates STK Push via API
+├─ Uses: MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET (same as operational wallet)
+├─ Uses: MPESA_SHORTCODE, MPESA_PASSKEY (same as all other wallets)
+├─ M-Pesa sends SMS callback
+├─ Existing SMS webhook receives payment notification
+├─ Payment gets matched and recorded in payments table
+├─ Registration payment callback updates registration status
+└─ Operations wallet receives the funds
+
+No separate payment infrastructure needed - reuses all existing systems!
