@@ -437,6 +437,7 @@ NEXT STEPS:
         operationalWithdrawalsData,
         expensesData,
         orgSettings,
+        membersData,
       ] = await Promise.all([
         // Wallets
         Promise.all([
@@ -456,9 +457,22 @@ NEXT STEPS:
         supabase.from("expenses").select("*").order("created_at", { ascending: false }),
         // Organization settings
         supabase.from("organization_settings").select("*").single(),
+        // Members (for name + phone lookup)
+        supabase.from("members").select("id, name, phone"),
       ]);
 
       const [penaltyWallet, donationWallet, operationalWallet] = walletData;
+
+      // Build a member lookup map: id -> { name, phone }
+      const memberMap = new Map<string, { name: string; phone: string }>();
+      (membersData.data || []).forEach((m: any) => {
+        memberMap.set(m.id, { name: m.name || "Unknown", phone: m.phone || "N/A" });
+      });
+      const memberLabel = (id: string) => {
+        const m = memberMap.get(id);
+        if (!m) return "N/A";
+        return `${m.name}<br/><span style="font-size:11px;color:#666;">${m.phone}</span>`;
+      };
       const orgName = orgSettings.data?.organization_name || "Organization";
       const reportDate = new Date().toLocaleDateString();
 
