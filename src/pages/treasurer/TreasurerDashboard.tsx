@@ -437,6 +437,7 @@ NEXT STEPS:
         operationalWithdrawalsData,
         expensesData,
         orgSettings,
+        membersData,
       ] = await Promise.all([
         // Wallets
         Promise.all([
@@ -456,9 +457,22 @@ NEXT STEPS:
         supabase.from("expenses").select("*").order("created_at", { ascending: false }),
         // Organization settings
         supabase.from("organization_settings").select("*").single(),
+        // Members (for name + phone lookup)
+        supabase.from("members").select("id, name, phone"),
       ]);
 
       const [penaltyWallet, donationWallet, operationalWallet] = walletData;
+
+      // Build a member lookup map: id -> { name, phone }
+      const memberMap = new Map<string, { name: string; phone: string }>();
+      (membersData.data || []).forEach((m: any) => {
+        memberMap.set(m.id, { name: m.name || "Unknown", phone: m.phone || "N/A" });
+      });
+      const memberLabel = (id: string) => {
+        const m = memberMap.get(id);
+        if (!m) return "N/A";
+        return `${m.name}<br/><span style="font-size:11px;color:#666;">${m.phone}</span>`;
+      };
       const orgName = orgSettings.data?.organization_name || "Organization";
       const reportDate = new Date().toLocaleDateString();
 
@@ -545,7 +559,7 @@ NEXT STEPS:
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Member</th>
+                  <th>Member / Phone</th>
                   <th class="amount">Amount</th>
                   <th>Status</th>
                 </tr>
@@ -554,7 +568,7 @@ NEXT STEPS:
                 ${(contributionsData.data || []).slice(0, 20).map((c: any) => `
                   <tr>
                     <td>${new Date(c.created_at).toLocaleDateString()}</td>
-                    <td>${c.member_id || 'N/A'}</td>
+                    <td>${memberLabel(c.member_id)}</td>
                     <td class="amount">Ksh ${parseFloat(c.amount).toLocaleString()}</td>
                     <td>${c.status}</td>
                   </tr>
@@ -571,7 +585,7 @@ NEXT STEPS:
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Member</th>
+                  <th>Member / Phone</th>
                   <th class="amount">Amount</th>
                   <th>Status</th>
                 </tr>
@@ -580,7 +594,7 @@ NEXT STEPS:
                 ${(penaltiesData.data || []).slice(0, 20).map((p: any) => `
                   <tr>
                     <td>${new Date(p.created_at).toLocaleDateString()}</td>
-                    <td>${p.member_id || 'N/A'}</td>
+                    <td>${memberLabel(p.member_id)}</td>
                     <td class="amount">Ksh ${parseFloat(p.amount).toLocaleString()}</td>
                     <td>${p.is_paid ? 'Paid' : 'Pending'}</td>
                   </tr>
