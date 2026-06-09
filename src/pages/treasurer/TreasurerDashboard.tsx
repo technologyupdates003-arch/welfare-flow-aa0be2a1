@@ -559,7 +559,7 @@ NEXT STEPS:
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Member</th>
+                  <th>Member / Phone</th>
                   <th class="amount">Amount</th>
                   <th>Status</th>
                 </tr>
@@ -568,7 +568,7 @@ NEXT STEPS:
                 ${(contributionsData.data || []).slice(0, 20).map((c: any) => `
                   <tr>
                     <td>${new Date(c.created_at).toLocaleDateString()}</td>
-                    <td>${c.member_id || 'N/A'}</td>
+                    <td>${memberLabel(c.member_id)}</td>
                     <td class="amount">Ksh ${parseFloat(c.amount).toLocaleString()}</td>
                     <td>${c.status}</td>
                   </tr>
