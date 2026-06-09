@@ -585,7 +585,7 @@ NEXT STEPS:
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Member</th>
+                  <th>Member / Phone</th>
                   <th class="amount">Amount</th>
                   <th>Status</th>
                 </tr>
@@ -594,7 +594,7 @@ NEXT STEPS:
                 ${(penaltiesData.data || []).slice(0, 20).map((p: any) => `
                   <tr>
                     <td>${new Date(p.created_at).toLocaleDateString()}</td>
-                    <td>${p.member_id || 'N/A'}</td>
+                    <td>${memberLabel(p.member_id)}</td>
                     <td class="amount">Ksh ${parseFloat(p.amount).toLocaleString()}</td>
                     <td>${p.is_paid ? 'Paid' : 'Pending'}</td>
                   </tr>
