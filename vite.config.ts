@@ -21,9 +21,17 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
   optimizeDeps: {
-    exclude: ["canvg", "lucide-react"],
+    exclude: ["lucide-react"],
   },
   build: {
     sourcemap: false,
+    rollupOptions: {
+      external: [/^core-js/],
+      output: {
+        globals: {
+          "core-js": "coreJs",
+        },
+      },
+    },
   },
 }));

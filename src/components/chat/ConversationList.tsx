@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Users, MessageCircle, UserPlus, Search, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import "@/styles/chat-glassmorphism.css";
@@ -128,40 +129,22 @@ export default function ConversationList({ activeId, onSelect, onNewChat, onGrou
   const onlineCount = presenceData ? Array.from(presenceData.values()).filter(Boolean).length : 0;
 
   return (
-    <div className={cn("flex flex-col h-full bg-gradient-to-b from-[#ECEEF3] to-[#F4F6FA]", darkMode ? "text-gray-100" : "")}>
-      {/* Header with action buttons */}
-      <div className="p-4 border-b border-white/20">
-        <div className="flex gap-2 mb-4">
-          <Button 
-            size="sm" 
-            className="flex-1 text-xs rounded-full glass-card hover:bg-white/80 font-medium"
+    <div className="flex flex-col h-full conversation-list-container">
+      {/* Header with Filter Tabs - Now at the top */}
+      <div className="conversation-list-header">
+        <div className="flex items-center justify-between mb-4 px-2">
+          <h2 className="text-lg font-bold text-gray-900">Messages</h2>
+          <Button
+            size="sm"
+            className="h-8 w-8 p-0 rounded-full bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white"
             onClick={onNewChat}
           >
-            <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Chat
+            <Plus className="h-4 w-4" />
           </Button>
-          <Button 
-            size="sm" 
-            className="flex-1 text-xs rounded-full glass-card hover:bg-white/80 font-medium"
-            onClick={onGroupChat}
-          >
-            <Users className="h-3.5 w-3.5 mr-1.5" /> Group
-          </Button>
-        </div>
-
-        {/* Search bar */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-full glass-card border-0 bg-white/50 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:bg-white/70"
-          />
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-2 segmented-control mx-auto">
+        <div className="segmented-control w-full justify-center">
           <button
             onClick={() => setFilterTab("all")}
             className={cn(
@@ -174,7 +157,7 @@ export default function ConversationList({ activeId, onSelect, onNewChat, onGrou
           <button
             onClick={() => setFilterTab("unread")}
             className={cn(
-              "segmented-control-item",
+              "segmented-control-item relative",
               filterTab === "unread" && "active"
             )}
           >
@@ -183,113 +166,125 @@ export default function ConversationList({ activeId, onSelect, onNewChat, onGrou
           <button
             onClick={() => setFilterTab("mentions")}
             className={cn(
-              "segmented-control-item",
+              "segmented-control-item relative",
               filterTab === "mentions" && "active"
             )}
           >
             Mentions
+            {conversations && conversations.some(c => c.mentionCount > 0) && (
+              <span className="absolute -top-1 -right-1 notification-badge text-[10px] px-1.5">4</span>
+            )}
           </button>
         </div>
       </div>
 
+      {/* Search bar */}
+      <div className="conversation-list-search">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-full glass-card border-0 bg-white/60 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A84FF] focus:bg-white/80 transition-all"
+          />
+        </div>
+      </div>
+
       {/* Conversations list */}
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-2">
-          {/* Group chat - Welfare Chat */}
+      <div className="conversation-list-scroll">
+        {/* Group chat - Welfare Chat */}
+        <button
+          onClick={() => onSelect("group")}
+          className={cn(
+            "conversation-item",
+            activeId === "group" && "active"
+          )}
+        >
+          <div className="conversation-avatar">
+            <div className="conversation-avatar-placeholder">
+              <Users className="h-5 w-5" />
+            </div>
+            <div className="avatar-online-dot"></div>
+          </div>
+          <div className="conversation-info">
+            <p className="conversation-name">Welfare Chat</p>
+            <p className="conversation-message">{onlineCount} online</p>
+          </div>
+          {onlineCount > 0 && (
+            <div className="conversation-meta">
+              <span className="text-[10px] text-green-600 font-semibold">Active</span>
+            </div>
+          )}
+        </button>
+
+        {/* Divider */}
+        {filteredConversations.length > 0 && (
+          <div className="px-3 py-3 flex items-center gap-2">
+            <div className="flex-1 h-px bg-gray-200/60"></div>
+            <span className="text-xs text-gray-500 font-medium">Direct</span>
+            <div className="flex-1 h-px bg-gray-200/60"></div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {conversationsError && (
+          <div className="p-8 text-center">
+            <MessageCircle className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+            <p className="text-sm text-red-500 font-medium">Error loading conversations</p>
+            <p className="text-xs text-gray-500">{conversationsError.message}</p>
+          </div>
+        )}
+        
+        {/* Empty state */}
+        {conversations?.length === 0 && !conversationsError && (
+          <div className="p-8 text-center">
+            <MessageCircle className="h-12 w-12 mx-auto text-gray-300 mb-3 opacity-50" />
+            <p className="text-sm text-gray-600 font-medium">No conversations yet</p>
+            <p className="text-xs text-gray-500">Start a new chat to begin messaging</p>
+          </div>
+        )}
+        
+        {/* Conversations */}
+        {filteredConversations.map((conv) => (
           <button
-            onClick={() => onSelect("group")}
+            key={conv.id}
+            onClick={() => onSelect(conv.id)}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-chat-lg transition-all duration-200 hover-lift",
-              activeId === "group" 
-                ? "glass-card bg-white/90 shadow-lg" 
-                : "glass-card hover:bg-white/60"
+              "conversation-item",
+              activeId === conv.id && "active"
             )}
           >
-            <div className="relative flex-shrink-0">
-              <div className="h-11 w-11 rounded-full bg-gradient-to-br from-[#0A84FF] to-[#2196F3] flex items-center justify-center shadow-md">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-white shadow-sm"></div>
+            <div className="conversation-avatar">
+              {conv.profilePicture ? (
+                <img src={conv.profilePicture} alt={conv.displayName} />
+              ) : (
+                <div className="conversation-avatar-placeholder">
+                  {conv.displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {presenceData?.get(conv.id) && (
+                <div className="avatar-online-dot"></div>
+              )}
             </div>
-            <div className="min-w-0 flex-1 text-left">
-              <p className="font-semibold text-sm text-gray-900">Welfare Chat</p>
-              <p className="text-xs text-gray-500">{onlineCount} online</p>
+            <div className="conversation-info">
+              <p className="conversation-name">{conv.displayName}</p>
+              <p className="conversation-message">{conv.type === "private" ? "Direct message" : "Group chat"}</p>
+            </div>
+            <div className="conversation-meta">
+              {conv.unreadCount > 0 && (
+                <span className="notification-badge">
+                  {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
+                </span>
+              )}
+              {conv.mentionCount > 0 && !conv.unreadCount && (
+                <span className="notification-badge">@</span>
+              )}
             </div>
           </button>
-
-          {/* Divider */}
-          {filteredConversations.length > 0 && (
-            <div className="px-4 py-2 flex items-center gap-2">
-              <div className="flex-1 h-px bg-white/30"></div>
-              <span className="text-xs text-gray-500 font-medium">Direct Messages</span>
-              <div className="flex-1 h-px bg-white/30"></div>
-            </div>
-          )}
-
-          {/* Error state */}
-          {conversationsError && (
-            <div className="p-4 text-center">
-              <MessageCircle className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-              <p className="text-sm text-red-500 font-medium">Error loading conversations</p>
-              <p className="text-xs text-gray-500">{conversationsError.message}</p>
-            </div>
-          )}
-          
-          {/* Empty state */}
-          {conversations?.length === 0 && !conversationsError && (
-            <div className="p-8 text-center">
-              <MessageCircle className="h-12 w-12 mx-auto text-gray-300 mb-3 opacity-50" />
-              <p className="text-sm text-gray-600 font-medium">No conversations yet</p>
-              <p className="text-xs text-gray-500">Start a new chat to begin messaging</p>
-            </div>
-          )}
-          
-          {/* Conversations */}
-          {filteredConversations.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => onSelect(conv.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-chat-lg transition-all duration-200 hover-lift",
-                activeId === conv.id 
-                  ? "glass-card bg-white/90 shadow-lg" 
-                  : "glass-card hover:bg-white/60"
-              )}
-            >
-              <div className="relative flex-shrink-0">
-                {conv.profilePicture ? (
-                  <img src={conv.profilePicture} alt={conv.displayName} className="h-11 w-11 rounded-full object-cover shadow-md" />
-                ) : (
-                  <div className="h-11 w-11 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white font-semibold shadow-md">
-                    {conv.displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                {presenceData?.get(conv.id) && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-white shadow-sm"></div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-sm text-gray-900 truncate">
-                    {conv.displayName}
-                  </p>
-                  {conv.unreadCount > 0 && (
-                    <span className="notification-badge">
-                      {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
-                    </span>
-                  )}
-                  {conv.mentionCount > 0 && (
-                    <span className="notification-badge mention">
-                      @
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 truncate">{conv.type === "private" ? "Private" : "Group"}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </ScrollArea>
+        ))}
+      </div>
     </div>
   );
 }
