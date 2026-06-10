@@ -66,15 +66,18 @@ async function getDarajaToken(): Promise<string | null> {
 async function getRegistrationConfig(supabase: any) {
   const { data, error } = await supabase
     .from("registration_config")
-    .select("retiring_date, registration_fee, active")
-    .eq("active", true)
-    .single();
+    .select("retiring_date, registration_fee, active, show_on_login, auto_approve")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (error || !data) {
     return {
       retiring_date: "2027-12-31",
       registration_fee: 1000,
       active: true,
+      show_on_login: true,
+      auto_approve: false,
       message: "Join our welfare group",
     };
   }
