@@ -349,7 +349,9 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/functions\/v1\/member-registration/, "");
+  // Strip any prefix up to and including the function name so routing works
+  // regardless of whether the runtime path includes /functions/v1
+  const path = url.pathname.replace(/^.*\/member-registration/, "");
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
