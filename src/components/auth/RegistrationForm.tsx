@@ -38,7 +38,7 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   });
 
   // Load config on mount
-  useState(() => {
+  useEffect(() => {
     const loadConfig = async () => {
       const cfg = await getRegistrationConfig();
       setConfig(cfg);
