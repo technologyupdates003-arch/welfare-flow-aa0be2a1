@@ -409,7 +409,9 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/functions\/v1\/admin-registration/, "");
+  // Strip any prefix up to and including the function name so routing works
+  // regardless of whether the runtime path includes /functions/v1
+  const path = url.pathname.replace(/^.*\/admin-registration/, "");
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // Get auth header to verify admin
