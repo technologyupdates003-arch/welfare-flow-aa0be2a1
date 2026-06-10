@@ -321,10 +321,11 @@ async function getConfig(supabase: any): Promise<Response> {
   const { data, error } = await supabase
     .from("registration_config")
     .select("*")
-    .eq("active", true)
-    .single();
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     return new Response(
       JSON.stringify({
         success: true,
@@ -332,6 +333,8 @@ async function getConfig(supabase: any): Promise<Response> {
           retiring_date: "2027-12-31",
           registration_fee: 1000,
           active: true,
+          show_on_login: true,
+          auto_approve: false,
         },
       }),
       {
