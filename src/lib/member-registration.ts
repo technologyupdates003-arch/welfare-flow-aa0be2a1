@@ -46,7 +46,7 @@ interface StatusResponse {
   message: string;
 }
 
-const API_BASE_URL = (typeof Deno !== 'undefined' && Deno.env?.get?.("SUPABASE_URL")) || import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co";
+const API_BASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co";
 
 /**
  * Get current registration configuration and requirements
