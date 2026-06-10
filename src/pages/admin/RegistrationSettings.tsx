@@ -114,6 +114,8 @@ export default function RegistrationSettings() {
             retiring_date: config.retiring_date,
             registration_fee: config.registration_fee,
             active: config.active,
+            show_on_login: displaySettings.show_on_login,
+            auto_approve: displaySettings.auto_approve,
           }),
         }
       );
