@@ -353,26 +353,33 @@ async function updateConfig(
   payload: ConfigUpdatePayload,
   adminId: string
 ): Promise<Response> {
-  if (!payload.retiring_date && !payload.registration_fee) {
-    return new Response(
-      JSON.stringify({ success: false, error: "At least one field required" }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-
-  const { error } = await supabase
+  // Find the single config row (regardless of active state)
+  const { data: existing } = await supabase
     .from("registration_config")
-    .update({
-      ...(payload.retiring_date && { retiring_date: payload.retiring_date }),
-      ...(payload.registration_fee && { registration_fee: payload.registration_fee }),
-      ...(payload.active !== undefined && { active: payload.active }),
-      updated_at: new Date().toISOString(),
-      updated_by: adminId,
-    })
-    .eq("active", true);
+    .select("id")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const updates: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+    updated_by: adminId,
+  };
+  if (payload.retiring_date) updates.retiring_date = payload.retiring_date;
+  if (payload.registration_fee !== undefined) updates.registration_fee = payload.registration_fee;
+  if (payload.active !== undefined) updates.active = payload.active;
+  if (payload.show_on_login !== undefined) updates.show_on_login = payload.show_on_login;
+  if (payload.auto_approve !== undefined) updates.auto_approve = payload.auto_approve;
+
+  let error;
+  if (existing?.id) {
+    ({ error } = await supabase
+      .from("registration_config")
+      .update(updates)
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await supabase.from("registration_config").insert(updates));
+  }
 
   if (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
