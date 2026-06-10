@@ -26,6 +26,8 @@ interface ConfigUpdatePayload {
   retiring_date?: string;
   registration_fee?: number;
   active?: boolean;
+  show_on_login?: boolean;
+  auto_approve?: boolean;
 }
 
 // Verify admin access (roles are stored in user_roles)
