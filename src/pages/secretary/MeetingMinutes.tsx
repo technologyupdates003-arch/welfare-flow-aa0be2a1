@@ -682,7 +682,7 @@ export default function MeetingMinutes() {
       return rolesData.map(role => ({
         user_id: role.user_id,
         role: role.role,
-        members: memberMap.get(role.user_id) || { name: "Unknown", phone: "" }
+        members: memberMap?.get(role.user_id) || { name: "Unknown", phone: "" }
       }));
     },
   });
@@ -718,7 +718,7 @@ export default function MeetingMinutes() {
         .map(role => ({
           user_id: role.user_id,
           role: role.role,
-          members: memberMap.get(role.user_id) || { name: "Unknown", phone: "" }
+          members: memberMap?.get(role.user_id) || { name: "Unknown", phone: "" }
         }))
         .filter(r => r.members?.name && r.members.name !== "Unknown");
     },

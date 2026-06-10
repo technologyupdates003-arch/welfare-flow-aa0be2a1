@@ -299,12 +299,13 @@ export default function PenaltyWallet() {
       .replace(/"/g, '&quot;');
 
   const getSignatureInfo = (signatory: SignatoryInfo) => {
+    if (!signatureMap) return undefined;
     const exactKey = signatory.signatory_user_id
       ? `${signatory.signatory_user_id}-${signatory.signatory_role}`
       : null;
     return (
-      (exactKey && signatureMap.get(exactKey)) ||
-      signatureMap.get(signatory.signatory_role)
+      (exactKey && signatureMap?.get(exactKey)) ||
+      signatureMap?.get(signatory.signatory_role)
     );
   };
 

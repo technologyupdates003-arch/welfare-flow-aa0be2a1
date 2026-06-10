@@ -1,10 +1,12 @@
- import { useState } from "react";
+ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
+import RegistrationForm from "@/components/auth/RegistrationForm";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -12,6 +14,16 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+
+  // Check if registration is enabled
+  useEffect(() => {
+    const settings = localStorage.getItem("registration_display_settings");
+    if (settings) {
+      const parsed = JSON.parse(settings);
+      setRegistrationEnabled(parsed.show_on_login ?? false);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,8 +37,9 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader className="text-center space-y-2">
+      <div className="w-full max-w-md animate-fade-in">
+        {/* Logo and Title */}
+        <div className="text-center space-y-2 mb-6">
           <div className="mx-auto flex h-20 w-20 items-center justify-center">
             <img 
               src={logoImage} 
@@ -34,39 +47,71 @@ export default function Login() {
               className="h-full w-full object-contain"
             />
           </div>
-          <CardTitle className="text-2xl">KIRINYAGA HCWW</CardTitle>
-          <CardDescription>Sign in with your phone number</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                placeholder="+254XXXXXXXXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          <h1 className="text-2xl font-bold">KIRINYAGA HCWW</h1>
+        </div>
+
+        {/* Tabs for Login and Registration */}
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login">Sign In</TabsTrigger>
+            {registrationEnabled && (
+              <TabsTrigger value="register">Register</TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* Login Tab */}
+          <TabsContent value="login">
+            <Card>
+              <CardHeader className="text-center space-y-2">
+                <CardTitle>Sign In</CardTitle>
+                <CardDescription>Sign in with your phone number</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+254XXXXXXXXX"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Registration Tab */}
+          {registrationEnabled && (
+            <TabsContent value="register">
+              <RegistrationForm onSuccess={() => {
+                // Reset to login tab after successful registration
+                setTimeout(() => {
+                  setPhone("");
+                  setPassword("");
+                }, 1000);
+              }} />
+            </TabsContent>
+          )}
+        </Tabs>
+      </div>
     </div>
   );
 }

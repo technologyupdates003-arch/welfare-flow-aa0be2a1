@@ -219,7 +219,7 @@ export default function TreasurerReports() {
       (allMembers || []).map((m: any) => [normalizePhone(m.phone), m.name])
     );
     const resolveName = (t: any) =>
-      t.party_name || memberByPhone.get(normalizePhone(t.party_phone)) || "—";
+      t.party_name || (memberByPhone?.get(normalizePhone(t.party_phone))) || "—";
 
     const orgName = orgSettings?.organization_name || "KIRINYAGA HEALTHCARE WORKERS' WELFARE";
     const orgAddress = orgSettings?.organization_address || "P.O.BOX 24-10300 KERUGOYA, LOCATION: KCRH";

@@ -99,7 +99,8 @@ export default function WalletReports() {
             });
           }
 
-          const summary = summaryMap.get(key)!;
+          const summary = summaryMap.get(key);
+          if (!summary) return;
           if (tx.direction === "in") {
             summary.total_in += tx.net_amount || 0;
             totalIn += tx.net_amount || 0;
@@ -127,7 +128,8 @@ export default function WalletReports() {
             });
           }
 
-          const summary = txSummaryMap.get(key)!;
+          const summary = txSummaryMap.get(key);
+          if (!summary) return;
           summary.count += 1;
           summary.total_amount += tx.net_amount || 0;
           summary.avg_amount = summary.total_amount / summary.count;

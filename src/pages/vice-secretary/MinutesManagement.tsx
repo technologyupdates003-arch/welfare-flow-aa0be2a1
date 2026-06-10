@@ -81,7 +81,11 @@ export default function MinutesManagement() {
       const seen = new Set<string>();
       return rolesData
         .filter(r => { if (seen.has(r.user_id)) return false; seen.add(r.user_id); return true; })
-        .map(r => ({ user_id: r.user_id, role: r.role, members: memberMap.get(r.user_id) || { name: "Unknown", phone: "" } }))
+        .map(r => ({ 
+          user_id: r.user_id, 
+          role: r.role, 
+          members: memberMap?.get(r.user_id) || { name: "Unknown", phone: "" } 
+        }))
         .filter(r => r.members?.name && r.members.name !== "Unknown");
     },
   });

@@ -70,8 +70,8 @@ export default function Members() {
       // Combine members with their roles
       return (membersData || []).map(member => ({
         ...member,
-        user_roles: member.user_id && roleMap.has(member.user_id) 
-          ? [{ role: roleMap.get(member.user_id) }]
+        user_roles: member.user_id && roleMap?.has(member.user_id) 
+          ? [{ role: roleMap?.get(member.user_id) }]
           : []
       }));
     },

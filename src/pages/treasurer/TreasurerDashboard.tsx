@@ -70,12 +70,11 @@ export default function TreasurerDashboard() {
         signaturesMap.set(`${sig.signatory_role}`, sig);
       });
 
-      const getSignatureInfo = (s: any) =>
-        signaturesMap.get(
-          s.signatory_user_id
-            ? `${s.signatory_user_id}-${s.signatory_role}`
-            : s.signatory_role
-        ) || signaturesMap.get(s.signatory_role);
+      const getSignatureInfo = (s: any) => {
+        if (!signaturesMap) return undefined;
+        const exactKey = s.signatory_user_id ? `${s.signatory_user_id}-${s.signatory_role}` : s.signatory_role;
+        return signaturesMap?.get(exactKey) || signaturesMap?.get(s.signatory_role);
+      };
 
       const combined = [
         ...(penaltyRes.data || []).map((w: any) => ({

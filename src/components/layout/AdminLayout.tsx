@@ -58,6 +58,9 @@ const getNavItems = (role: string) => {
         
         { to: "/admin/withdrawal-approval", icon: FileSignature, label: "Withdrawal Approvals" },
         { to: "/admin/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" },
+        { to: "/admin/registration-settings", icon: Settings, label: "Registration Settings" },
+        { to: "/admin/registration-management", icon: Users, label: "Member Registrations" },
+        { to: "/admin/registration-api-docs", icon: FileText, label: "Registration API Docs" },
         { to: "/admin/sms", icon: Send, label: "Bulk SMS" },
         { to: "/admin/schedule", icon: Calendar, label: "Schedule Manager" },
         { to: "/admin/events", icon: Calendar, label: "Events" },

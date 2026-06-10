@@ -64,21 +64,25 @@ export default function WithdrawalReceipts() {
         setOrgSettings(org.data || null);
 
         const sigMap = new Map<string, any>();
-        sigs.data?.forEach((s: any) => {
-          sigMap.set(`${s.user_id}-${s.signatory_role}`, s);
-          if (!sigMap.has(s.signatory_role)) sigMap.set(s.signatory_role, s);
-        });
+        if (sigs.data && Array.isArray(sigs.data)) {
+          sigs.data.forEach((s: any) => {
+            if (s?.user_id && s?.signatory_role) {
+              sigMap.set(`${s.user_id}-${s.signatory_role}`, s);
+              if (!sigMap.has(s.signatory_role)) sigMap.set(s.signatory_role, s);
+            }
+          });
+        }
 
         const enrich = (s: any): SignatoryInfo => {
           const found =
-            (s.signatory_user_id && sigMap.get(`${s.signatory_user_id}-${s.signatory_role}`)) ||
-            sigMap.get(s.signatory_role);
+            (s?.signatory_user_id && sigMap?.get(`${s.signatory_user_id}-${s.signatory_role}`)) ||
+            sigMap?.get(s?.signatory_role);
           return {
-            signatory_role: s.signatory_role,
-            status: s.status,
-            approved_at: s.approved_at,
-            signatory_user_id: s.signatory_user_id,
-            signature_url: s.signature_url || found?.signature_url,
+            signatory_role: s?.signatory_role,
+            status: s?.status,
+            approved_at: s?.approved_at,
+            signatory_user_id: s?.signatory_user_id,
+            signature_url: s?.signature_url || found?.signature_url,
             full_name: found?.full_name,
           };
         };

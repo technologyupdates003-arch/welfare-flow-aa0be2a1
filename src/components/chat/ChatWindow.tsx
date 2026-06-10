@@ -72,7 +72,7 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
         
         // Enrich reply messages with member names from our map
         replyMap = new Map((replies || []).map((r: any) => {
-          const memberData = memberByUserIdMap.get(r.user_id);
+          const memberData = memberByUserIdMap?.get(r.user_id) || null;
           return [r.id, {
             ...r,
             resolvedName: memberData?.name || r.members?.name || "Unknown User"
@@ -82,38 +82,48 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
 
       // Get reactions
       const messageIds = data.map((m: any) => m.id);
-      const { data: reactions } = await supabase
-        .from("message_reactions")
-        .select("*")
-        .in("message_id", messageIds);
-      const reactionsMap = new Map<string, any[]>();
-      (reactions || []).forEach((r: any) => {
-        if (!reactionsMap.has(r.message_id)) reactionsMap.set(r.message_id, []);
-        reactionsMap.get(r.message_id)!.push(r);
-      });
+      let reactionsMap = new Map<string, any[]>();
+      if (messageIds.length > 0) {
+        const { data: reactions } = await supabase
+          .from("message_reactions")
+          .select("*")
+          .in("message_id", messageIds);
+        reactionsMap = new Map<string, any[]>();
+        (reactions || []).forEach((r: any) => {
+          if (!reactionsMap.has(r.message_id)) reactionsMap.set(r.message_id, []);
+          const existing = reactionsMap.get(r.message_id);
+          if (existing) existing.push(r);
+        });
+      }
 
       return data.map((m: any) => {
-        const role = roleMap.get(m.user_id) || "member";
+        // Ensure maps exist with fallback empty maps
+        const safeRoleMap = roleMap || new Map();
+        const safeMemberByUserIdMap = memberByUserIdMap || new Map();
+        const safeReplyMap = replyMap || new Map();
+        const safeReactionsMap = reactionsMap || new Map();
+
+        const role = safeRoleMap.get(m.user_id) || "member";
         // Get name from member lookup by user_id (most reliable)
-        const memberData = memberByUserIdMap.get(m.user_id);
+        const memberData = safeMemberByUserIdMap.get(m.user_id);
         const resolvedName = memberData?.name || m.members?.name || "Unknown User";
         const resolvedPicture = memberData?.profile_picture_url || m.members?.profile_picture_url || null;
         
         // Debug logging
         if (!memberData) {
-          console.log("No member data for user_id:", m.user_id, "Available members:", Array.from(memberByUserIdMap.keys()));
+          console.log("No member data for user_id:", m.user_id, "Available members:", Array.from(safeMemberByUserIdMap.keys()));
         }
         
-        const replyMsg = m.reply_to_id ? replyMap.get(m.reply_to_id) : null;
+        const replyMsg = m.reply_to_id ? safeReplyMap.get(m.reply_to_id) : null;
         
         return {
           ...m,
           userRole: role,
           resolvedName,
           resolvedPicture,
-          message_reactions: reactionsMap.get(m.id) || [],
+          message_reactions: safeReactionsMap.get(m.id) || [],
           replyMessage: replyMsg,
-          replyRole: replyMsg ? (roleMap.get(replyMsg.user_id) || "member") : null,
+          replyRole: replyMsg ? (safeRoleMap.get(replyMsg.user_id) || "member") : null,
         };
       });
     },

@@ -83,6 +83,9 @@ import SecuritySettings from "@/pages/super-admin/SecuritySettings";
 import PasswordManagement from "@/pages/super-admin/PasswordManagement";
 import AccessControl from "@/pages/super-admin/AccessControl";
 import SystemMonitoring from "@/pages/super-admin/SystemMonitoring";
+import RegistrationSettings from "@/pages/admin/RegistrationSettings";
+import RegistrationManagement from "@/pages/admin/RegistrationManagement";
+import RegistrationApiDocs from "@/pages/admin/RegistrationApiDocs";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -142,6 +145,9 @@ function AppRoutes() {
         <Route path="/admin/donation-campaigns" element={<AdminLayout><DonationCampaigns /></AdminLayout>} />
         <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
         <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
+        <Route path="/admin/registration-settings" element={<AdminLayout><RegistrationSettings /></AdminLayout>} />
+        <Route path="/admin/registration-management" element={<AdminLayout><RegistrationManagement /></AdminLayout>} />
+        <Route path="/admin/registration-api-docs" element={<AdminLayout><RegistrationApiDocs /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
@@ -277,6 +283,9 @@ function AppRoutes() {
         <Route path="/admin/donation-campaigns" element={<AdminLayout><DonationCampaigns /></AdminLayout>} />
         <Route path="/admin/withdrawal-approval" element={<AdminLayout><WithdrawalApproval /></AdminLayout>} />
         <Route path="/admin/withdrawal-receipts" element={<AdminLayout><WithdrawalReceipts /></AdminLayout>} />
+        <Route path="/admin/registration-settings" element={<AdminLayout><RegistrationSettings /></AdminLayout>} />
+        <Route path="/admin/registration-management" element={<AdminLayout><RegistrationManagement /></AdminLayout>} />
+        <Route path="/admin/registration-api-docs" element={<AdminLayout><RegistrationApiDocs /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />

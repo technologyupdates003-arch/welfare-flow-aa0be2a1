@@ -19,6 +19,16 @@
     <meta property="og:title" content="KIRINYAGA HCWW" />
     <meta property="og:description" content="Kirinyaga Health Care Workers Welfare Management System" />
     <meta property="og:type" content="website" />
+
+    <!-- Polyfill for Deno in browser environment (Supabase compatibility) -->
+    <script>
+      if (typeof globalThis !== "undefined" && typeof Deno === "undefined") {
+        globalThis.Deno = {
+          unrefTimer: function() {},
+          version: undefined
+        };
+      }
+    </script>
   </head>
 
   <body>
