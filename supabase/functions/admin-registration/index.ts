@@ -28,15 +28,15 @@ interface ConfigUpdatePayload {
   active?: boolean;
 }
 
-// Verify admin access
+// Verify admin access (roles are stored in user_roles)
 async function verifyAdminAccess(supabase: any, userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("members")
+  const { data, error } = await supabase
+    .from("user_roles")
     .select("role")
-    .eq("id", userId)
-    .single();
+    .eq("user_id", userId);
 
-  return data?.role === "admin" || data?.role === "super_admin";
+  if (error || !data) return false;
+  return data.some((r: any) => r.role === "admin" || r.role === "super_admin");
 }
 
 // Generate temporary password
