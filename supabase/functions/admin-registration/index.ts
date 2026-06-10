@@ -26,17 +26,19 @@ interface ConfigUpdatePayload {
   retiring_date?: string;
   registration_fee?: number;
   active?: boolean;
+  show_on_login?: boolean;
+  auto_approve?: boolean;
 }
 
-// Verify admin access
+// Verify admin access (roles are stored in user_roles)
 async function verifyAdminAccess(supabase: any, userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("members")
+  const { data, error } = await supabase
+    .from("user_roles")
     .select("role")
-    .eq("id", userId)
-    .single();
+    .eq("user_id", userId);
 
-  return data?.role === "admin" || data?.role === "super_admin";
+  if (error || !data) return false;
+  return data.some((r: any) => r.role === "admin" || r.role === "super_admin");
 }
 
 // Generate temporary password
@@ -319,10 +321,11 @@ async function getConfig(supabase: any): Promise<Response> {
   const { data, error } = await supabase
     .from("registration_config")
     .select("*")
-    .eq("active", true)
-    .single();
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     return new Response(
       JSON.stringify({
         success: true,
@@ -330,6 +333,8 @@ async function getConfig(supabase: any): Promise<Response> {
           retiring_date: "2027-12-31",
           registration_fee: 1000,
           active: true,
+          show_on_login: true,
+          auto_approve: false,
         },
       }),
       {
@@ -351,26 +356,33 @@ async function updateConfig(
   payload: ConfigUpdatePayload,
   adminId: string
 ): Promise<Response> {
-  if (!payload.retiring_date && !payload.registration_fee) {
-    return new Response(
-      JSON.stringify({ success: false, error: "At least one field required" }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-
-  const { error } = await supabase
+  // Find the single config row (regardless of active state)
+  const { data: existing } = await supabase
     .from("registration_config")
-    .update({
-      ...(payload.retiring_date && { retiring_date: payload.retiring_date }),
-      ...(payload.registration_fee && { registration_fee: payload.registration_fee }),
-      ...(payload.active !== undefined && { active: payload.active }),
-      updated_at: new Date().toISOString(),
-      updated_by: adminId,
-    })
-    .eq("active", true);
+    .select("id")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const updates: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+    updated_by: adminId,
+  };
+  if (payload.retiring_date) updates.retiring_date = payload.retiring_date;
+  if (payload.registration_fee !== undefined) updates.registration_fee = payload.registration_fee;
+  if (payload.active !== undefined) updates.active = payload.active;
+  if (payload.show_on_login !== undefined) updates.show_on_login = payload.show_on_login;
+  if (payload.auto_approve !== undefined) updates.auto_approve = payload.auto_approve;
+
+  let error;
+  if (existing?.id) {
+    ({ error } = await supabase
+      .from("registration_config")
+      .update(updates)
+      .eq("id", existing.id));
+  } else {
+    ({ error } = await supabase.from("registration_config").insert(updates));
+  }
 
   if (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
@@ -397,7 +409,9 @@ Deno.serve(async (req) => {
   }
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/functions\/v1\/admin-registration/, "");
+  // Strip any prefix up to and including the function name so routing works
+  // regardless of whether the runtime path includes /functions/v1
+  const path = url.pathname.replace(/^.*\/admin-registration/, "");
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // Get auth header to verify admin

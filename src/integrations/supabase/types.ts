@@ -1016,6 +1016,60 @@ export type Database = {
           },
         ]
       }
+      member_registrations: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          date_of_birth: string | null
+          department: string | null
+          full_name: string
+          id: string
+          payment_status: string
+          phone_number: string
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+          working_location: string | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          department?: string | null
+          full_name: string
+          id?: string
+          payment_status?: string
+          phone_number: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          working_location?: string | null
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          department?: string | null
+          full_name?: string
+          id?: string
+          payment_status?: string
+          phone_number?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          working_location?: string | null
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           created_at: string
@@ -1985,6 +2039,136 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      registration_access_links: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          registration_id: string
+          temporary_password: string | null
+          used: boolean
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          registration_id: string
+          temporary_password?: string | null
+          used?: boolean
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          registration_id?: string
+          temporary_password?: string | null
+          used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_access_links_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "member_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registration_config: {
+        Row: {
+          active: boolean
+          auto_approve: boolean
+          created_at: string
+          id: string
+          registration_fee: number
+          retiring_date: string | null
+          show_on_login: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          auto_approve?: boolean
+          created_at?: string
+          id?: string
+          registration_fee?: number
+          retiring_date?: string | null
+          show_on_login?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          auto_approve?: boolean
+          created_at?: string
+          id?: string
+          registration_fee?: number
+          retiring_date?: string | null
+          show_on_login?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      registration_fees: {
+        Row: {
+          amount: number
+          created_at: string
+          error_message: string | null
+          id: string
+          last_retry_at: string | null
+          mpesa_checkout_request_id: string | null
+          mpesa_transaction_id: string | null
+          phone_number: string | null
+          registration_id: string
+          retry_count: number
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_retry_at?: string | null
+          mpesa_checkout_request_id?: string | null
+          mpesa_transaction_id?: string | null
+          phone_number?: string | null
+          registration_id: string
+          retry_count?: number
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_retry_at?: string | null
+          mpesa_checkout_request_id?: string | null
+          mpesa_transaction_id?: string | null
+          phone_number?: string | null
+          registration_id?: string
+          retry_count?: number
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_fees_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "member_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       signatory_signatures: {
         Row: {

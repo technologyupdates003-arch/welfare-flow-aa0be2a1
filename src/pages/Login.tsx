@@ -16,13 +16,33 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
 
-  // Check if registration is enabled
+  // Check if registration is enabled (fetch from public backend config)
   useEffect(() => {
-    const settings = localStorage.getItem("registration_display_settings");
-    if (settings) {
-      const parsed = JSON.parse(settings);
-      setRegistrationEnabled(parsed.show_on_login ?? false);
-    }
+    const checkRegistration = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/member-registration/config`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          const cfg = json?.data || {};
+          setRegistrationEnabled(Boolean(cfg.active) && cfg.show_on_login !== false);
+          return;
+        }
+      } catch {
+        // fall back to localStorage below
+      }
+      const settings = localStorage.getItem("registration_display_settings");
+      if (settings) {
+        try {
+          const parsed = JSON.parse(settings);
+          setRegistrationEnabled(parsed.show_on_login ?? false);
+        } catch {
+          setRegistrationEnabled(false);
+        }
+      }
+    };
+    checkRegistration();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

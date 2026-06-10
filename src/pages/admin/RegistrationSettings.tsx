@@ -54,12 +54,18 @@ export default function RegistrationSettings() {
         if (response.ok) {
           const data = await response.json();
           setConfig(data.data);
-        }
-
-        // Load local display settings from localStorage
-        const savedSettings = localStorage.getItem("registration_display_settings");
-        if (savedSettings) {
-          setDisplaySettings(JSON.parse(savedSettings));
+          setDisplaySettings({
+            show_on_login: data.data.show_on_login ?? true,
+            auto_approve: data.data.auto_approve ?? false,
+          });
+          // Mirror to localStorage for immediate Login page use
+          localStorage.setItem(
+            "registration_display_settings",
+            JSON.stringify({
+              show_on_login: data.data.show_on_login ?? true,
+              auto_approve: data.data.auto_approve ?? false,
+            })
+          );
         }
       } catch (err: any) {
         setError(err.message);
@@ -108,6 +114,8 @@ export default function RegistrationSettings() {
             retiring_date: config.retiring_date,
             registration_fee: config.registration_fee,
             active: config.active,
+            show_on_login: displaySettings.show_on_login,
+            auto_approve: displaySettings.auto_approve,
           }),
         }
       );

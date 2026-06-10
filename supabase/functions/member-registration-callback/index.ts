@@ -142,8 +142,53 @@ Deno.serve(async (req) => {
       .eq("id", fee.registration_id)
       .single();
 
-    if (registration) {
-      // Send SMS notification about payment verification
+    // Check if auto-approve is enabled
+    const { data: config } = await supabase
+      .from("registration_config")
+      .select("auto_approve")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (registration && config?.auto_approve) {
+      // Auto-approve: generate access link + temp password and send setup SMS
+      try {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let tempPassword = "";
+        for (let i = 0; i < 12; i++) {
+          tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        const accessToken = `${registration.id}-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 15)}`;
+        const systemLink = `${Deno.env.get("SYSTEM_URL") || SUPABASE_URL}/register/${accessToken}`;
+
+        await supabase.from("registration_access_links").insert({
+          registration_id: registration.id,
+          access_token: accessToken,
+          temporary_password: tempPassword,
+        });
+
+        await supabase
+          .from("member_registrations")
+          .update({
+            status: "approved",
+            approved_at: new Date().toISOString(),
+            approval_notes: "Auto-approved after payment",
+          })
+          .eq("id", registration.id);
+
+        await supabase.functions.invoke("send-sms", {
+          body: {
+            phone: registration.phone_number,
+            message: `Karibu ${registration.full_name}! Ombi lako limeidhinishwa. Ingia: ${systemLink}\nNeno la siri: ${tempPassword}`,
+          },
+        });
+      } catch (autoErr) {
+        console.error("Auto-approve error:", autoErr);
+      }
+    } else if (registration) {
+      // Send SMS notification about payment verification (manual approval)
       try {
         await supabase.functions.invoke("send-sms", {
           body: {
