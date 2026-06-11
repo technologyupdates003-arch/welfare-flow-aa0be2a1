@@ -178,9 +178,9 @@ Deno.serve(async (req) => {
           })
           .eq("id", registration.id);
 
-        await supabase.functions.invoke("send-sms", {
+        await supabase.functions.invoke("send-bulk-sms", {
           body: {
-            phone: registration.phone_number,
+            phones: [registration.phone_number],
             message: `Karibu ${registration.full_name}! Ombi lako limeidhinishwa. Ingia: ${systemLink}\nNeno la siri: ${tempPassword}`,
           },
         });
