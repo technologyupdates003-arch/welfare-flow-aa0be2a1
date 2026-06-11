@@ -107,6 +107,11 @@ export default function WithdrawalReceipts() {
             type: "donation" as const,
             signatories: (w.donation_withdrawal_signatories || []).map(enrich),
           })),
+          ...(op.data || []).map((w: any) => ({
+            ...w,
+            type: "operational" as const,
+            signatories: (w.operational_withdrawal_signatories || []).map(enrich),
+          })),
         ].sort(
           (a, b) =>
             new Date(b.submitted_at || b.created_at).getTime() -
