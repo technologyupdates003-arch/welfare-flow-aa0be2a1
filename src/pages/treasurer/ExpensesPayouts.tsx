@@ -206,7 +206,7 @@ export default function ExpensesPayouts() {
         ? "operational_withdrawal_signatories"
         : data.walletType === "donation"
         ? "donation_withdrawal_signatories"
-        : "penalty_withdrawal_signatories";
+        : "withdrawal_signatories";
 
       // Create withdrawal record
       const { data: withdrawal, error: withdrawalError } = await supabase
@@ -286,7 +286,7 @@ export default function ExpensesPayouts() {
           ? "operational_withdrawal_signatories"
           : data.expenseWallet === "donation"
           ? "donation_withdrawal_signatories"
-          : "penalty_withdrawal_signatories";
+          : "withdrawal_signatories";
 
         // Create withdrawal record for expense
         const { data: withdrawal, error: withdrawalError } = await supabase

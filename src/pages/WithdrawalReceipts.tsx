@@ -24,7 +24,7 @@ interface ReceiptRow {
   phone_number?: string | null;
   created_at: string;
   submitted_at?: string | null;
-  type: "penalty" | "donation";
+  type: "penalty" | "donation" | "operational";
   signatories: SignatoryInfo[];
 }
 
@@ -39,7 +39,7 @@ export default function WithdrawalReceipts() {
     (async () => {
       try {
         setLoading(true);
-        const [pen, don, sigs, org] = await Promise.all([
+        const [pen, don, op, sigs, org] = await Promise.all([
           supabase
             .from("penalty_withdrawals")
             .select(`
@@ -56,11 +56,20 @@ export default function WithdrawalReceipts() {
             `)
             .eq("status", "completed")
             .order("submitted_at", { ascending: false }),
+          supabase
+            .from("operational_withdrawals")
+            .select(`
+              id, amount, reason, status, phone_number, created_at, submitted_at,
+              operational_withdrawal_signatories ( signatory_role, status, signature_url, approved_at, signatory_user_id )
+            `)
+            .eq("status", "completed")
+            .order("submitted_at", { ascending: false }),
           supabase.from("signatory_signatures").select("user_id, signatory_role, signature_url, full_name"),
           supabase.from("organization_settings").select("*").maybeSingle(),
         ]);
         if (pen.error) throw pen.error;
         if (don.error) throw don.error;
+        if (op.error) throw op.error;
         setOrgSettings(org.data || null);
 
         const sigMap = new Map<string, any>();
@@ -97,6 +106,11 @@ export default function WithdrawalReceipts() {
             ...w,
             type: "donation" as const,
             signatories: (w.donation_withdrawal_signatories || []).map(enrich),
+          })),
+          ...(op.data || []).map((w: any) => ({
+            ...w,
+            type: "operational" as const,
+            signatories: (w.operational_withdrawal_signatories || []).map(enrich),
           })),
         ].sort(
           (a, b) =>
@@ -265,7 +279,7 @@ export default function WithdrawalReceipts() {
                 {/* Receipt Type */}
                 <div style={{ marginBottom: '20px' }}>
                   <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827', margin: '0 0 5px 0' }}>
-                    {open.type === 'penalty' ? 'PENALTY WALLET WITHDRAWAL RECEIPT' : 'FUNDS WALLET WITHDRAWAL RECEIPT'}
+                    {open.type === 'penalty' ? 'PENALTY WALLET WITHDRAWAL RECEIPT' : open.type === 'operational' ? 'OPERATIONAL WALLET WITHDRAWAL RECEIPT' : 'FUNDS WALLET WITHDRAWAL RECEIPT'}
                   </h2>
                   <div style={{ fontSize: '10px', color: '#6b7280' }}>Generated: {new Date().toLocaleString()}</div>
                 </div>
@@ -284,7 +298,7 @@ export default function WithdrawalReceipts() {
                       </tr>
                       <tr style={{ background: '#f3f4f6' }}>
                         <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Wallet Type:</td>
-                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{open.type === 'penalty' ? 'Penalty Wallet' : 'Funds Wallet'}</td>
+                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{open.type === 'penalty' ? 'Penalty Wallet' : open.type === 'operational' ? 'Operational Wallet' : 'Funds Wallet'}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Withdrawal Reason:</td>
