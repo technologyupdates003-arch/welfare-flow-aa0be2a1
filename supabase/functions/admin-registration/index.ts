@@ -293,9 +293,9 @@ async function rejectRegistration(
   if (registration) {
     try {
       const message = `Asante kwa kamatia! Ombi lako halijalipulikana: ${payload.reason}. Jaribu tena baadaye.`;
-      await supabase.functions.invoke("send-sms", {
+      await supabase.functions.invoke("send-bulk-sms", {
         body: {
-          phone: registration.phone_number,
+          phones: [registration.phone_number],
           message: message,
         },
       });
