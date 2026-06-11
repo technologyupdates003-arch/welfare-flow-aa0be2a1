@@ -279,7 +279,7 @@ export default function WithdrawalReceipts() {
                 {/* Receipt Type */}
                 <div style={{ marginBottom: '20px' }}>
                   <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827', margin: '0 0 5px 0' }}>
-                    {open.type === 'penalty' ? 'PENALTY WALLET WITHDRAWAL RECEIPT' : 'FUNDS WALLET WITHDRAWAL RECEIPT'}
+                    {open.type === 'penalty' ? 'PENALTY WALLET WITHDRAWAL RECEIPT' : open.type === 'operational' ? 'OPERATIONAL WALLET WITHDRAWAL RECEIPT' : 'FUNDS WALLET WITHDRAWAL RECEIPT'}
                   </h2>
                   <div style={{ fontSize: '10px', color: '#6b7280' }}>Generated: {new Date().toLocaleString()}</div>
                 </div>
