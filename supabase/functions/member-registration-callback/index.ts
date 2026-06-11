@@ -190,9 +190,9 @@ Deno.serve(async (req) => {
     } else if (registration) {
       // Send SMS notification about payment verification (manual approval)
       try {
-        await supabase.functions.invoke("send-sms", {
+        await supabase.functions.invoke("send-bulk-sms", {
           body: {
-            phone: registration.phone_number,
+            phones: [registration.phone_number],
             message: `Asante ${registration.full_name}! Malipo yako yamethibitishwa. Utapata ujumbe wa kuingia kwenye mfumo hivi karibuni.`,
           },
         });
