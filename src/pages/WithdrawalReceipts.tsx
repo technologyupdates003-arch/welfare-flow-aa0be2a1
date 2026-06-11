@@ -24,7 +24,7 @@ interface ReceiptRow {
   phone_number?: string | null;
   created_at: string;
   submitted_at?: string | null;
-  type: "penalty" | "donation";
+  type: "penalty" | "donation" | "operational";
   signatories: SignatoryInfo[];
 }
 
