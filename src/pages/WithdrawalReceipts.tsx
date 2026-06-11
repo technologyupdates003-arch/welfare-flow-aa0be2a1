@@ -39,7 +39,7 @@ export default function WithdrawalReceipts() {
     (async () => {
       try {
         setLoading(true);
-        const [pen, don, sigs, org] = await Promise.all([
+        const [pen, don, op, sigs, org] = await Promise.all([
           supabase
             .from("penalty_withdrawals")
             .select(`
@@ -56,11 +56,20 @@ export default function WithdrawalReceipts() {
             `)
             .eq("status", "completed")
             .order("submitted_at", { ascending: false }),
+          supabase
+            .from("operational_withdrawals")
+            .select(`
+              id, amount, reason, status, phone_number, created_at, submitted_at,
+              operational_withdrawal_signatories ( signatory_role, status, signature_url, approved_at, signatory_user_id )
+            `)
+            .eq("status", "completed")
+            .order("submitted_at", { ascending: false }),
           supabase.from("signatory_signatures").select("user_id, signatory_role, signature_url, full_name"),
           supabase.from("organization_settings").select("*").maybeSingle(),
         ]);
         if (pen.error) throw pen.error;
         if (don.error) throw don.error;
+        if (op.error) throw op.error;
         setOrgSettings(org.data || null);
 
         const sigMap = new Map<string, any>();
