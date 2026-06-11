@@ -298,7 +298,7 @@ export default function WithdrawalReceipts() {
                       </tr>
                       <tr style={{ background: '#f3f4f6' }}>
                         <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Wallet Type:</td>
-                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{open.type === 'penalty' ? 'Penalty Wallet' : 'Funds Wallet'}</td>
+                        <td style={{ padding: '8px', color: '#1f2937', border: '1px solid #e5e7eb' }}>{open.type === 'penalty' ? 'Penalty Wallet' : open.type === 'operational' ? 'Operational Wallet' : 'Funds Wallet'}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: '8px', fontWeight: '600', color: '#374151', border: '1px solid #e5e7eb' }}>Withdrawal Reason:</td>
