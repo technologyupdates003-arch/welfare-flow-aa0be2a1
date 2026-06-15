@@ -126,8 +126,11 @@ export default function RegistrationSettings() {
         throw new Error(data.error || "Failed to save configuration");
       }
 
-      // Save display settings to localStorage
-      localStorage.setItem("registration_display_settings", JSON.stringify(displaySettings));
+      // Save display settings to localStorage (include active state)
+      localStorage.setItem(
+        "registration_display_settings",
+        JSON.stringify({ ...displaySettings, active: config.active })
+      );
 
       setSuccess("Registration configuration updated successfully!");
     } catch (err: any) {
