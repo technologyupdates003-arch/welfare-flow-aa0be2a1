@@ -45,8 +45,9 @@
     --radius: 1.25rem;
 
     /* Neumorphic light/dark shadow anchors (relative to --background) */
+    /* Darker dark + brighter light = more contrast = more tangible depth */
     --neu-light: 0 0% 100%;
-    --neu-dark: 220 18% 80%;
+    --neu-dark: 220 22% 72%;
 
     /* Legacy glass tokens kept so existing components stay consistent */
     --glass-bg: 220 27% 98%;
@@ -136,6 +137,17 @@
     background-attachment: fixed;
     min-height: 100vh;
     touch-action: manipulation;
+    position: relative;
+  }
+  /* Subtle grain so flat surfaces feel like a real material */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', 'Inter', sans-serif;
@@ -144,44 +156,57 @@
 }
 
 @layer utilities {
-  /* ===== Neumorphism core ===== */
+  /* ===== Neumorphism core =====
+     Each raised surface gets a faint top-left → bottom-right sheen so it
+     reads as a real object catching light, plus deeper dual shadows. */
   .neu {
-    background: hsl(var(--card));
+    background:
+      linear-gradient(145deg, hsl(var(--neu-light) / 0.6), transparent 55%),
+      hsl(var(--card));
     box-shadow:
-      6px 6px 14px hsl(var(--neu-dark) / 0.55),
-      -6px -6px 14px hsl(var(--neu-light) / 0.9);
+      7px 7px 16px hsl(var(--neu-dark) / 0.7),
+      -7px -7px 16px hsl(var(--neu-light) / 0.95),
+      inset 1px 1px 1px hsl(var(--neu-light) / 0.5);
   }
   .neu-lg {
-    background: hsl(var(--card));
+    background:
+      linear-gradient(145deg, hsl(var(--neu-light) / 0.65), transparent 55%),
+      hsl(var(--card));
     box-shadow:
-      10px 10px 26px hsl(var(--neu-dark) / 0.55),
-      -10px -10px 26px hsl(var(--neu-light) / 0.9);
+      13px 13px 30px hsl(var(--neu-dark) / 0.7),
+      -12px -12px 28px hsl(var(--neu-light) / 0.97),
+      inset 1px 1px 2px hsl(var(--neu-light) / 0.6);
   }
   .neu-sm {
-    background: hsl(var(--card));
+    background:
+      linear-gradient(145deg, hsl(var(--neu-light) / 0.5), transparent 55%),
+      hsl(var(--card));
     box-shadow:
-      4px 4px 9px hsl(var(--neu-dark) / 0.5),
-      -4px -4px 9px hsl(var(--neu-light) / 0.85);
+      5px 5px 11px hsl(var(--neu-dark) / 0.65),
+      -4px -4px 10px hsl(var(--neu-light) / 0.9),
+      inset 1px 1px 1px hsl(var(--neu-light) / 0.4);
   }
   .neu-inset {
     background: hsl(var(--background));
     box-shadow:
-      inset 5px 5px 10px hsl(var(--neu-dark) / 0.55),
-      inset -5px -5px 10px hsl(var(--neu-light) / 0.9);
+      inset 6px 6px 12px hsl(var(--neu-dark) / 0.72),
+      inset -6px -6px 12px hsl(var(--neu-light) / 0.92);
   }
   .neu-pressable {
-    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    transition: box-shadow 0.18s ease, transform 0.12s ease;
   }
   .neu-pressable:hover {
     box-shadow:
-      8px 8px 18px hsl(var(--neu-dark) / 0.6),
-      -8px -8px 18px hsl(var(--neu-light) / 0.95);
+      9px 9px 20px hsl(var(--neu-dark) / 0.72),
+      -9px -9px 20px hsl(var(--neu-light) / 0.97),
+      inset 1px 1px 1px hsl(var(--neu-light) / 0.5);
+    transform: translateY(-1px);
   }
   .neu-pressable:active {
     box-shadow:
-      inset 4px 4px 9px hsl(var(--neu-dark) / 0.5),
-      inset -4px -4px 9px hsl(var(--neu-light) / 0.85);
-    transform: translateY(1px);
+      inset 5px 5px 11px hsl(var(--neu-dark) / 0.7),
+      inset -5px -5px 11px hsl(var(--neu-light) / 0.9);
+    transform: translateY(1px) scale(0.992);
   }
 
   /* ===== Legacy glass utilities remapped to neumorphism ===== */
