@@ -45,8 +45,9 @@
     --radius: 1.25rem;
 
     /* Neumorphic light/dark shadow anchors (relative to --background) */
+    /* Darker dark + brighter light = more contrast = more tangible depth */
     --neu-light: 0 0% 100%;
-    --neu-dark: 220 18% 80%;
+    --neu-dark: 220 22% 72%;
 
     /* Legacy glass tokens kept so existing components stay consistent */
     --glass-bg: 220 27% 98%;
