@@ -67,32 +67,32 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Super Admin Sidebar - Dark gradient with WowDash styling */}
+      {/* Super Admin Sidebar - Floating neumorphic */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900/90 backdrop-blur-sm text-white flex flex-col border-r border-slate-700/50",
-        "lg:relative lg:translate-x-0 lg:z-auto lg:block",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground flex flex-col",
+        "lg:relative lg:translate-x-0 lg:z-auto lg:block lg:m-3 lg:rounded-3xl lg:shadow-neu lg:border lg:border-sidebar-border/40",
         "transform transition-transform duration-200 ease-in-out",
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="flex flex-col p-4 border-b border-slate-700/50">
+        <div className="flex flex-col p-4 border-b border-sidebar-border/50">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-white bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+            <h1 className="text-xl font-display font-bold text-gradient-brand">
               Super Admin
             </h1>
-            <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-slate-800/50" onClick={() => setSidebarOpen(false)}>
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <span className="text-xs bg-gradient-to-r from-blue-600/30 to-cyan-600/30 text-blue-300 px-2 py-1 rounded-full mt-2 self-start">
+          <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full mt-2 self-start font-medium shadow-neu-sm">
             Full System Access
           </span>
         </div>
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto no-scrollbar">
           {navItems.map(({ to, icon: Icon, label, divider }, index) => (
             <div key={to || `divider-${index}`}>
               {divider && (
-                <div className="my-3 border-t border-slate-700/50">
-                  <p className="text-xs text-slate-400 px-3 py-2 font-medium">Member Features</p>
+                <div className="my-3 border-t border-sidebar-border/50">
+                  <p className="text-xs text-sidebar-foreground/50 px-3 py-2 font-medium">Member Features</p>
                 </div>
               )}
               {to ? (
@@ -100,10 +100,10 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
                   to={to}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                     location.pathname === to
-                      ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg"
-                      : "text-slate-300 hover:bg-slate-800/50 hover:text-white"
+                      ? "bg-gradient-brand text-primary-foreground shadow-brand"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:shadow-neu-sm hover:bg-sidebar-accent"
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -113,10 +113,10 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
             </div>
           ))}
         </nav>
-        <div className="p-3 border-t border-slate-700/50">
+        <div className="p-3 border-t border-sidebar-border/50">
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800/50"
+            className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground"
             onClick={signOut}
           >
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
