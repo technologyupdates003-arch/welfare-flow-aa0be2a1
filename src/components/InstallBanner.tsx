@@ -108,18 +108,11 @@ export default function InstallBanner() {
     }
   };
 
-  // Don't show if installed or in standalone mode
-  if (isInstalled) return null;
-  // Temporarily dismissed - will show again on next page load/revisit
-  if (dismissed) return null;
-
-  // Don't show in iframe (Lovable preview)
-  try {
-    if (window.self !== window.top) return null;
-  } catch { return null; }
+  // Don't show if installed, dismissed, or inside the Lovable preview iframe
+  if (!bannerVisible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] gradient-brand text-primary-foreground shadow-brand">
+    <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[100] gradient-brand text-primary-foreground shadow-brand">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <img src="/favicon.png" alt="Welfare" className="h-8 w-8 rounded-lg" />
