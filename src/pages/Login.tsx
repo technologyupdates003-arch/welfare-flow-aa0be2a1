@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
 import RegistrationForm from "@/components/auth/RegistrationForm";
+import { TermsAndConditionsDialog } from "@/components/auth/TermsAndConditions";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -15,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Check if registration is enabled (fetch from public backend config)
   useEffect(() => {
@@ -48,6 +51,10 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!agreedToTerms) {
+      setError("Please accept the Terms & Conditions to continue.");
+      return;
+    }
     setLoading(true);
     const formatted = phone.startsWith("+254") ? phone : `+254${phone.replace(/^0/, "")}`;
     const { error } = await signIn(formatted, password);
@@ -109,8 +116,24 @@ export default function Login() {
                       required
                     />
                   </div>
+                  <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3">
+                    <Checkbox
+                      id="terms"
+                      checked={agreedToTerms}
+                      onCheckedChange={(v) => setAgreedToTerms(v === true)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                      By ticking this box, you confirm that you are an active member of KHCW
+                      Welfare Group and agree to honor all statutory obligations, including
+                      contributions, platform maintenance fees, and the Statutory Lifetime
+                      Onboarding Fee. You also consent to the secure processing of your personal
+                      data under the Kenya Data Protection Act (2019). Read the full{" "}
+                      <TermsAndConditionsDialog />.
+                    </Label>
+                  </div>
                   {error && <p className="text-sm text-destructive">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
                     {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>

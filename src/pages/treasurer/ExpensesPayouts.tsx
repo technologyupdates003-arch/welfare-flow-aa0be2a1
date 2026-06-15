@@ -194,7 +194,7 @@ export default function ExpensesPayouts() {
         .select("signatory_roles")
         .single();
 
-      const signatoryRoles = orgSettings?.signatory_roles || ["chairperson", "secretary"];
+      const signatoryRoles = orgSettings?.signatory_roles || ["chairperson", "secretary", "treasurer"];
 
       // Determine withdrawal table based on wallet type
       const withdrawalTable = data.walletType === "operational" 
@@ -274,7 +274,7 @@ export default function ExpensesPayouts() {
           .select("signatory_roles")
           .single();
 
-        const signatoryRoles = orgSettings?.signatory_roles || ["chairperson", "secretary"];
+        const signatoryRoles = orgSettings?.signatory_roles || ["chairperson", "secretary", "treasurer"];
 
         // Determine withdrawal table based on wallet type
         const withdrawalTable = data.expenseWallet === "operational" 
@@ -545,7 +545,7 @@ export default function ExpensesPayouts() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => createExpense.mutate(expenseForm)}
+                  onClick={() => createExpense.mutate({ ...expenseForm, expenseWallet, amount: parseFloat(expenseForm.amount) })}
                   className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                   disabled={
                     !expenseForm.category || 
