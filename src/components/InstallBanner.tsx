@@ -84,25 +84,25 @@ export default function InstallBanner() {
   } catch { return null; }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg">
+    <div className="fixed top-0 left-0 right-0 z-[100] gradient-brand text-primary-foreground shadow-brand">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <img src="/favicon.png" alt="Welfare" className="h-8 w-8 rounded-lg" />
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">Install KIRINYAGA HCWW</p>
-            <p className="text-xs text-white/80 truncate">Get the app for quick access</p>
+            <p className="text-xs text-primary-foreground/80 truncate">Get the app for quick access</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             onClick={handleInstall}
             size="sm"
-            className="bg-white text-green-700 hover:bg-white/90 font-semibold"
+            className="bg-white text-primary hover:bg-white/90 font-semibold shadow-neu-sm"
           >
             <Download className="h-4 w-4 mr-1" />
             Install
           </Button>
-          <button onClick={() => setDismissed(true)} className="text-white/70 hover:text-white text-lg px-1">✕</button>
+          <button onClick={() => setDismissed(true)} className="text-primary-foreground/70 hover:text-primary-foreground text-lg px-1">✕</button>
         </div>
       </div>
 
