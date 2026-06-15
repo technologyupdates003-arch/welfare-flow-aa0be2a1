@@ -13,6 +13,41 @@ export default function InstallBanner() {
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [inIframe, setInIframe] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // Detect Lovable preview iframe once on mount (avoids rendering banner there)
+  useEffect(() => {
+    try {
+      setInIframe(window.self !== window.top);
+    } catch {
+      setInIframe(true);
+    }
+  }, []);
+
+  // While the fixed banner is visible, offset page content so nothing is hidden behind it
+  const bannerVisible = !isInstalled && !dismissed && !inIframe;
+  useLayoutEffect(() => {
+    if (!bannerVisible) {
+      document.body.style.paddingTop = "";
+      return;
+    }
+    const apply = () => {
+      const h = bannerRef.current?.offsetHeight ?? 0;
+      document.body.style.paddingTop = h ? `${h}px` : "";
+    };
+    apply();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(apply) : null;
+    if (ro && bannerRef.current) ro.observe(bannerRef.current);
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      ro?.disconnect();
+      document.body.style.paddingTop = "";
+    };
+  }, [bannerVisible, showIOSGuide]);
+
+
 
   useEffect(() => {
     // Check if running in standalone mode (already installed)
