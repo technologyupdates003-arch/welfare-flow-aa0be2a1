@@ -200,7 +200,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Bottom Navigation (Mobile Only) */}
-      <nav className="fixed bottom-0 inset-x-0 bg-card border-t border-border flex justify-around py-2 z-40 lg:hidden">
+      <nav className="fixed bottom-2 inset-x-2 bg-card rounded-2xl border border-border/40 shadow-neu flex justify-around py-2 z-40 lg:hidden">
         {navItemsWithBadges.slice(0, 4).map((item: any) => { const { to, icon: Icon, label, showBadge, badgeCount } = item; return (
           <Link
             key={to}
