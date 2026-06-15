@@ -50,10 +50,6 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!agreedToTerms) {
-      setError("Please accept the Terms & Conditions to continue.");
-      return;
-    }
     setLoading(true);
     const formatted = phone.startsWith("+254") ? phone : `+254${phone.replace(/^0/, "")}`;
     const { error } = await signIn(formatted, password);
