@@ -23,9 +23,12 @@ export default {
         "gradient-deep": "var(--gradient-deep)",
       },
       boxShadow: {
-        glass: "0 8px 32px -8px hsl(24 60% 30% / 0.12), inset 0 1px 0 0 hsl(0 0% 100% / 0.6)",
-        "glass-lg": "0 20px 50px -12px hsl(24 60% 30% / 0.18), inset 0 1px 0 0 hsl(0 0% 100% / 0.7)",
-        brand: "0 12px 40px -10px hsl(24 95% 53% / 0.45)",
+        glass: "6px 6px 14px hsl(var(--neu-dark) / 0.5), -6px -6px 14px hsl(var(--neu-light) / 0.9)",
+        "glass-lg": "10px 10px 26px hsl(var(--neu-dark) / 0.55), -10px -10px 26px hsl(var(--neu-light) / 0.95)",
+        brand: "0 12px 30px -8px hsl(29 100% 50% / 0.4)",
+        neu: "6px 6px 14px hsl(var(--neu-dark) / 0.55), -6px -6px 14px hsl(var(--neu-light) / 0.9)",
+        "neu-sm": "4px 4px 9px hsl(var(--neu-dark) / 0.5), -4px -4px 9px hsl(var(--neu-light) / 0.85)",
+        "neu-inset": "inset 5px 5px 10px hsl(var(--neu-dark) / 0.55), inset -5px -5px 10px hsl(var(--neu-light) / 0.9)",
       },
       colors: {
         border: "hsl(var(--border))",
