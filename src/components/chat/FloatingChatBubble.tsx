@@ -22,7 +22,11 @@ export default function FloatingChatBubble() {
   const [darkMode, setDarkMode] = useState(false);
 
   // Draggable bubble state
-  const [pos, setPos] = useState({ x: 24, y: 24 }); // from bottom-right
+  // On mobile the bottom nav occupies the bottom edge, so lift the bubble above it
+  const [pos, setPos] = useState(() => ({
+    x: 16,
+    y: typeof window !== "undefined" && window.innerWidth < 1024 ? 88 : 24,
+  })); // from bottom-right
   const dragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const moved = useRef(false);
