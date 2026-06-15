@@ -78,29 +78,29 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
 
   return (
     <DashboardLock area="treasurer">
-    <div className="flex h-screen bg-[#F9FAFB]">
+    <div className="flex h-screen">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar - Collapsible on mobile, compact on desktop */}
       <aside className={cn(
-        "w-[160px] bg-[#0B1F3A] text-white flex flex-col fixed h-full z-50",
-        "lg:relative lg:z-auto",
+        "w-[160px] bg-sidebar text-sidebar-foreground flex flex-col fixed h-full z-50",
+        "lg:relative lg:z-auto lg:m-3 lg:h-[calc(100%-1.5rem)] lg:rounded-3xl lg:shadow-neu lg:border lg:border-sidebar-border/40",
         "transform transition-transform duration-200 ease-in-out lg:transform-none",
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Logo/Brand - More compact */}
-        <div className="p-3 border-b border-white/10 flex items-center justify-between">
+        <div className="p-3 border-b border-sidebar-border/50 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold">KHCWW</h1>
-            <p className="text-xs text-orange-400 mt-1">Treasurer</p>
+            <h1 className="text-lg font-display font-bold text-gradient-brand">KHCWW</h1>
+            <p className="text-xs text-primary mt-1 font-medium">Treasurer</p>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="lg:hidden text-white hover:bg-white/10"
+            className="lg:hidden"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -108,7 +108,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
         </div>
 
         {/* Navigation Menu - More compact */}
-        <nav className="flex-1 py-3 px-2 space-y-1">
+        <nav className="flex-1 py-3 px-2 space-y-1.5 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to, item.exact);
@@ -116,10 +116,10 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all text-sm ${
+                className={`flex items-center gap-2 px-2 py-2 rounded-xl transition-all text-sm ${
                   active
-                    ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
+                    ? "bg-gradient-brand text-primary-foreground shadow-brand"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground hover:shadow-neu-sm"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -130,23 +130,23 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
         </nav>
 
         {/* Bottom Profile Section */}
-        <div className="p-3 border-t border-white/10">
-          <button onClick={() => navigate("/member/profile")} className="flex items-center gap-2 mb-2 w-full text-left hover:bg-white/5 rounded-lg p-1 -m-1 transition-colors" title="My Profile">
+        <div className="p-3 border-t border-sidebar-border/50">
+          <button onClick={() => navigate("/member/profile")} className="flex items-center gap-2 mb-2 w-full text-left hover:bg-sidebar-accent rounded-lg p-1 -m-1 transition-colors" title="My Profile">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-600 text-white text-xs">
+              <AvatarFallback className="bg-gradient-brand text-primary-foreground text-xs">
                 {user?.email?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{user?.email}</p>
-              <p className="text-xs text-orange-400">Treasurer</p>
+              <p className="text-xs text-primary">Treasurer</p>
             </div>
           </button>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className="w-full justify-start text-white/70 hover:text-white hover:bg-white/5 text-xs"
+            className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground text-xs"
           >
             <LogOut className="h-3 w-3 mr-2" />
             Logout

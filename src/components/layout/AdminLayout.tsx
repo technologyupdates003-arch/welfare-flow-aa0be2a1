@@ -178,48 +178,48 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <DashboardLock area="admin">
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Admin Sidebar - Always visible on desktop */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col border-r border-slate-700",
-        "lg:relative lg:translate-x-0 lg:z-auto lg:block",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground flex flex-col",
+        "lg:relative lg:translate-x-0 lg:z-auto lg:block lg:m-3 lg:rounded-3xl lg:shadow-neu lg:border lg:border-sidebar-border/40",
         "transform transition-transform duration-200 ease-in-out",
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="flex flex-col p-4 border-b border-slate-700">
+        <div className="flex flex-col p-4 border-b border-sidebar-border/50">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold text-white">{roleTitle}</h1>
-            <Button variant="ghost" size="icon" className="lg:hidden text-white hover:bg-slate-800" onClick={() => setSidebarOpen(false)}>
+            <h1 className="text-lg font-display font-bold text-gradient-brand">{roleTitle}</h1>
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </Button>
           </div>
           {roleBadge && (
-            <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-1 rounded-full mt-2 self-start">
+            <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full mt-2 self-start font-medium shadow-neu-sm">
               {roleBadge}
             </span>
           )}
         </div>
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto no-scrollbar">
           {navItemsWithBadges.map((item: any, index) => { const { to, icon: Icon, label, showBadge, badgeCount, divider } = item; return (
             <div key={to}>
               {divider && (
-                <div className="my-3 border-t border-slate-700">
-                  <p className="text-xs text-slate-400 px-3 py-2 font-medium">Member Features</p>
+                <div className="my-3 border-t border-sidebar-border/50">
+                  <p className="text-xs text-sidebar-foreground/50 px-3 py-2 font-medium">Member Features</p>
                 </div>
               )}
               <Link
                 to={to}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   location.pathname === to
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    ? "bg-gradient-brand text-primary-foreground shadow-brand"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:shadow-neu-sm hover:bg-sidebar-accent"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -233,8 +233,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
           ); })}
         </nav>
-        <div className="p-3 border-t border-slate-700">
-          <Button variant="ghost" className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800" onClick={signOut}>
+        <div className="p-3 border-t border-sidebar-border/50">
+          <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={signOut}>
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </Button>
         </div>
@@ -242,7 +242,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 lg:px-6">
+        <header className="flex items-center justify-between gap-3 mx-3 mt-3 rounded-2xl border border-border/40 bg-card px-4 py-3 lg:px-6 shadow-neu-sm">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />

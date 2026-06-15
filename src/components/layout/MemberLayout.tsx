@@ -127,18 +127,18 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform lg:translate-x-0 lg:static lg:z-auto flex flex-col",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform lg:translate-x-0 lg:static lg:z-auto flex flex-col lg:m-3 lg:rounded-3xl lg:shadow-neu lg:border lg:border-sidebar-border/40",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex flex-col p-4 border-b border-sidebar-border">
+        <div className="flex flex-col p-4 border-b border-sidebar-border/50">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-display font-bold text-sidebar-primary">KIRINYAGA HCWW</h1>
+            <h1 className="text-lg font-display font-bold text-gradient-brand">KIRINYAGA HCWW</h1>
             <Button variant="ghost" size="icon" className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </Button>
           </div>
           {role && role !== "member" && (
-            <span className="text-xs bg-sidebar-primary/20 text-sidebar-primary px-2 py-1 rounded-full mt-2 self-start">
+            <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full mt-2 self-start font-medium shadow-neu-sm">
               {role === "admin" ? "Administrator" :
                role === "secretary" ? "Secretary" :
                role === "chairperson" ? "Chairperson" :
@@ -148,11 +148,11 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
             </span>
           )}
         </div>
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto pb-20 lg:pb-3">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto pb-20 lg:pb-3 no-scrollbar">
           {navItemsWithBadges.map((item: any) => { const { to, icon: Icon, label, showBadge, badgeCount, divider } = item; return (
             <div key={to}>
               {divider && (
-                <div className="my-3 border-t border-sidebar-border">
+                <div className="my-3 border-t border-sidebar-border/50">
                   <p className="text-xs text-sidebar-foreground/50 px-3 py-2 font-medium">Role Dashboard</p>
                 </div>
               )}
@@ -160,10 +160,10 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
                 to={to}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative",
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all relative",
                   location.pathname === to
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    ? "bg-gradient-brand text-primary-foreground shadow-brand"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:shadow-neu-sm hover:bg-sidebar-accent"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -177,7 +177,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
             </div>
           ); })}
         </nav>
-        <div className="p-3 border-t border-sidebar-border hidden lg:block">
+        <div className="p-3 border-t border-sidebar-border/50 hidden lg:block">
           <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={signOut}>
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </Button>
@@ -186,7 +186,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-3 lg:px-6">
+        <header className="flex items-center gap-3 mx-3 mt-3 rounded-2xl border border-border/40 bg-card px-4 py-3 lg:px-6 shadow-neu-sm">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
@@ -200,7 +200,7 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Bottom Navigation (Mobile Only) */}
-      <nav className="fixed bottom-0 inset-x-0 bg-card border-t border-border flex justify-around py-2 z-40 lg:hidden">
+      <nav className="fixed bottom-2 inset-x-2 bg-card rounded-2xl border border-border/40 shadow-neu flex justify-around py-2 z-40 lg:hidden">
         {navItemsWithBadges.slice(0, 4).map((item: any) => { const { to, icon: Icon, label, showBadge, badgeCount } = item; return (
           <Link
             key={to}
