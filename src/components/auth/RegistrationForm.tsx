@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TermsAndConditionsDialog } from "@/components/auth/TermsAndConditions";
 import {
   getRegistrationConfig,
   submitRegistration,
@@ -25,6 +27,7 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [registrationId, setRegistrationId] = useState("");
   const [fee, setFee] = useState(0);
   const [config, setConfig] = useState<any>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -81,6 +84,13 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       setLoading(false);
       return;
     }
+
+    if (!agreedToTerms) {
+      setError("You must accept the Terms & Conditions to register");
+      setLoading(false);
+      return;
+    }
+
 
     // Submit registration
     const result = await submitRegistration({
@@ -209,7 +219,29 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full">
+              {/* Terms & Conditions */}
+              <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3">
+                <Checkbox
+                  id="reg_terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(v) => {
+                    setAgreedToTerms(v === true);
+                    setError("");
+                  }}
+                  disabled={loading}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="reg_terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                  By ticking this box, you confirm that you are an active member of KHCW
+                  Welfare Group and agree to honor all statutory obligations, including
+                  contributions, platform maintenance fees, and the Statutory Lifetime
+                  Onboarding Fee. You also consent to the secure processing of your personal
+                  data under the Kenya Data Protection Act (2019). Read the full{" "}
+                  <TermsAndConditionsDialog />.
+                </Label>
+              </div>
+
+              <Button type="submit" disabled={loading || !agreedToTerms} className="w-full">
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
