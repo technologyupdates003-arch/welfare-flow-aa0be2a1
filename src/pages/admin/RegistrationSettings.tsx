@@ -62,6 +62,7 @@ export default function RegistrationSettings() {
           localStorage.setItem(
             "registration_display_settings",
             JSON.stringify({
+              active: data.data.active ?? true,
               show_on_login: data.data.show_on_login ?? true,
               auto_approve: data.data.auto_approve ?? false,
             })
