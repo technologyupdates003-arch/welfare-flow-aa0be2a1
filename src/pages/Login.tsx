@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoImage from "@/assets/WhatsApp Image 2026-04-13 at 12.35.07.jpeg";
 import RegistrationForm from "@/components/auth/RegistrationForm";
+import { TermsAndConditionsDialog } from "@/components/auth/TermsAndConditions";
 
 export default function Login() {
   const { signIn } = useAuth();
