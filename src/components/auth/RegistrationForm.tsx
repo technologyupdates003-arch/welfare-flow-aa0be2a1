@@ -85,6 +85,13 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       return;
     }
 
+    if (!agreedToTerms) {
+      setError("You must accept the Terms & Conditions to register");
+      setLoading(false);
+      return;
+    }
+
+
     // Submit registration
     const result = await submitRegistration({
       full_name: formData.full_name.trim(),
