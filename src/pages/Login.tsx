@@ -17,6 +17,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Check if registration is enabled (fetch from public backend config)
   useEffect(() => {
