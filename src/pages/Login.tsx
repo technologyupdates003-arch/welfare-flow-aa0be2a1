@@ -39,7 +39,9 @@ export default function Login() {
       if (settings) {
         try {
           const parsed = JSON.parse(settings);
-          setRegistrationEnabled(parsed.show_on_login ?? false);
+          // Only show when registration is active AND set to display on login
+          const isActive = parsed.active ?? false;
+          setRegistrationEnabled(isActive && (parsed.show_on_login ?? false));
         } catch {
           setRegistrationEnabled(false);
         }
