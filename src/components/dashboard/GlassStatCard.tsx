@@ -28,11 +28,11 @@ export default function GlassStatCard({
   return (
     <Card
       className={cn(
-        "glass border-white/40 overflow-hidden relative group hover:shadow-glass-lg transition-all",
+        "neu-pressable overflow-hidden relative group rounded-2xl border-border/40",
         className
       )}
     >
-      <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60 pointer-events-none", accent)} />
+      <div className={cn("absolute inset-0 bg-gradient-to-br opacity-40 pointer-events-none", accent)} />
       <CardContent className="relative p-4 sm:p-5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -43,7 +43,7 @@ export default function GlassStatCard({
               {value}
             </div>
           </div>
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl glass-brand flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-neu-sm bg-card">
             <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
         </div>
