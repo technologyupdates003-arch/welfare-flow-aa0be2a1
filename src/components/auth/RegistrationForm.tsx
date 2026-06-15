@@ -27,6 +27,7 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [registrationId, setRegistrationId] = useState("");
   const [fee, setFee] = useState(0);
   const [config, setConfig] = useState<any>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: "",
