@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,41 @@ export default function InstallBanner() {
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [inIframe, setInIframe] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // Detect Lovable preview iframe once on mount (avoids rendering banner there)
+  useEffect(() => {
+    try {
+      setInIframe(window.self !== window.top);
+    } catch {
+      setInIframe(true);
+    }
+  }, []);
+
+  // While the fixed banner is visible, offset page content so nothing is hidden behind it
+  const bannerVisible = !isInstalled && !dismissed && !inIframe;
+  useLayoutEffect(() => {
+    if (!bannerVisible) {
+      document.body.style.paddingTop = "";
+      return;
+    }
+    const apply = () => {
+      const h = bannerRef.current?.offsetHeight ?? 0;
+      document.body.style.paddingTop = h ? `${h}px` : "";
+    };
+    apply();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(apply) : null;
+    if (ro && bannerRef.current) ro.observe(bannerRef.current);
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      ro?.disconnect();
+      document.body.style.paddingTop = "";
+    };
+  }, [bannerVisible, showIOSGuide]);
+
+
 
   useEffect(() => {
     // Check if running in standalone mode (already installed)
@@ -73,18 +108,11 @@ export default function InstallBanner() {
     }
   };
 
-  // Don't show if installed or in standalone mode
-  if (isInstalled) return null;
-  // Temporarily dismissed - will show again on next page load/revisit
-  if (dismissed) return null;
-
-  // Don't show in iframe (Lovable preview)
-  try {
-    if (window.self !== window.top) return null;
-  } catch { return null; }
+  // Don't show if installed, dismissed, or inside the Lovable preview iframe
+  if (!bannerVisible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] gradient-brand text-primary-foreground shadow-brand">
+    <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[100] gradient-brand text-primary-foreground shadow-brand">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <img src="/favicon.png" alt="Welfare" className="h-8 w-8 rounded-lg" />
