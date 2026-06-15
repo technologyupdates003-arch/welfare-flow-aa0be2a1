@@ -111,29 +111,14 @@ export default function Login() {
                       required
                     />
                   </div>
-                  <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3">
-                    <Checkbox
-                      id="terms"
-                      checked={agreedToTerms}
-                      onCheckedChange={(v) => setAgreedToTerms(v === true)}
-                      className="mt-0.5"
-                    />
-                    <Label htmlFor="terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
-                      By ticking this box, you confirm that you are an active member of KHCW
-                      Welfare Group and agree to honor all statutory obligations, including
-                      contributions, platform maintenance fees, and the Statutory Lifetime
-                      Onboarding Fee. You also consent to the secure processing of your personal
-                      data under the Kenya Data Protection Act (2019). Read the full{" "}
-                      <TermsAndConditionsDialog />.
-                    </Label>
-                  </div>
                   {error && <p className="text-sm text-destructive">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
+
           </TabsContent>
 
           {/* Registration Tab */}
