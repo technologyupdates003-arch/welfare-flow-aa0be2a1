@@ -79,12 +79,15 @@ export default function Defaulters() {
     },
   });
 
-  const filteredDefaulters = defaulters.filter(
-    (member) =>
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.phone.includes(searchTerm) ||
-      member.member_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const term = searchTerm.trim().toLowerCase();
+  const filteredDefaulters = defaulters.filter((member) => {
+    if (!term) return true;
+    return (
+      (member.name?.toLowerCase().includes(term)) ||
+      (member.phone?.toLowerCase().includes(term)) ||
+      (member.member_id?.toLowerCase().includes(term))
+    );
+  });
 
   const totalOwed = defaulters.reduce((sum, m) => sum + m.totalOwed, 0);
   const totalDefaulters = defaulters.length;
