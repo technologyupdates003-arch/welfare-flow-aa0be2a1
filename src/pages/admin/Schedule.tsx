@@ -189,6 +189,56 @@ export default function Schedule() {
     }
   };
 
+  const handleCreate = async () => {
+    if (!createForm.title.trim() || !createForm.scheduled_date) {
+      toast.error('Please enter a title and scheduled date');
+      return;
+    }
+    if (!user) {
+      toast.error('You must be signed in');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const scheduledISO = new Date(createForm.scheduled_date).toISOString();
+
+      if (createForm.type === 'event') {
+        const { error } = await supabase.from('events').insert({
+          title: createForm.title.trim(),
+          description: createForm.description.trim() || null,
+          event_type: 'funeral',
+          contribution_amount: createForm.contribution_amount
+            ? Number(createForm.contribution_amount)
+            : 0,
+          status: 'active',
+          created_by: user.id,
+          scheduled_date: scheduledISO,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('news').insert({
+          title: createForm.title.trim(),
+          content: createForm.description.trim() || createForm.title.trim(),
+          author_id: user.id,
+          status: 'active',
+          scheduled_date: scheduledISO,
+        });
+        if (error) throw error;
+      }
+
+      toast.success('Schedule created successfully');
+      setCreateOpen(false);
+      setCreateForm({ type: 'event', title: '', description: '', scheduled_date: '', contribution_amount: '' });
+      fetchSchedules();
+    } catch (error) {
+      console.error('Error creating schedule:', error);
+      toast.error('Failed to create schedule');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleDelete = async (id: string, type: 'event' | 'news') => {
     if (!confirm('Are you sure you want to delete this scheduled item?')) return;
 
