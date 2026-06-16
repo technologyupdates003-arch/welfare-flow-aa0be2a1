@@ -153,6 +153,12 @@
     font-family: 'Space Grotesk', 'Inter', sans-serif;
     letter-spacing: -0.01em;
   }
+  /* Ensure the text caret is always visible and blinking in form fields */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    caret-color: hsl(var(--primary));
+  }
 }
 
 @layer utilities {
