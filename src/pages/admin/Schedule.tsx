@@ -297,14 +297,106 @@ export default function Schedule() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Calendar className="h-8 w-8" /> Event & News Schedule
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Manage scheduled events and news. Items automatically disappear when their date arrives or passes.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Calendar className="h-8 w-8" /> Event & News Schedule
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Manage scheduled events and news. Items automatically disappear when their date arrives or passes.
+          </p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)} className="shrink-0">
+          <Plus className="h-4 w-4 mr-2" /> New Schedule
+        </Button>
       </div>
+
+      {/* Create Schedule Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Scheduled Item</DialogTitle>
+            <DialogDescription>
+              Schedule a new event or news announcement. It becomes visible until the scheduled date passes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Type *</label>
+              <Select
+                value={createForm.type}
+                onValueChange={(v) => setCreateForm({ ...createForm, type: v as 'event' | 'news' })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="event">Event</SelectItem>
+                  <SelectItem value="news">News</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Title *</label>
+              <Input
+                value={createForm.title}
+                onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                placeholder="Enter a title"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">
+                {createForm.type === 'event' ? 'Description' : 'Content'}
+              </label>
+              <Textarea
+                value={createForm.description}
+                onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                placeholder="Details..."
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+
+            {createForm.type === 'event' && (
+              <div>
+                <label className="text-sm font-medium">Contribution Amount (KES)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={createForm.contribution_amount}
+                  onChange={(e) => setCreateForm({ ...createForm, contribution_amount: e.target.value })}
+                  placeholder="0"
+                  className="mt-1"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium">Scheduled Date *</label>
+              <Input
+                type="datetime-local"
+                value={createForm.scheduled_date}
+                onChange={(e) => setCreateForm({ ...createForm, scheduled_date: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="flex-1" disabled={creating}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreate} className="flex-1" disabled={creating}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Schedule'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Real-time Status Alert */}
       <Alert className="border-blue-200 bg-blue-50">
