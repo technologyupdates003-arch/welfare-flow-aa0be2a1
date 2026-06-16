@@ -96,8 +96,9 @@ Deno.serve(async (req) => {
         );
       }
 
-      const SHORTCODE = Deno.env.get("MPESA_SHORTCODE") ?? "174379";
-      const PASSKEY = Deno.env.get("MPESA_PASSKEY") ?? "bfb279f9aa9bdbcf158e97dd1a503b6015d86092693d626c8401d1ecf8118a6a";
+      // Use the SAME sandbox credentials as the penalty/donation wallet (coop-stk-push)
+      const SHORTCODE = Deno.env.get("MPESA_STK_SHORTCODE") ?? "174379";
+      const PASSKEY = Deno.env.get("MPESA_STK_PASSKEY") ?? "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919";
       const callbackUrl =
         Deno.env.get("MPESA_C2B_CALLBACK_URL") ??
         `${SUPABASE_URL}/functions/v1/sms-webhook`;
