@@ -61,6 +61,15 @@ export default function Schedule() {
     rescheduled_date: '',
     reschedule_reason: '',
   });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    type: 'event' as 'event' | 'news',
+    title: '',
+    description: '',
+    scheduled_date: '',
+    contribution_amount: '',
+  });
 
   // Real-time update interval
   useEffect(() => {
