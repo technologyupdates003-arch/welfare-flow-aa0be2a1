@@ -257,29 +257,44 @@ export default function TreasurerDashboard() {
   const { data: alerts } = useQuery({
     queryKey: ["treasurer-alerts"],
     queryFn: async () => {
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
+      // Members who still owe contributions (anything not marked paid)
+      const { data: lateContribs } = await supabase
+        .from("contributions")
+        .select("member_id")
+        .neq("status", "paid");
 
-      // Get members with late payments
-      const { data: lateMembers } = await supabase
-        .from("members")
-        .select("id")
-        .eq("is_active", true);
+      const lateMemberIds = new Set(
+        (lateContribs || []).map((c: any) => c.member_id).filter(Boolean)
+      );
 
-      const { data: pendingPayouts } = await supabase
-        .from("payouts")
-        .select("id")
-        .eq("status", "pending");
+      // Pending payouts = withdrawal requests awaiting approval across all wallets
+      const [penaltyW, donationW, operationalW, payoutsRes] = await Promise.all([
+        supabase.from("penalty_withdrawals").select("id").eq("status", "pending"),
+        supabase.from("donation_withdrawals").select("id").eq("status", "pending"),
+        supabase.from("operational_withdrawals").select("id").eq("status", "pending"),
+        supabase.from("payouts").select("id").eq("status", "pending"),
+      ]);
 
-      const { data: penalties } = await supabase
-        .from("penalty_payments")
-        .select("id")
-        .eq("status", "pending");
+      const pendingPayoutsCount =
+        (penaltyW.data?.length || 0) +
+        (donationW.data?.length || 0) +
+        (operationalW.data?.length || 0) +
+        (payoutsRes.data?.length || 0);
+
+      // Members under penalty = distinct members with unpaid penalties
+      const { data: unpaidPenalties } = await supabase
+        .from("penalties")
+        .select("member_id")
+        .eq("is_paid", false);
+
+      const penaltyMemberIds = new Set(
+        (unpaidPenalties || []).map((p: any) => p.member_id).filter(Boolean)
+      );
 
       return {
-        latePayments: lateMembers?.length || 0,
-        pendingPayouts: pendingPayouts?.length || 0,
-        pendingPenalties: penalties?.length || 0,
+        latePayments: lateMemberIds.size,
+        pendingPayouts: pendingPayoutsCount,
+        pendingPenalties: penaltyMemberIds.size,
       };
     },
   });
