@@ -75,6 +75,7 @@ import TreasurerDocuments from "@/pages/treasurer/TreasurerDocuments";
 import TreasurerReports from "@/pages/treasurer/TreasurerReports";
 import TreasurerSettings from "@/pages/treasurer/TreasurerSettings";
 import BankSync from "@/pages/treasurer/BankSync";
+import BankStatementImport from "@/pages/treasurer/BankStatementImport";
 import OperationalWallet from "@/pages/treasurer/OperationalWallet";
 import WalletReports from "@/pages/treasurer/WalletReports";
 import SystemTroubleshooting from "@/pages/super-admin/SystemTroubleshooting";
