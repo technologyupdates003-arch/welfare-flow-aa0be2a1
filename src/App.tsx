@@ -167,6 +167,7 @@ function AppRoutes() {
         <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-statement-import" element={<TreasurerLayout><BankStatementImport /></TreasurerLayout>} />
         
         {/* Member routes */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
@@ -240,6 +241,7 @@ function AppRoutes() {
         <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-statement-import" element={<TreasurerLayout><BankStatementImport /></TreasurerLayout>} />
         
         {/* Member routes for super admin */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
@@ -305,6 +307,7 @@ function AppRoutes() {
         <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-statement-import" element={<TreasurerLayout><BankStatementImport /></TreasurerLayout>} />
         
         {/* Super Admin routes if user has super_admin role */}
         {roles.includes("super_admin") && (
