@@ -56,6 +56,7 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
     { to: "/treasurer/donation-campaigns", icon: Target, label: "Funds Drives" },
     { to: "/treasurer/operational-wallet", icon: Wallet, label: "Operational Wallet" },
     { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
+    { to: "/treasurer/bank-statement-import", icon: Upload, label: "Statement Import" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
     { to: "/treasurer/memos", icon: FileText, label: "Memos" },
     { to: "/treasurer/documents", icon: FileText, label: "Documents" },
