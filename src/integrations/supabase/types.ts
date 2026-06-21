@@ -164,6 +164,59 @@ export type Database = {
           },
         ]
       }
+      bank_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          member_id: string | null
+          month: number
+          mpesa_code: string | null
+          name: string | null
+          phone: string
+          raw_details: string | null
+          transaction_date: string
+          transaction_reference: string
+          year: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          month: number
+          mpesa_code?: string | null
+          name?: string | null
+          phone: string
+          raw_details?: string | null
+          transaction_date: string
+          transaction_reference: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          month?: number
+          mpesa_code?: string | null
+          name?: string | null
+          phone?: string
+          raw_details?: string | null
+          transaction_date?: string
+          transaction_reference?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beneficiaries: {
         Row: {
           created_at: string
