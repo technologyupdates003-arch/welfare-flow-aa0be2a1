@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import DashboardLock from "@/components/DashboardLock";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, Settings, CreditCard, Menu, X, Landmark, FileSignature, Target } from "lucide-react";
+import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, Settings, CreditCard, Menu, X, Landmark, FileSignature, Target, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
