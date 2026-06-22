@@ -52,6 +52,29 @@ function excelDateToISO(val: any): string | null {
 
 const SKIP_WORDS = ["balance", "forward", "total", "carried", "brought"];
 
+// Header synonyms for the columns we need (all lower-cased, matched by "includes")
+const DATE_HINTS = ["trans date", "transaction date", "txn date", "date", "value date", "posting date"];
+const DETAIL_HINTS = ["transaction details", "details", "narration", "particulars", "description", "remarks"];
+const REF_HINTS = ["reference", "ref no", "ref.", "cheque", "transaction id", "txn id"];
+const CREDIT_HINTS = ["credit", "deposit", "money in", "cr amount", "amount in"];
+const AMOUNT_HINTS = ["amount", "value"];
+
+function isHeaderRow(vals: string[]): boolean {
+  const hasDetail = vals.some((v) => DETAIL_HINTS.some((h) => v.includes(h)));
+  const hasMoney =
+    vals.some((v) => CREDIT_HINTS.some((h) => v.includes(h))) ||
+    vals.some((v) => AMOUNT_HINTS.some((h) => v.includes(h)));
+  return hasDetail && hasMoney;
+}
+
+function firstCol(header: string[], hints: string[]): number {
+  for (const h of hints) {
+    const idx = header.findIndex((v) => v.includes(h));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
 function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
   const out: ParsedTx[] = [];
 
@@ -60,12 +83,12 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
     const grid = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: true, defval: "" });
     if (!grid.length) continue;
 
-    // Locate header row
+    // Locate header row anywhere in the sheet (statements often have preamble rows)
     let hdr = -1;
     let header: string[] = [];
-    for (let i = 0; i < Math.min(6, grid.length); i++) {
+    for (let i = 0; i < grid.length; i++) {
       const vals = (grid[i] || []).map((v) => String(v).trim().toLowerCase());
-      if (vals.some((v) => v.includes("trans date")) && vals.some((v) => v.includes("transaction details"))) {
+      if (isHeaderRow(vals)) {
         hdr = i;
         header = vals;
         break;
@@ -73,21 +96,26 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
     }
     if (hdr === -1) continue;
 
-    const colOf = (needle: string) => header.findIndex((v) => v.includes(needle));
-    const cDate = colOf("trans date");
-    const cDet = colOf("transaction details");
-    const cRef = colOf("reference");
-    const cCred = colOf("credit");
+    const cDate = firstCol(header, DATE_HINTS);
+    const cDet = firstCol(header, DETAIL_HINTS);
+    const cRef = firstCol(header, REF_HINTS);
+    // Prefer a dedicated credit/deposit column; fall back to a generic amount column
+    let cCred = firstCol(header, CREDIT_HINTS);
+    const cDebit = header.findIndex((v) => v.includes("debit") || v.includes("withdraw") || v.includes("money out"));
+    if (cCred === -1) cCred = firstCol(header, AMOUNT_HINTS);
+    if (cDet === -1) continue;
 
-    let cur: { date: any; det: string; ref: string; cred: any } | null = null;
+    let cur: { date: any; det: string; ref: string; cred: any; debit: any } | null = null;
     const flush = () => {
       if (!cur) return;
       const credNum = Number(String(cur.cred).replace(/,/g, "").trim());
-      if (!isNaN(credNum) && credNum > 0) {
+      const debitNum = cDebit >= 0 ? Number(String(cur.debit).replace(/,/g, "").trim()) : 0;
+      // Only credits (money in) are contributions; skip debits/withdrawals
+      if (!isNaN(credNum) && credNum > 0 && !(debitNum > 0)) {
         const compact = cur.det.replace(/\s+/g, "");
-        const phoneMatch = compact.match(/254\d{9}/);
+        const phoneMatch = compact.match(/254\d{9}/) || compact.match(/0\d{9}/) || compact.match(/\b\d{9}\b/);
         if (phoneMatch) {
-          const phone = "+" + phoneMatch[0];
+          const phone = normalizePhone(phoneMatch[0]);
           const parts = cur.det.split("~");
           let name = parts.length > 1 ? parts[parts.length - 1].trim() : "";
           name = name.replace(/^\d+\s*/, "").trim();
@@ -98,13 +126,14 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
           }
           const mpesaCode = parts.length ? parts[0].trim().split(/\s/)[0] : "";
           const iso = excelDateToISO(cur.date);
-          if (iso && cur.ref) {
+          const reference = String(cur.ref || "").trim() || `${mpesaCode || phone}-${iso}-${credNum}`;
+          if (phone && iso) {
             out.push({
               phone,
-              name: name || phone,
+              name: name || (phone as string),
               amount: credNum,
               date: iso,
-              reference: String(cur.ref).trim(),
+              reference,
               mpesaCode,
               rawDetails: cur.det.trim().slice(0, 300),
             });
@@ -118,15 +147,19 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
       const r = grid[i] || [];
       const ref = cRef >= 0 ? String(r[cRef] ?? "").trim() : "";
       const det = cDet >= 0 ? String(r[cDet] ?? "").replace(/\n/g, " ").trim() : "";
-      const hasRef = ref && ref.toLowerCase() !== "nan";
+      const dateCell = cDate >= 0 ? r[cDate] : "";
+      const credCell = cCred >= 0 ? String(r[cCred] ?? "").replace(/,/g, "").trim() : "";
+      // A new transaction row starts when it has a reference OR a date OR a credit value
+      const startsRow = (ref && ref.toLowerCase() !== "nan") || !!dateCell || (credCell !== "" && Number(credCell) > 0);
 
-      if (hasRef) {
+      if (startsRow) {
         flush();
         cur = {
-          date: cDate >= 0 ? r[cDate] : "",
+          date: dateCell,
           det,
           ref,
           cred: cCred >= 0 ? r[cCred] : "",
+          debit: cDebit >= 0 ? r[cDebit] : "",
         };
       } else if (cur && det && det.toLowerCase() !== "nan") {
         const low = det.toLowerCase();
