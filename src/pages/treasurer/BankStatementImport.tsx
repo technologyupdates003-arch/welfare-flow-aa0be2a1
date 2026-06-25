@@ -254,6 +254,7 @@ export default function BankStatementImport() {
   const [rows, setRows] = useState<ParsedTx[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [results, setResults] = useState<ImportResults | null>(null);
 
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
