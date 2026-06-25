@@ -32,11 +32,32 @@ interface ImportResults {
 
 function normalizePhone(raw: string): string | null {
   if (!raw) return null;
-  const cleaned = String(raw).replace(/\s+/g, "").replace(/-/g, "").replace(/\+/g, "");
+  let cleaned = String(raw).replace(/\s+/g, "").replace(/-/g, "").replace(/\+/g, "");
+  // keep only digits
+  cleaned = cleaned.replace(/\D/g, "");
   if (cleaned.startsWith("254") && cleaned.length === 12) return "+" + cleaned;
   if (cleaned.startsWith("0") && cleaned.length === 10) return "+254" + cleaned.slice(1);
-  if (cleaned.startsWith("7") && cleaned.length === 9) return "+254" + cleaned;
+  if ((cleaned.startsWith("7") || cleaned.startsWith("1")) && cleaned.length === 9) return "+254" + cleaned;
   if (/^\d{9}$/.test(cleaned)) return "+254" + cleaned;
+  return null;
+}
+
+// Find a Kenyan phone number anywhere inside a blob of text.
+function extractPhone(text: string): string | null {
+  if (!text) return null;
+  const compact = text.replace(/[\s\-()]/g, "");
+  const patterns = [
+    /254[17]\d{8}/, // 2547xxxxxxxx / 2541xxxxxxxx
+    /\b0[17]\d{8}\b/, // 07xxxxxxxx / 01xxxxxxxx
+    /(?<!\d)[17]\d{8}(?!\d)/, // 7xxxxxxxx / 1xxxxxxxx standalone
+  ];
+  for (const p of patterns) {
+    const m = compact.match(p);
+    if (m) {
+      const phone = normalizePhone(m[0]);
+      if (phone) return phone;
+    }
+  }
   return null;
 }
 
@@ -46,25 +67,38 @@ function excelDateToISO(val: any): string | null {
     const d = new Date((val - 25569) * 86400 * 1000);
     return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
   }
-  const d = new Date(val);
+  // Try common bank date formats: dd/mm/yyyy, dd-mm-yyyy, yyyy-mm-dd
+  const s = String(val).trim();
+  const dmy = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (dmy) {
+    let [, dd, mm, yy] = dmy;
+    if (yy.length === 2) yy = "20" + yy;
+    const d = new Date(Number(yy), Number(mm) - 1, Number(dd));
+    if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+  }
+  const d = new Date(s);
   return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
 }
 
-const SKIP_WORDS = ["balance", "forward", "total", "carried", "brought"];
+const SKIP_WORDS = ["balance", "forward", "total", "carried", "brought", "opening", "closing"];
 
 // Header synonyms for the columns we need (all lower-cased, matched by "includes")
-const DATE_HINTS = ["trans date", "transaction date", "txn date", "date", "value date", "posting date"];
-const DETAIL_HINTS = ["transaction details", "details", "narration", "particulars", "description", "remarks"];
-const REF_HINTS = ["reference", "ref no", "ref.", "cheque", "transaction id", "txn id"];
-const CREDIT_HINTS = ["credit", "deposit", "money in", "cr amount", "amount in"];
+const DATE_HINTS = ["trans date", "transaction date", "txn date", "value date", "posting date", "date"];
+const DETAIL_HINTS = ["transaction details", "details", "narration", "particulars", "description", "remarks", "narrative"];
+const REF_HINTS = ["reference", "ref no", "ref.", "cheque", "transaction id", "txn id", "receipt"];
+const CREDIT_HINTS = ["credit", "deposit", "money in", "cr amount", "amount in", "paid in"];
 const AMOUNT_HINTS = ["amount", "value"];
+const NAME_HINTS = ["name", "customer", "payer", "sender", "depositor"];
+const PHONE_HINTS = ["phone", "mobile", "msisdn", "number", "tel"];
 
 function isHeaderRow(vals: string[]): boolean {
   const hasDetail = vals.some((v) => DETAIL_HINTS.some((h) => v.includes(h)));
   const hasMoney =
     vals.some((v) => CREDIT_HINTS.some((h) => v.includes(h))) ||
     vals.some((v) => AMOUNT_HINTS.some((h) => v.includes(h)));
-  return hasDetail && hasMoney;
+  const hasDate = vals.some((v) => DATE_HINTS.some((h) => v.includes(h)));
+  // A header needs money + (details OR date) to be considered valid
+  return hasMoney && (hasDetail || hasDate);
 }
 
 function firstCol(header: string[], hints: string[]): number {
@@ -73,6 +107,28 @@ function firstCol(header: string[], hints: string[]): number {
     if (idx >= 0) return idx;
   }
   return -1;
+}
+
+function deriveName(text: string, phone: string): string {
+  if (!text) return phone;
+  let name = "";
+  // Co-op / Mpesa style: code~amount~phone~NAME (last segment after ~)
+  const parts = text.split("~");
+  if (parts.length > 1) {
+    name = parts[parts.length - 1].trim();
+  }
+  // If no tilde, try to grab a run of capitalised words / letters
+  if (!name) {
+    const m = text.match(/[A-Za-z][A-Za-z'.\- ]{3,}/);
+    if (m) name = m[0].trim();
+  }
+  // clean up: remove digits, references, skip words
+  name = name.replace(/\d+/g, " ").replace(/[~_|]/g, " ").replace(/\s+/g, " ").trim();
+  for (const w of SKIP_WORDS) {
+    const idx = name.toLowerCase().indexOf(w);
+    if (idx > 0) name = name.slice(0, idx).trim();
+  }
+  return name || phone;
 }
 
 function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
@@ -99,43 +155,45 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
     const cDate = firstCol(header, DATE_HINTS);
     const cDet = firstCol(header, DETAIL_HINTS);
     const cRef = firstCol(header, REF_HINTS);
+    const cName = firstCol(header, NAME_HINTS);
+    const cPhone = firstCol(header, PHONE_HINTS);
     // Prefer a dedicated credit/deposit column; fall back to a generic amount column
     let cCred = firstCol(header, CREDIT_HINTS);
-    const cDebit = header.findIndex((v) => v.includes("debit") || v.includes("withdraw") || v.includes("money out"));
+    const cDebit = header.findIndex((v) => v.includes("debit") || v.includes("withdraw") || v.includes("money out") || v.includes("paid out"));
     if (cCred === -1) cCred = firstCol(header, AMOUNT_HINTS);
-    if (cDet === -1) continue;
 
-    let cur: { date: any; det: string; ref: string; cred: any; debit: any } | null = null;
+    type Cur = { date: any; det: string; ref: string; cred: any; debit: any; nameCell: string; phoneCell: string; all: string };
+    let cur: Cur | null = null;
+
     const flush = () => {
       if (!cur) return;
       const credNum = Number(String(cur.cred).replace(/,/g, "").trim());
       const debitNum = cDebit >= 0 ? Number(String(cur.debit).replace(/,/g, "").trim()) : 0;
       // Only credits (money in) are contributions; skip debits/withdrawals
       if (!isNaN(credNum) && credNum > 0 && !(debitNum > 0)) {
-        const compact = cur.det.replace(/\s+/g, "");
-        const phoneMatch = compact.match(/254\d{9}/) || compact.match(/0\d{9}/) || compact.match(/\b\d{9}\b/);
-        if (phoneMatch) {
-          const phone = normalizePhone(phoneMatch[0]);
-          const parts = cur.det.split("~");
-          let name = parts.length > 1 ? parts[parts.length - 1].trim() : "";
-          name = name.replace(/^\d+\s*/, "").trim();
-          // strip any trailing footer noise
-          for (const w of SKIP_WORDS) {
-            const idx = name.toLowerCase().indexOf(w);
-            if (idx > 0) name = name.slice(0, idx).trim();
-          }
-          const mpesaCode = parts.length ? parts[0].trim().split(/\s/)[0] : "";
+        // Search phone in: dedicated phone cell -> details -> whole row text
+        const phone =
+          extractPhone(cur.phoneCell) || extractPhone(cur.det) || extractPhone(cur.all);
+        if (phone) {
+          const nameSource = (cur.nameCell || "").trim() || cur.det;
+          const name = deriveName(nameSource, phone);
+          // mpesa code: first token in details that looks like a code
+          const codeMatch = cur.det.match(/\b[A-Z0-9]{8,12}\b/);
+          const mpesaCode = codeMatch ? codeMatch[0] : "";
           const iso = excelDateToISO(cur.date);
-          const reference = String(cur.ref || "").trim() || `${mpesaCode || phone}-${iso}-${credNum}`;
-          if (phone && iso) {
+          const reference =
+            String(cur.ref || "").trim() ||
+            mpesaCode ||
+            `${phone}-${iso || "nd"}-${credNum}`;
+          if (iso) {
             out.push({
               phone,
-              name: name || (phone as string),
+              name: name || phone,
               amount: credNum,
               date: iso,
               reference,
               mpesaCode,
-              rawDetails: cur.det.trim().slice(0, 300),
+              rawDetails: (cur.all || cur.det).trim().slice(0, 400),
             });
           }
         }
@@ -145,12 +203,16 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
 
     for (let i = hdr + 1; i < grid.length; i++) {
       const r = grid[i] || [];
+      const allText = r.map((c) => String(c ?? "")).join(" ").replace(/\s+/g, " ").trim();
       const ref = cRef >= 0 ? String(r[cRef] ?? "").trim() : "";
       const det = cDet >= 0 ? String(r[cDet] ?? "").replace(/\n/g, " ").trim() : "";
+      const nameCell = cName >= 0 ? String(r[cName] ?? "").trim() : "";
+      const phoneCell = cPhone >= 0 ? String(r[cPhone] ?? "").trim() : "";
       const dateCell = cDate >= 0 ? r[cDate] : "";
       const credCell = cCred >= 0 ? String(r[cCred] ?? "").replace(/,/g, "").trim() : "";
       // A new transaction row starts when it has a reference OR a date OR a credit value
-      const startsRow = (ref && ref.toLowerCase() !== "nan") || !!dateCell || (credCell !== "" && Number(credCell) > 0);
+      const startsRow =
+        (ref && ref.toLowerCase() !== "nan") || !!dateCell || (credCell !== "" && Number(credCell) > 0);
 
       if (startsRow) {
         flush();
@@ -160,11 +222,17 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
           ref,
           cred: cCred >= 0 ? r[cCred] : "",
           debit: cDebit >= 0 ? r[cDebit] : "",
+          nameCell,
+          phoneCell,
+          all: allText,
         };
-      } else if (cur && det && det.toLowerCase() !== "nan") {
-        const low = det.toLowerCase();
+      } else if (cur && (det || allText) && (det || allText).toLowerCase() !== "nan") {
+        const low = (det || allText).toLowerCase();
         if (!SKIP_WORDS.some((w) => low.includes(w))) {
-          cur.det += " " + det;
+          if (det) cur.det += " " + det;
+          if (allText) cur.all += " " + allText;
+          if (!cur.phoneCell && phoneCell) cur.phoneCell = phoneCell;
+          if (!cur.nameCell && nameCell) cur.nameCell = nameCell;
         }
       }
     }
