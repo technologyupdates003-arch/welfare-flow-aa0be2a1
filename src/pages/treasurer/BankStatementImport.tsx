@@ -287,29 +287,58 @@ export default function BankStatementImport() {
   const handleImport = async () => {
     setImporting(true);
     setResults(null);
+    setProgress({ done: 0, total: rows.length });
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const url = `https://${projectId}.supabase.co/functions/v1/bank-statement-import`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        toast.error(data.error || "Import failed");
-        return;
+
+      // Process in chunks so very large statements (1000+ rows) never time out.
+      const CHUNK = 200;
+      const agg: ImportResults = {
+        total: rows.length,
+        new_members: 0,
+        existing_members_updated: 0,
+        duplicates_skipped: 0,
+        transactions_imported: 0,
+        total_amount: 0,
+        failed: 0,
+        failures: [],
+      };
+
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        const slice = rows.slice(i, i + CHUNK);
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows: slice }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          toast.error(data.error || `Import failed on batch ${Math.floor(i / CHUNK) + 1}`);
+          setResults(agg);
+          return;
+        }
+        agg.new_members += data.new_members || 0;
+        agg.existing_members_updated += data.existing_members_updated || 0;
+        agg.duplicates_skipped += data.duplicates_skipped || 0;
+        agg.transactions_imported += data.transactions_imported || 0;
+        agg.total_amount += data.total_amount || 0;
+        agg.failed += data.failed || 0;
+        if (Array.isArray(data.failures)) agg.failures.push(...data.failures);
+        setProgress({ done: Math.min(i + CHUNK, rows.length), total: rows.length });
       }
-      setResults(data);
+
+      setResults(agg);
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       queryClient.invalidateQueries({ queryKey: ["treasurer-stats"] });
       queryClient.invalidateQueries({ queryKey: ["contributions"] });
-      toast.success(`${data.transactions_imported} transactions imported • ${data.new_members} new members`);
+      toast.success(`${agg.transactions_imported} transactions imported • ${agg.new_members} new members`);
     } catch (err: any) {
       toast.error(`Import error: ${err.message}`);
     } finally {
       setImporting(false);
+      setProgress(null);
     }
   };
 
