@@ -407,7 +407,11 @@ export default function BankStatementImport() {
 
               <Button onClick={handleImport} disabled={importing} className="w-full sm:w-auto">
                 {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                {importing ? "Importing..." : `Import ${rows.length} Transactions`}
+                {importing
+                  ? progress
+                    ? `Importing ${progress.done}/${progress.total}...`
+                    : "Importing..."
+                  : `Import ${rows.length} Transactions`}
               </Button>
             </>
           )}
