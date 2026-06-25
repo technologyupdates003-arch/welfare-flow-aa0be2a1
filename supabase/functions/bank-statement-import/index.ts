@@ -9,11 +9,10 @@ const UNIVERSAL_PASSWORD = "Member2026";
 
 function normalizePhone(raw: string): string | null {
   if (!raw) return null;
-  const cleaned = String(raw).replace(/\s+/g, "").replace(/-/g, "").replace(/\+/g, "");
+  const cleaned = String(raw).replace(/\D/g, "");
   if (cleaned.startsWith("254") && cleaned.length === 12) return "+" + cleaned;
   if (cleaned.startsWith("0") && cleaned.length === 10) return "+254" + cleaned.slice(1);
-  if (cleaned.startsWith("7") && cleaned.length === 9) return "+254" + cleaned;
-  if (cleaned.startsWith("1") && cleaned.length === 9) return "+254" + cleaned;
+  if ((cleaned.startsWith("7") || cleaned.startsWith("1")) && cleaned.length === 9) return "+254" + cleaned;
   if (/^\d{9}$/.test(cleaned)) return "+254" + cleaned;
   return null;
 }
@@ -26,6 +25,27 @@ interface IncomingRow {
   reference: string;
   mpesaCode?: string;
   rawDetails?: string;
+}
+
+// Load ALL auth users into an email -> id map (paginated).
+async function loadAuthUsers(supabase: any): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  let page = 1;
+  // perPage max is 1000
+  for (; page <= 50; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) break;
+    const users = data?.users || [];
+    for (const u of users) if (u.email) map.set(u.email.toLowerCase(), u.id);
+    if (users.length < 1000) break;
+  }
+  return map;
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 Deno.serve(async (req) => {
@@ -55,65 +75,98 @@ Deno.serve(async (req) => {
       failures: [] as { row: number; reason: string }[],
     };
 
-    // Pre-fetch members for dedup/matching
+    // ---- Pre-fetch everything we need (once) ----
     const { data: allMembers } = await supabase.from("members").select("id, phone");
-    const memberMap = new Map((allMembers || []).map((m: any) => [m.phone, m.id]));
+    const memberMap = new Map<string, string>((allMembers || []).map((m: any) => [m.phone, m.id]));
 
-    // Track which members got new transactions (need recompute)
-    const affectedMembers = new Set<string>();
-    const existingUpdated = new Set<string>();
+    // Existing dedup keys for transactions already in the DB
+    const { data: existingTx } = await supabase
+      .from("bank_transactions")
+      .select("phone, transaction_reference, transaction_date, amount");
+    const existingKeys = new Set<string>(
+      (existingTx || []).map(
+        (t: any) => `${t.phone}|${t.transaction_reference}|${t.transaction_date}|${Number(t.amount)}`
+      )
+    );
+
+    // ---- Normalise + validate incoming rows ----
+    interface CleanRow {
+      rowNum: number;
+      phone: string;
+      name: string;
+      amount: number;
+      date: string;
+      month: number;
+      year: number;
+      reference: string;
+      mpesaCode: string | null;
+      rawDetails: string | null;
+      key: string;
+    }
+
+    const clean: CleanRow[] = [];
+    const seenInBatch = new Set<string>();
 
     for (let i = 0; i < rows.length; i++) {
       const rowNum = i + 1;
       const row: IncomingRow = rows[i];
-      try {
-        const phone = normalizePhone(String(row.phone || ""));
-        const amount = Number(row.amount);
-        const dateStr = String(row.date || "").trim();
-        const reference = String(row.reference || "").trim();
+      const phone = normalizePhone(String(row.phone || ""));
+      const amount = Number(row.amount);
+      const dateStr = String(row.date || "").trim();
+      let reference = String(row.reference || "").trim();
 
-        if (!phone) { results.failures.push({ row: rowNum, reason: `Invalid phone: "${row.phone}"` }); results.failed++; continue; }
-        if (isNaN(amount) || amount <= 0) { results.failures.push({ row: rowNum, reason: `Invalid amount: "${row.amount}"` }); results.failed++; continue; }
-        if (!dateStr) { results.failures.push({ row: rowNum, reason: "Missing transaction date" }); results.failed++; continue; }
-        if (!reference) { results.failures.push({ row: rowNum, reason: "Missing transaction reference" }); results.failed++; continue; }
+      if (!phone) { results.failures.push({ row: rowNum, reason: `Invalid phone: "${row.phone}"` }); results.failed++; continue; }
+      if (isNaN(amount) || amount <= 0) { results.failures.push({ row: rowNum, reason: `Invalid amount: "${row.amount}"` }); results.failed++; continue; }
+      if (!dateStr) { results.failures.push({ row: rowNum, reason: "Missing transaction date" }); results.failed++; continue; }
 
-        const parsedDate = new Date(dateStr);
-        if (isNaN(parsedDate.getTime())) { results.failures.push({ row: rowNum, reason: `Invalid date: "${dateStr}"` }); results.failed++; continue; }
+      const parsedDate = new Date(dateStr);
+      if (isNaN(parsedDate.getTime())) { results.failures.push({ row: rowNum, reason: `Invalid date: "${dateStr}"` }); results.failed++; continue; }
 
-        const month = parsedDate.getMonth() + 1;
-        const year = parsedDate.getFullYear();
-        const txDate = parsedDate.toISOString().split("T")[0];
-        const name = String(row.name || "").trim() || phone;
+      const txDate = parsedDate.toISOString().split("T")[0];
+      if (!reference) reference = `${phone}-${txDate}-${amount}`;
 
-        // Duplicate prevention: phone + reference + date + amount
-        const { data: existingTx } = await supabase
-          .from("bank_transactions")
-          .select("id")
-          .eq("phone", phone)
-          .eq("transaction_reference", reference)
-          .eq("transaction_date", txDate)
-          .eq("amount", amount)
-          .maybeSingle();
+      const key = `${phone}|${reference}|${txDate}|${amount}`;
+      // Duplicate against DB or within this batch
+      if (existingKeys.has(key) || seenInBatch.has(key)) { results.duplicates_skipped++; continue; }
+      seenInBatch.add(key);
 
-        if (existingTx) { results.duplicates_skipped++; continue; }
+      clean.push({
+        rowNum,
+        phone,
+        name: String(row.name || "").trim() || phone,
+        amount,
+        date: txDate,
+        month: parsedDate.getMonth() + 1,
+        year: parsedDate.getFullYear(),
+        reference,
+        mpesaCode: row.mpesaCode || null,
+        rawDetails: row.rawDetails || null,
+        key,
+      });
+    }
 
-        // Find or create member
-        let memberId = memberMap.get(phone);
-        if (!memberId) {
+    // ---- Create missing members in bulk ----
+    const neededPhones = new Map<string, string>(); // phone -> name
+    for (const c of clean) {
+      if (!memberMap.has(c.phone) && !neededPhones.has(c.phone)) neededPhones.set(c.phone, c.name);
+    }
+
+    if (neededPhones.size > 0) {
+      const authMap = await loadAuthUsers(supabase);
+
+      for (const [phone, name] of neededPhones) {
+        try {
           const email = `${phone.replace("+", "")}@welfare.local`;
-          const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
-            email, password: UNIVERSAL_PASSWORD, email_confirm: true,
-          });
+          let userId = authMap.get(email.toLowerCase());
 
-          if (authErr && !authErr.message?.includes("already")) {
-            throw new Error(authErr.message);
-          }
-
-          let userId = authData?.user?.id;
           if (!userId) {
-            // Auth user already existed - look it up via listUsers
-            const { data: list } = await supabase.auth.admin.listUsers();
-            userId = list?.users?.find((u: any) => u.email === email)?.id;
+            const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+              email, password: UNIVERSAL_PASSWORD, email_confirm: true,
+            });
+            if (authErr && !String(authErr.message || "").toLowerCase().includes("already")) {
+              throw new Error(authErr.message);
+            }
+            userId = authData?.user?.id || authMap.get(email.toLowerCase());
           }
 
           const { data: newMember, error: memberErr } = await supabase
@@ -127,84 +180,118 @@ Deno.serve(async (req) => {
             await supabase.from("user_roles").insert({ user_id: userId, role: "member" });
           }
 
-          memberId = newMember.id;
-          memberMap.set(phone, memberId);
+          memberMap.set(phone, newMember.id);
           results.new_members++;
-        } else {
-          existingUpdated.add(memberId);
-        }
-
-        // Insert the raw transaction
-        const { error: txErr } = await supabase.from("bank_transactions").insert({
-          member_id: memberId,
-          phone,
-          name,
-          amount,
-          transaction_date: txDate,
-          month,
-          year,
-          transaction_reference: reference,
-          mpesa_code: row.mpesaCode || null,
-          raw_details: row.rawDetails || null,
-        });
-        if (txErr) {
-          // Unique index race -> treat as duplicate
-          if (txErr.message?.includes("duplicate") || txErr.code === "23505") {
-            results.duplicates_skipped++;
-            continue;
+        } catch (err: any) {
+          // Mark all rows for this phone as failed
+          for (const c of clean) {
+            if (c.phone === phone) { results.failures.push({ row: c.rowNum, reason: `Member create failed: ${err.message}` }); results.failed++; }
           }
-          throw new Error(txErr.message);
         }
-
-        affectedMembers.add(memberId);
-        results.transactions_imported++;
-        results.total_amount += amount;
-      } catch (err: any) {
-        results.failures.push({ row: rowNum, reason: err.message || "Unknown error" });
-        results.failed++;
       }
     }
 
-    results.existing_members_updated = existingUpdated.size;
+    // ---- Bulk insert transactions ----
+    const insertable = clean
+      .filter((c) => memberMap.has(c.phone))
+      .map((c) => ({
+        member_id: memberMap.get(c.phone)!,
+        phone: c.phone,
+        name: c.name,
+        amount: c.amount,
+        transaction_date: c.date,
+        month: c.month,
+        year: c.year,
+        transaction_reference: c.reference,
+        mpesa_code: c.mpesaCode,
+        raw_details: c.rawDetails,
+      }));
 
-    // Recompute monthly contribution aggregates + member totals for affected members
-    for (const memberId of affectedMembers) {
-      try {
-        const { data: txs } = await supabase
-          .from("bank_transactions")
-          .select("amount, month, year, transaction_date")
-          .eq("member_id", memberId);
+    const affectedMembers = new Set<string>();
+    const existingMembersTouched = new Set<string>();
+    for (const c of clean) {
+      const id = memberMap.get(c.phone);
+      if (!id) continue;
+      affectedMembers.add(id);
+      if (!neededPhones.has(c.phone)) existingMembersTouched.add(id);
+    }
 
-        const monthly = new Map<string, { amount: number; month: number; year: number; lastDate: string }>();
-        for (const t of txs || []) {
-          const key = `${t.year}-${t.month}`;
-          const cur = monthly.get(key) || { amount: 0, month: t.month, year: t.year, lastDate: t.transaction_date };
-          cur.amount += Number(t.amount);
-          if (t.transaction_date > cur.lastDate) cur.lastDate = t.transaction_date;
-          monthly.set(key, cur);
+    for (const batch of chunk(insertable, 500)) {
+      const { error: txErr } = await supabase
+        .from("bank_transactions")
+        .upsert(batch, { onConflict: "phone,transaction_reference,transaction_date,amount", ignoreDuplicates: true });
+      if (txErr) {
+        // Fall back to per-row insert so one bad row doesn't drop the whole batch
+        for (const rec of batch) {
+          const { error: oneErr } = await supabase.from("bank_transactions").insert(rec);
+          if (oneErr) {
+            if (oneErr.code === "23505" || String(oneErr.message || "").includes("duplicate")) {
+              results.duplicates_skipped++;
+            } else {
+              results.failed++;
+              results.failures.push({ row: 0, reason: `Insert failed (${rec.phone}): ${oneErr.message}` });
+            }
+          } else {
+            results.transactions_imported++;
+            results.total_amount += Number(rec.amount);
+          }
         }
+      } else {
+        results.transactions_imported += batch.length;
+        for (const rec of batch) results.total_amount += Number(rec.amount);
+      }
+    }
 
-        let memberTotal = 0;
-        for (const m of monthly.values()) {
-          memberTotal += m.amount;
-          const dueDate = `${m.year}-${String(m.month).padStart(2, "0")}-05`;
-          await supabase.from("contributions").upsert(
-            {
+    results.existing_members_updated = existingMembersTouched.size;
+
+    // ---- Recompute aggregates for affected members (bulk per member) ----
+    const affectedIds = [...affectedMembers];
+    for (const idsChunk of chunk(affectedIds, 50)) {
+      const { data: txs } = await supabase
+        .from("bank_transactions")
+        .select("member_id, amount, month, year, transaction_date")
+        .in("member_id", idsChunk);
+
+      const byMember = new Map<string, any[]>();
+      for (const t of txs || []) {
+        const arr = byMember.get(t.member_id) || [];
+        arr.push(t);
+        byMember.set(t.member_id, arr);
+      }
+
+      for (const memberId of idsChunk) {
+        try {
+          const list = byMember.get(memberId) || [];
+          const monthly = new Map<string, { amount: number; month: number; year: number; lastDate: string }>();
+          for (const t of list) {
+            const k = `${t.year}-${t.month}`;
+            const cur = monthly.get(k) || { amount: 0, month: t.month, year: t.year, lastDate: t.transaction_date };
+            cur.amount += Number(t.amount);
+            if (t.transaction_date > cur.lastDate) cur.lastDate = t.transaction_date;
+            monthly.set(k, cur);
+          }
+
+          let memberTotal = 0;
+          const contribRows = [];
+          for (const m of monthly.values()) {
+            memberTotal += m.amount;
+            contribRows.push({
               member_id: memberId,
               amount: m.amount,
               month: m.month,
               year: m.year,
-              due_date: dueDate,
+              due_date: `${m.year}-${String(m.month).padStart(2, "0")}-05`,
               status: "paid",
               paid_date: m.lastDate,
-            },
-            { onConflict: "member_id,month,year" }
-          );
+            });
+          }
+          if (contribRows.length) {
+            await supabase.from("contributions").upsert(contribRows, { onConflict: "member_id,month,year" });
+          }
+          await supabase.from("members").update({ total_contributions: memberTotal }).eq("id", memberId);
+        } catch (err) {
+          console.error("Recompute error for member", memberId, err);
         }
-
-        await supabase.from("members").update({ total_contributions: memberTotal }).eq("id", memberId);
-      } catch (err) {
-        console.error("Recompute error for member", memberId, err);
       }
     }
 
