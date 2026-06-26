@@ -40,8 +40,10 @@ Deno.serve(async (req) => {
       if (users.length < 1000) break;
     }
 
-    // Make sure Laban has a known password
+    // Make sure Laban has a known login email + password
     const { error: pwErr } = await supabase.auth.admin.updateUserById(KEEP_USER_ID, {
+      email: "254700000000@welfare.local",
+      email_confirm: true,
       password: UNIVERSAL_PASSWORD,
     });
 
