@@ -45,7 +45,11 @@ Deno.serve(async (req) => {
       password: UNIVERSAL_PASSWORD,
     });
 
-    // Then try to align his login email to phone 0700000000
+    // Remove any stray account holding the 0700000000 email so we can assign it to Laban
+    const conflictUserId = "37976e72-8f4f-4681-a190-7940d286924b";
+    await supabase.auth.admin.deleteUser(conflictUserId).catch(() => {});
+
+    // Then align his login email to phone 0700000000
     const { error: emailErr } = await supabase.auth.admin.updateUserById(KEEP_USER_ID, {
       email: "254700000000@welfare.local",
       email_confirm: true,
