@@ -40,11 +40,15 @@ Deno.serve(async (req) => {
       if (users.length < 1000) break;
     }
 
-    // Make sure Laban has a known login email + password
+    // Set a known password first (independent of email change)
     const { error: pwErr } = await supabase.auth.admin.updateUserById(KEEP_USER_ID, {
+      password: UNIVERSAL_PASSWORD,
+    });
+
+    // Then try to align his login email to phone 0700000000
+    const { error: emailErr } = await supabase.auth.admin.updateUserById(KEEP_USER_ID, {
       email: "254700000000@welfare.local",
       email_confirm: true,
-      password: UNIVERSAL_PASSWORD,
     });
 
     // Clean up any leftover member rows that are not Laban (in case cascade missed any)
