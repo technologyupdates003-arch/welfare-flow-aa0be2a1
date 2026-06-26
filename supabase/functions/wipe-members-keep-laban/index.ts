@@ -66,6 +66,8 @@ Deno.serve(async (req) => {
         laban_password: UNIVERSAL_PASSWORD,
         password_reset_ok: !pwErr,
         password_error: pwErr?.message ?? null,
+        email_update_ok: !emailErr,
+        email_error: emailErr?.message ?? null,
         failures,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
