@@ -123,6 +123,10 @@ export default function MemberDashboard() {
   });
 
   const currentYear = new Date().getFullYear();
+  // All-time total paid contributions (so imported statements from any year are reflected)
+  const totalPaidAllTime = contributions
+    ?.filter(c => c.status === "paid")
+    .reduce((s, c) => s + Number(c.amount), 0) || 0;
   const totalPaidThisYear = contributions
     ?.filter(c => c.status === "paid" && c.year === currentYear)
     .reduce((s, c) => s + Number(c.amount), 0) || 0;
