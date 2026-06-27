@@ -10,6 +10,7 @@ export type UserRole =
   | "member" 
   | "super_admin"
   | "treasurer"
+  | "executive"
   | "user";
 
 export interface RoleConfig {
