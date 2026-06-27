@@ -163,6 +163,20 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
       "view_reports",
     ],
   },
+  executive: {
+    label: "Executive",
+    color: "bg-amber-600",
+    dashboardItems: [
+      "dashboard",
+      "profile",
+      "contributions",
+      "news",
+    ],
+    permissions: [
+      "view_own_profile",
+      "view_own_contributions",
+    ],
+  },
   user: {
     label: "User",
     color: "bg-gray-400",
