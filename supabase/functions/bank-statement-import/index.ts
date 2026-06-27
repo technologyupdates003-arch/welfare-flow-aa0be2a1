@@ -76,8 +76,31 @@ Deno.serve(async (req) => {
     };
 
     // ---- Pre-fetch everything we need (once) ----
-    const { data: allMembers } = await supabase.from("members").select("id, phone");
-    const memberMap = new Map<string, string>((allMembers || []).map((m: any) => [m.phone, m.id]));
+    const authMap = await loadAuthUsers(supabase);
+    const { data: allMembers } = await supabase.from("members").select("id, phone, user_id");
+    const memberMap = new Map<string, { id: string; user_id: string | null }>(
+      (allMembers || []).map((m: any) => {
+        const normalizedPhone = normalizePhone(String(m.phone || ""));
+        return [normalizedPhone || String(m.phone || ""), { id: m.id, user_id: m.user_id }];
+      })
+    );
+
+    // Keep existing members linked to auth users by phone when possible
+    for (const member of allMembers || []) {
+      if (!member.user_id && member.phone) {
+        const email = `${member.phone.replace(/\D/g, "")}@welfare.local`.toLowerCase();
+        const userId = authMap.get(email);
+        if (userId) {
+          await supabase.from("members").update({ user_id: userId }).eq("id", member.id);
+          memberMap.set(member.phone, { id: member.id, user_id: userId });
+          authMap.set(email, userId);
+          await supabase.from("user_roles").upsert(
+            { user_id: userId, role: "member" },
+            { onConflict: ["user_id", "role"], ignoreDuplicates: true }
+          );
+        }
+      }
+    }
 
     // Existing dedup keys for transactions already in the DB
     const { data: existingTx } = await supabase
@@ -180,7 +203,7 @@ Deno.serve(async (req) => {
             await supabase.from("user_roles").insert({ user_id: userId, role: "member" });
           }
 
-          memberMap.set(phone, newMember.id);
+          memberMap.set(phone, { id: newMember.id, user_id: userId || null });
           results.new_members++;
         } catch (err: any) {
           // Mark all rows for this phone as failed
@@ -194,26 +217,29 @@ Deno.serve(async (req) => {
     // ---- Bulk insert transactions ----
     const insertable = clean
       .filter((c) => memberMap.has(c.phone))
-      .map((c) => ({
-        member_id: memberMap.get(c.phone)!,
-        phone: c.phone,
-        name: c.name,
-        amount: c.amount,
-        transaction_date: c.date,
-        month: c.month,
-        year: c.year,
-        transaction_reference: c.reference,
-        mpesa_code: c.mpesaCode,
-        raw_details: c.rawDetails,
-      }));
+      .map((c) => {
+        const member = memberMap.get(c.phone)!;
+        return {
+          member_id: member.id,
+          phone: c.phone,
+          name: c.name,
+          amount: c.amount,
+          transaction_date: c.date,
+          month: c.month,
+          year: c.year,
+          transaction_reference: c.reference,
+          mpesa_code: c.mpesaCode,
+          raw_details: c.rawDetails,
+        };
+      });
 
     const affectedMembers = new Set<string>();
     const existingMembersTouched = new Set<string>();
     for (const c of clean) {
-      const id = memberMap.get(c.phone);
-      if (!id) continue;
-      affectedMembers.add(id);
-      if (!neededPhones.has(c.phone)) existingMembersTouched.add(id);
+      const member = memberMap.get(c.phone);
+      if (!member) continue;
+      affectedMembers.add(member.id);
+      if (!neededPhones.has(c.phone)) existingMembersTouched.add(member.id);
     }
 
     for (const batch of chunk(insertable, 500)) {
@@ -246,11 +272,14 @@ Deno.serve(async (req) => {
 
     // ---- Recompute aggregates for affected members (bulk per member) ----
     const affectedIds = [...affectedMembers];
+    console.log(`[DEBUG] Affected member IDs for recompute: ${affectedIds.length}`);
     for (const idsChunk of chunk(affectedIds, 50)) {
       const { data: txs } = await supabase
         .from("bank_transactions")
         .select("member_id, amount, month, year, transaction_date")
         .in("member_id", idsChunk);
+
+      console.log(`[DEBUG] Fetched ${txs?.length || 0} transactions for chunk of ${idsChunk.length} members`);
 
       const byMember = new Map<string, any[]>();
       for (const t of txs || []) {
@@ -262,6 +291,7 @@ Deno.serve(async (req) => {
       for (const memberId of idsChunk) {
         try {
           const list = byMember.get(memberId) || [];
+          console.log(`[DEBUG] Member ${memberId}: ${list.length} transactions`);
           const monthly = new Map<string, { amount: number; month: number; year: number; lastDate: string }>();
           for (const t of list) {
             const k = `${t.year}-${t.month}`;
@@ -286,9 +316,16 @@ Deno.serve(async (req) => {
             });
           }
           if (contribRows.length) {
-            await supabase.from("contributions").upsert(contribRows, { onConflict: "member_id,month,year" });
+            console.log(`[DEBUG] Upserting ${contribRows.length} contribution rows for member ${memberId}`);
+            const { error: upsertErr } = await supabase.from("contributions").upsert(contribRows, { onConflict: "member_id,month,year" });
+            if (upsertErr) {
+              console.error(`[DEBUG] Upsert error for member ${memberId}:`, upsertErr);
+            }
           }
-          await supabase.from("members").update({ total_contributions: memberTotal }).eq("id", memberId);
+          const { error: updateErr } = await supabase.from("members").update({ total_contributions: memberTotal }).eq("id", memberId);
+          if (updateErr) {
+            console.error(`[DEBUG] Update error for member ${memberId}:`, updateErr);
+          }
         } catch (err) {
           console.error("Recompute error for member", memberId, err);
         }

@@ -92,11 +92,13 @@ const NAME_HINTS = ["name", "customer", "payer", "sender", "depositor"];
 const PHONE_HINTS = ["phone", "mobile", "msisdn", "number", "tel"];
 
 function isHeaderRow(vals: string[]): boolean {
+  console.log("[DEBUG isHeaderRow] Testing row:", vals.slice(0, 7));
   const hasDetail = vals.some((v) => DETAIL_HINTS.some((h) => v.includes(h)));
   const hasMoney =
     vals.some((v) => CREDIT_HINTS.some((h) => v.includes(h))) ||
     vals.some((v) => AMOUNT_HINTS.some((h) => v.includes(h)));
   const hasDate = vals.some((v) => DATE_HINTS.some((h) => v.includes(h)));
+  console.log("[DEBUG isHeaderRow] hasDetail:", hasDetail, "hasMoney:", hasMoney, "hasDate:", hasDate);
   // A header needs money + (details OR date) to be considered valid
   return hasMoney && (hasDetail || hasDate);
 }
@@ -139,18 +141,25 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
     const grid = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: true, defval: "" });
     if (!grid.length) continue;
 
+    console.log(`[DEBUG] Sheet "${sheetName}" has ${grid.length} rows`);
+
     // Locate header row anywhere in the sheet (statements often have preamble rows)
     let hdr = -1;
     let header: string[] = [];
     for (let i = 0; i < grid.length; i++) {
       const vals = (grid[i] || []).map((v) => String(v).trim().toLowerCase());
+      console.log(`[DEBUG] Row ${i}:`, vals.slice(0, 7)); // Show first 7 columns
       if (isHeaderRow(vals)) {
         hdr = i;
         header = vals;
+        console.log(`[DEBUG] Found header at row ${i}:`, header.slice(0, 7));
         break;
       }
     }
-    if (hdr === -1) continue;
+    if (hdr === -1) {
+      console.log(`[DEBUG] No header row found in sheet "${sheetName}"`);
+      continue;
+    }
 
     const cDate = firstCol(header, DATE_HINTS);
     const cDet = firstCol(header, DETAIL_HINTS);
@@ -162,14 +171,36 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
     const cDebit = header.findIndex((v) => v.includes("debit") || v.includes("withdraw") || v.includes("money out") || v.includes("paid out"));
     if (cCred === -1) cCred = firstCol(header, AMOUNT_HINTS);
 
+    console.log(`[DEBUG] Column indices - Date:${cDate} Details:${cDet} Ref:${cRef} Name:${cName} Phone:${cPhone} Credit:${cCred} Debit:${cDebit}`);
+
+    // Some banks (Co-op) put incoming M-Pesa payments in the "Debit" column instead of "Credit".
+    // We scan a sample of rows to detect which column actually has the money.
+    let flipCredDebit = false;
+    if (cCred >= 0 && cDebit >= 0) {
+      let creditSum = 0, debitSum = 0;
+      for (let i = hdr + 1; i < Math.min(hdr + 20, grid.length); i++) {
+        const r = grid[i] || [];
+        creditSum += Number(String(r[cCred] ?? "").replace(/,/g, "").trim()) || 0;
+        debitSum += Number(String(r[cDebit] ?? "").replace(/,/g, "").trim()) || 0;
+      }
+      // If debit column has more value than credit, treat debit as incoming amount
+      if (debitSum > creditSum) flipCredDebit = true;
+      console.log(`[DEBUG] Credit sum: ${creditSum}, Debit sum: ${debitSum}, Flip: ${flipCredDebit}`);
+    }
+    const effectiveCred = flipCredDebit ? cDebit : cCred;
+    const effectiveDebit = flipCredDebit ? cCred : cDebit;
+    console.log(`[DEBUG] Effective credit column: ${effectiveCred}, effective debit column: ${effectiveDebit}`);
+
     type Cur = { date: any; det: string; ref: string; cred: any; debit: any; nameCell: string; phoneCell: string; all: string };
     let cur: Cur | null = null;
 
     const flush = () => {
       if (!cur) return;
       const credNum = Number(String(cur.cred).replace(/,/g, "").trim());
-      const debitNum = cDebit >= 0 ? Number(String(cur.debit).replace(/,/g, "").trim()) : 0;
-      // Only credits (money in) are contributions; skip debits/withdrawals
+      const debitNum = effectiveDebit >= 0 ? Number(String(cur.debit).replace(/,/g, "").trim()) : 0;
+      // Accept the row if the amount column has a value > 0.
+      // If there's also a debit column with a value, it's a real withdrawal — skip it.
+      // Exception: if we flipped debit/credit (Co-op style), the "debit" column is the credit side.
       if (!isNaN(credNum) && credNum > 0 && !(debitNum > 0)) {
         // Search phone in: dedicated phone cell -> details -> whole row text
         const phone =
@@ -209,10 +240,14 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
       const nameCell = cName >= 0 ? String(r[cName] ?? "").trim() : "";
       const phoneCell = cPhone >= 0 ? String(r[cPhone] ?? "").trim() : "";
       const dateCell = cDate >= 0 ? r[cDate] : "";
-      const credCell = cCred >= 0 ? String(r[cCred] ?? "").replace(/,/g, "").trim() : "";
-      // A new transaction row starts when it has a reference OR a date OR a credit value
+      const effectiveCredCell = effectiveCred >= 0 ? String(r[effectiveCred] ?? "").replace(/,/g, "").trim() : "";
+      // A new transaction row starts when it has a reference OR a date OR an amount value
       const startsRow =
-        (ref && ref.toLowerCase() !== "nan") || !!dateCell || (credCell !== "" && Number(credCell) > 0);
+        (ref && ref.toLowerCase() !== "nan") || !!dateCell || (effectiveCredCell !== "" && Number(effectiveCredCell) > 0);
+
+      if (i === hdr + 1 || i === hdr + 2) {
+        console.log(`[DEBUG] Row ${i}: startsRow=${startsRow}, ref="${ref}", date="${dateCell}", amount="${effectiveCredCell}", det="${det.slice(0, 50)}"`);
+      }
 
       if (startsRow) {
         flush();
@@ -220,8 +255,8 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedTx[] {
           date: dateCell,
           det,
           ref,
-          cred: cCred >= 0 ? r[cCred] : "",
-          debit: cDebit >= 0 ? r[cDebit] : "",
+          cred: effectiveCred >= 0 ? r[effectiveCred] : "",
+          debit: effectiveDebit >= 0 ? r[effectiveDebit] : "",
           nameCell,
           phoneCell,
           all: allText,
@@ -268,9 +303,11 @@ export default function BankStatementImport() {
     reader.onload = (evt) => {
       try {
         const wb = XLSX.read(evt.target?.result, { type: "binary", cellDates: false });
+        console.log("Workbook sheets:", wb.SheetNames);
         const parsed = parseWorkbook(wb);
+        console.log("Parsed transactions:", parsed.length, parsed.slice(0, 3));
         if (parsed.length === 0) {
-          toast.error("No contribution transactions found. Make sure this is a bank statement export.");
+          toast.error("No contribution transactions found. Make sure this is a bank statement export. Check browser console for debug info.");
           return;
         }
         setRows(parsed);
@@ -333,6 +370,7 @@ export default function BankStatementImport() {
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       queryClient.invalidateQueries({ queryKey: ["treasurer-stats"] });
       queryClient.invalidateQueries({ queryKey: ["contributions"] });
+      queryClient.invalidateQueries({ queryKey: ["treasurer-members-contributions"] });
       toast.success(`${agg.transactions_imported} transactions imported • ${agg.new_members} new members`);
     } catch (err: any) {
       toast.error(`Import error: ${err.message}`);

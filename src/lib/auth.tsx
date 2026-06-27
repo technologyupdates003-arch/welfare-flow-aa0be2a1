@@ -40,13 +40,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { primaryRole, allRoles: userRoles };
   };
 
-  const fetchMemberId = async (userId: string) => {
+  const normalizePhone = (raw: string) => {
+    const digits = String(raw).replace(/\D/g, "");
+    if (digits.startsWith("254") && digits.length === 12) return `+${digits}`;
+    if (digits.startsWith("0") && digits.length === 10) return `+254${digits.slice(1)}`;
+    if ((digits.startsWith("7") || digits.startsWith("1")) && digits.length === 9) return `+254${digits}`;
+    if (digits.length === 9) return `+254${digits}`;
+    return null;
+  };
+
+  const phoneFromEmail = (email: string | null) => {
+    if (!email) return null;
+    const match = String(email).toLowerCase().match(/^(\d+)@welfare\.local$/);
+    if (!match) return null;
+    return normalizePhone(match[1]);
+  };
+
+  const fetchMemberId = async (userId: string, email: string | null) => {
     const { data } = await supabase
       .from("members")
       .select("id")
       .eq("user_id", userId)
       .maybeSingle();
-    return data?.id || null;
+    if (data?.id) return data.id;
+
+    const phone = phoneFromEmail(email);
+    if (!phone) return null;
+
+    const { data: fallbackCandidates } = await supabase
+      .from("members")
+      .select("id, phone");
+    if (!fallbackCandidates || fallbackCandidates.length === 0) return null;
+
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) return null;
+
+    const matched = fallbackCandidates.find((member: any) => {
+      const memberPhone = normalizePhone(member.phone || "");
+      return memberPhone === normalizedPhone;
+    });
+
+    if (matched?.id) {
+      await supabase.from("members").update({ user_id: userId }).eq("id", matched.id);
+      return matched.id;
+    }
+
+    return null;
   };
 
   const subscribeToRoleChanges = (userId: string) => {
@@ -83,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (newSession?.user) {
       const [{ primaryRole, allRoles }, userMemberId] = await Promise.all([
         fetchRoles(newSession.user.id),
-        fetchMemberId(newSession.user.id),
+        fetchMemberId(newSession.user.id, newSession.user.email),
       ]);
       setRole(primaryRole);
       setRoles(allRoles);
