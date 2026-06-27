@@ -693,7 +693,7 @@ export default function MeetingMinutes() {
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron", "treasurer", "admin", "super_admin"])
+        .in("role", ["chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron", "treasurer", "admin", "super_admin", "executive"])
         .order("role");
       
       if (rolesError) throw rolesError;

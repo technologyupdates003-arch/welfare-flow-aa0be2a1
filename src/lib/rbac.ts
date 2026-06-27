@@ -10,6 +10,7 @@ export type UserRole =
   | "member" 
   | "super_admin"
   | "treasurer"
+  | "executive"
   | "user";
 
 export interface RoleConfig {
@@ -160,6 +161,20 @@ export const ROLE_CONFIG: Record<UserRole, RoleConfig> = {
       "manage_expenses",
       "manage_memos",
       "view_reports",
+    ],
+  },
+  executive: {
+    label: "Executive",
+    color: "bg-amber-600",
+    dashboardItems: [
+      "dashboard",
+      "profile",
+      "contributions",
+      "news",
+    ],
+    permissions: [
+      "view_own_profile",
+      "view_own_contributions",
     ],
   },
   user: {
