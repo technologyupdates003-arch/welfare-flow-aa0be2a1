@@ -202,9 +202,9 @@ export default function MemberDashboard() {
             </div>
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Total Contributed</p>
             <p className="text-xl font-bold mt-1 break-words leading-tight">
-              KES {totalPaidThisYear.toLocaleString()}
+              KES {totalPaidAllTime.toLocaleString()}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-1">This Year</p>
+            <p className="text-[11px] text-muted-foreground mt-1">All Time</p>
           </CardContent>
         </Card>
 
