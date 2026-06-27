@@ -623,6 +623,7 @@ export default function Members() {
                   <SelectItem value="secretary">Secretary</SelectItem>
                   <SelectItem value="vice_secretary">Vice Secretary</SelectItem>
                   <SelectItem value="patron">Patron</SelectItem>
+                  <SelectItem value="executive">Executive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
