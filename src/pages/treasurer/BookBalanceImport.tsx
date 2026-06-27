@@ -172,14 +172,15 @@ export default function BookBalanceImport() {
 
       setUploadProgress(50);
 
-      // Insert book balance records
+      // Insert or update book balance records (upsert on check_number)
       const { data, error: insertError } = await supabase
         .from("book_balance")
-        .insert(
+        .upsert(
           transactions.map((t) => ({
             ...t,
             created_by: user.id,
-          }))
+          })),
+          { onConflict: "check_number" } // Update if check_number already exists
         )
         .select();
 
@@ -190,9 +191,9 @@ export default function BookBalanceImport() {
 
       setUploadProgress(90);
 
-      console.log("[BookBalance Import] Successfully imported records:", data);
+      console.log("[BookBalance Import] Successfully imported/updated records:", data);
 
-      toast.success(`✅ Imported ${data?.length || 0} book balance records`);
+      toast.success(`✅ Imported/Updated ${data?.length || 0} book balance records`);
 
       setUploadProgress(100);
 
