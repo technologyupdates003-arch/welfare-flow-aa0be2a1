@@ -27,6 +27,9 @@ export default function MemberDashboard() {
   const [payPhone, setPayPhone] = useState("");
   const [paying, setPaying] = useState(false);
 
+  // Debug logging
+  console.log("[MemberDashboard] Current memberId:", memberId);
+
   // Check if user has a role (not just a regular member)
   const hasRole = useMemo(() => {
     return roles.some(r => r && r !== "member");
@@ -73,13 +76,18 @@ export default function MemberDashboard() {
   const { data: contributions } = useQuery({
     queryKey: ["my-contributions", memberId],
     queryFn: async () => {
-      if (!memberId) return [];
+      if (!memberId) {
+        console.log("[MemberDashboard] Contributions query: memberId is null/falsy, returning empty array");
+        return [];
+      }
+      console.log("[MemberDashboard] Fetching contributions for memberId:", memberId);
       const { data } = await supabase
         .from("contributions")
         .select("*")
         .eq("member_id", memberId)
         .order("year", { ascending: false })
         .order("month", { ascending: false });
+      console.log("[MemberDashboard] Contributions fetched:", data?.length || 0, "records", data);
       return data || [];
     },
     enabled: !!memberId,

@@ -57,34 +57,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchMemberId = async (userId: string, email: string | null) => {
+    console.log("[AUTH DEBUG] fetchMemberId called with userId:", userId, "email:", email);
+    
     const { data } = await supabase
       .from("members")
       .select("id")
       .eq("user_id", userId)
       .maybeSingle();
-    if (data?.id) return data.id;
+    
+    if (data?.id) {
+      console.log("[AUTH DEBUG] Found member by exact user_id match:", data.id);
+      return data.id;
+    }
 
     const phone = phoneFromEmail(email);
-    if (!phone) return null;
+    console.log("[AUTH DEBUG] Extracted phone from email:", phone);
+    if (!phone) {
+      console.log("[AUTH DEBUG] Could not extract phone, returning null");
+      return null;
+    }
 
     const { data: fallbackCandidates } = await supabase
       .from("members")
       .select("id, phone");
-    if (!fallbackCandidates || fallbackCandidates.length === 0) return null;
+    if (!fallbackCandidates || fallbackCandidates.length === 0) {
+      console.log("[AUTH DEBUG] No fallback candidates found");
+      return null;
+    }
 
     const normalizedPhone = normalizePhone(phone);
-    if (!normalizedPhone) return null;
+    console.log("[AUTH DEBUG] Normalized phone:", normalizedPhone, "from:", phone);
+    if (!normalizedPhone) {
+      console.log("[AUTH DEBUG] Could not normalize phone");
+      return null;
+    }
 
     const matched = fallbackCandidates.find((member: any) => {
       const memberPhone = normalizePhone(member.phone || "");
       return memberPhone === normalizedPhone;
     });
 
+    console.log("[AUTH DEBUG] Fallback match result:", matched?.id);
+
     if (matched?.id) {
       await supabase.from("members").update({ user_id: userId }).eq("id", matched.id);
+      console.log("[AUTH DEBUG] Updated member with user_id, returning:", matched.id);
       return matched.id;
     }
 
+    console.log("[AUTH DEBUG] No match found, returning null");
     return null;
   };
 
