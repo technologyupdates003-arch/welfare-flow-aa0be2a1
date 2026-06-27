@@ -76,6 +76,8 @@ import TreasurerReports from "@/pages/treasurer/TreasurerReports";
 import TreasurerSettings from "@/pages/treasurer/TreasurerSettings";
 import BankSync from "@/pages/treasurer/BankSync";
 import BankStatementImport from "@/pages/treasurer/BankStatementImport";
+import BookBalanceImport from "@/pages/treasurer/BookBalanceImport";
+import BookBalance from "@/pages/treasurer/BookBalance";
 import OperationalWallet from "@/pages/treasurer/OperationalWallet";
 import WalletReports from "@/pages/treasurer/WalletReports";
 import SystemTroubleshooting from "@/pages/super-admin/SystemTroubleshooting";
@@ -242,6 +244,8 @@ function AppRoutes() {
         <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
         <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
         <Route path="/treasurer/bank-statement-import" element={<TreasurerLayout><BankStatementImport /></TreasurerLayout>} />
+        <Route path="/treasurer/book-balance-import" element={<TreasurerLayout><BookBalanceImport /></TreasurerLayout>} />
+        <Route path="/treasurer/book-balance" element={<TreasurerLayout><BookBalance /></TreasurerLayout>} />
         
         {/* Member routes for super admin */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
