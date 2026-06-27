@@ -70,7 +70,7 @@ export default function MinutesManagement() {
       const { data: rolesData } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron", "treasurer", "admin", "super_admin"]);
+        .in("role", ["chairperson", "vice_chairperson", "secretary", "vice_secretary", "patron", "treasurer", "admin", "super_admin", "executive"]);
       if (!rolesData?.length) return [];
       const userIds = rolesData.map(r => r.user_id);
       const { data: membersData } = await supabase
