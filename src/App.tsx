@@ -624,6 +624,47 @@ function AppRoutes() {
   }
 
   // Default to member routes
+  if (role === "treasurer") {
+    return (
+      <Routes>
+        <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
+        <Route path="/treasurer/withdrawal-approvals" element={<TreasurerLayout><TreasurerWithdrawalApprovals /></TreasurerLayout>} />
+        <Route path="/treasurer/penalty-wallet" element={<TreasurerLayout><TreasurerPenaltyWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/donation-wallet" element={<TreasurerLayout><TreasurerDonationWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/donation-campaigns" element={<TreasurerLayout><DonationCampaigns /></TreasurerLayout>} />
+        <Route path="/treasurer/contributions" element={<TreasurerLayout><TreasurerContributions /></TreasurerLayout>} />
+        <Route path="/treasurer/expenses" element={<TreasurerLayout><ExpensesPayouts /></TreasurerLayout>} />
+        <Route path="/treasurer/memos" element={<TreasurerLayout><MemoHistory /></TreasurerLayout>} />
+        <Route path="/treasurer/memos/create" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
+        <Route path="/treasurer/memos/:id/edit" element={<TreasurerLayout><CreateMemo /></TreasurerLayout>} />
+        <Route path="/treasurer/documents" element={<TreasurerLayout><TreasurerDocuments /></TreasurerLayout>} />
+        <Route path="/treasurer/reports" element={<TreasurerLayout><TreasurerReports /></TreasurerLayout>} />
+        <Route path="/treasurer/operational-wallet" element={<TreasurerLayout><OperationalWallet /></TreasurerLayout>} />
+        <Route path="/treasurer/wallet-reports" element={<TreasurerLayout><WalletReports /></TreasurerLayout>} />
+        <Route path="/treasurer/settings" element={<TreasurerLayout><TreasurerSettings /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-sync" element={<TreasurerLayout><BankSync /></TreasurerLayout>} />
+        <Route path="/treasurer/bank-statement-import" element={<TreasurerLayout><BankStatementImport /></TreasurerLayout>} />
+        <Route path="/treasurer/book-balance-import" element={<TreasurerLayout><BookBalanceImport /></TreasurerLayout>} />
+        <Route path="/treasurer/book-balance" element={<TreasurerLayout><BookBalance /></TreasurerLayout>} />
+        
+        {/* Member routes for treasurer */}
+        <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
+        <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
+        <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
+        <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
+        <Route path="/member/withdrawal-receipts" element={<MemberLayout><WithdrawalReceipts /></MemberLayout>} />
+        <Route path="/member/news" element={<MemberLayout><MemberNews /></MemberLayout>} />
+        <Route path="/member/beneficiaries" element={<MemberLayout><MemberBeneficiaries /></MemberLayout>} />
+        <Route path="/member/notifications" element={<MemberLayout><MemberNotifications /></MemberLayout>} />
+        <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
+        <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
+        <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="*" element={<Navigate to="/treasurer" replace />} />
+      </Routes>
+    );
+  }
+
+  // Default to member routes
   return (
     <Routes>
       <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />

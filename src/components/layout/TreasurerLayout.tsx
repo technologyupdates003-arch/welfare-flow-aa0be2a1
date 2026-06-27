@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 import DashboardLock from "@/components/DashboardLock";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, Settings, CreditCard, Menu, X, Landmark, FileSignature, Target, Upload } from "lucide-react";
+import { Bell, Moon, Sun, LogOut, LayoutDashboard, Wallet, FileText, BarChart3, Settings, CreditCard, Menu, X, Landmark, FileSignature, Target, Upload, BookOpen } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
@@ -57,6 +57,8 @@ export default function TreasurerLayout({ children }: TreasurerLayoutProps) {
     { to: "/treasurer/operational-wallet", icon: Wallet, label: "Operational Wallet" },
     { to: "/treasurer/bank-sync", icon: Landmark, label: "Bank Sync" },
     { to: "/treasurer/bank-statement-import", icon: Upload, label: "Statement Import" },
+    { to: "/treasurer/book-balance-import", icon: Upload, label: "Book Balance Import" },
+    { to: "/treasurer/book-balance", icon: BookOpen, label: "Book Balance & Debits" },
     { to: "/treasurer/expenses", icon: Wallet, label: "Expenses & Payouts" },
     { to: "/treasurer/memos", icon: FileText, label: "Memos" },
     { to: "/treasurer/documents", icon: FileText, label: "Documents" },
