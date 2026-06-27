@@ -40,35 +40,63 @@ export default function BookBalanceImport() {
           console.log("[BookBalance Import] Raw rows from Excel:", rows);
 
           const transactions = rows
-            .slice(0, -1) // Remove last row if it's summary
+            .filter((row: any) => row["Trans Date"] && row["Reference No"]) // Filter valid rows
             .map((row: any, index: number) => {
-              const transactionDate = row["Transaction Date"] || row["Date"];
-              const checkNumber = row["Check Number"] || row["Check No"] || row["Cheque No"];
-              const debit = row["Debit"] || row["Amount"];
-              const bookBalance = row["Book Balance"] || row["Balance"];
+              try {
+                const transactionDate = row["Trans Date"];
+                const referenceNo = row["Reference No"]; // Unique check number like CB0637161
+                const credit = parseFloat(row["Credit"] || 0);
+                const debit = parseFloat(row["Debit"] || 0);
+                const bookBalance = row["Book Balance"];
+                const transactionDetails = row["Transaction Details"] || "";
 
-              if (!transactionDate || !checkNumber || !debit || bookBalance === undefined) {
-                console.log(
-                  `[BookBalance Import] Row ${index} missing required fields:`,
-                  { transactionDate, checkNumber, debit, bookBalance }
-                );
+                // Parse book balance (remove "CR" or "DR" suffix and commas)
+                const bookBalanceValue = bookBalance
+                  ? parseFloat(String(bookBalance).replace(/,/g, "").replace(/\s*(CR|DR)/g, ""))
+                  : 0;
+
+                // Determine actual debit (use debit if > 0, otherwise use credit as debit if it's an outgoing)
+                const actualDebit = debit > 0 ? debit : credit;
+
+                if (!transactionDate || !referenceNo) {
+                  console.log(
+                    `[BookBalance Import] Row ${index} missing required fields:`,
+                    { transactionDate, referenceNo }
+                  );
+                  return null;
+                }
+
+                // Parse date - handle various formats
+                let parsedDate;
+                try {
+                  parsedDate = new Date(transactionDate).toISOString().split("T")[0];
+                } catch {
+                  console.log(`[BookBalance Import] Could not parse date: ${transactionDate}`);
+                  return null;
+                }
+
+                return {
+                  transaction_date: parsedDate,
+                  check_number: String(referenceNo).trim().toUpperCase(),
+                  debit: actualDebit,
+                  book_balance: bookBalanceValue,
+                  reason: transactionDetails.trim(),
+                };
+              } catch (rowError) {
+                console.error(`[BookBalance Import] Error processing row ${index}:`, rowError);
                 return null;
               }
-
-              return {
-                transaction_date: new Date(transactionDate).toISOString().split("T")[0],
-                check_number: String(checkNumber).trim().toUpperCase(),
-                debit: parseFloat(debit),
-                book_balance: parseFloat(bookBalance),
-                reason: row["Reason"] || row["Notes"] || "",
-              };
             })
             .filter((t: any) => t !== null);
 
           console.log("[BookBalance Import] Parsed transactions:", transactions);
 
           if (transactions.length === 0) {
-            reject(new Error("No valid book balance transactions found. Make sure the Excel file has: Transaction Date, Check Number, Debit, Book Balance columns."));
+            reject(
+              new Error(
+                "No valid book balance transactions found. Make sure the Excel file has: Trans Date, Transaction Details, Reference No, Credit, Debit, Book Balance columns."
+              )
+            );
             return;
           }
 
@@ -215,11 +243,13 @@ export default function BookBalanceImport() {
           <div className="rounded-lg bg-blue-50 p-4">
             <p className="text-sm font-medium text-blue-900 mb-2">📋 Required Excel Format:</p>
             <ul className="text-xs text-blue-800 space-y-1">
-              <li>• Column A: Transaction Date (YYYY-MM-DD format)</li>
-              <li>• Column B: Check Number (unique identifier)</li>
-              <li>• Column C: Debit (amount)</li>
-              <li>• Column D: Book Balance (running balance)</li>
-              <li>• Column E: Reason (optional notes)</li>
+              <li>• Column A: Trans Date (Date format: DD-M-YYYY)</li>
+              <li>• Column B: Transaction Details (Description with check info)</li>
+              <li>• Column C: Value Date</li>
+              <li>• Column D: Reference No (Unique check number - required)</li>
+              <li>• Column E: Credit (Incoming amount)</li>
+              <li>• Column F: Debit (Outgoing amount)</li>
+              <li>• Column G: Book Balance (Running balance with CR/DR suffix)</li>
             </ul>
           </div>
         </CardContent>
