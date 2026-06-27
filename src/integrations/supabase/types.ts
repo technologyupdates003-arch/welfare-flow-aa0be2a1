@@ -2687,6 +2687,7 @@ export type Database = {
         | "vice_secretary"
         | "patron"
         | "treasurer"
+        | "executive"
       signatory_status: "pending" | "approved" | "rejected"
       withdrawal_status:
         | "pending"
@@ -2833,6 +2834,7 @@ export const Constants = {
         "vice_secretary",
         "patron",
         "treasurer",
+        "executive",
       ],
       signatory_status: ["pending", "approved", "rejected"],
       withdrawal_status: [
