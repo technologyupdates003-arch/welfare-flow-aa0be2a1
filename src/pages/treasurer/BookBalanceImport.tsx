@@ -66,12 +66,46 @@ export default function BookBalanceImport() {
                   return null;
                 }
 
-                // Parse date - handle various formats
+                // Parse date - handle Excel serial numbers and various formats
                 let parsedDate;
                 try {
-                  parsedDate = new Date(transactionDate).toISOString().split("T")[0];
-                } catch {
-                  console.log(`[BookBalance Import] Could not parse date: ${transactionDate}`);
+                  const dateValue = transactionDate;
+                  
+                  // If it's a number (Excel serial date), convert it
+                  if (typeof dateValue === 'number') {
+                    // Excel dates start from 1900-01-01, but 1900-02-29 doesn't exist
+                    // So we need to adjust for dates after Feb 28, 1900
+                    const excelEpoch = new Date(1900, 0, 1);
+                    const jsDate = new Date(excelEpoch.getTime() + (dateValue - 1) * 24 * 60 * 60 * 1000);
+                    parsedDate = jsDate.toISOString().split("T")[0];
+                  } else {
+                    // Parse as string (DD-M-YYYY or other formats)
+                    const dateStr = String(dateValue).trim();
+                    
+                    // Try DD-M-YYYY format first (like "01-6-2024")
+                    const parts = dateStr.split('-');
+                    if (parts.length === 3) {
+                      const day = parseInt(parts[0], 10);
+                      const month = parseInt(parts[1], 10);
+                      const year = parseInt(parts[2], 10);
+                      
+                      if (day > 0 && day <= 31 && month > 0 && month <= 12 && year > 1900) {
+                        const jsDate = new Date(year, month - 1, day);
+                        parsedDate = jsDate.toISOString().split("T")[0];
+                      } else {
+                        throw new Error(`Invalid date components: ${dateStr}`);
+                      }
+                    } else {
+                      // Try standard parsing as fallback
+                      const jsDate = new Date(dateStr);
+                      if (isNaN(jsDate.getTime())) {
+                        throw new Error(`Cannot parse date: ${dateStr}`);
+                      }
+                      parsedDate = jsDate.toISOString().split("T")[0];
+                    }
+                  }
+                } catch (dateError) {
+                  console.log(`[BookBalance Import] Could not parse date: ${transactionDate}`, dateError);
                   return null;
                 }
 
