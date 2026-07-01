@@ -1,22 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { normalizePhone, sendTalksasaSms } from "../_shared/talksasa.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const ABANCOOL_URL = "https://hynoajfxknnudmziecua.supabase.co/functions/v1/send-sms";
-const SENDER_ID = "ABAN_COOL";
-
-function normalizePhone(raw: string): string | null {
-  if (!raw) return null;
-  let p = String(raw).replace(/[^\d+]/g, "");
-  if (p.startsWith("+")) p = p.slice(1);
-  if (p.startsWith("0")) p = "254" + p.slice(1);
-  if (p.startsWith("7") || p.startsWith("1")) p = "254" + p;
-  if (!p.startsWith("254") || p.length !== 12) return null;
-  return p;
-}
 
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -30,8 +18,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const apiKey = Deno.env.get("ABANCOOL_SMS_API_KEY");
-    if (!apiKey) throw new Error("ABANCOOL_SMS_API_KEY not configured");
+    if (!Deno.env.get("TALKSASA_API_TOKEN")) throw new Error("TALKSASA_API_TOKEN not configured");
 
     const today = new Date();
     const in3 = new Date(today); in3.setDate(in3.getDate() + 3);
@@ -62,14 +49,9 @@ Deno.serve(async (req) => {
         const message = `Hi ${m.name}, your welfare contribution of KES ${Number(c.amount).toLocaleString()} ${label} (${date}). Please pay on time to avoid penalties. Thank you.`;
 
         try {
-          const resp = await fetch(ABANCOOL_URL, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ recipients: [phone], message, sender_id: SENDER_ID }),
-          });
-          const ok = resp.ok;
-          if (ok) sent++;
-          results.push({ phone, date, ok });
+          const res = await sendTalksasaSms([phone], message);
+          if (res.ok) sent++;
+          results.push({ phone, date, ok: res.ok, error: res.error });
         } catch (e) {
           results.push({ phone, date, error: (e as Error).message });
         }
