@@ -327,6 +327,42 @@ export type Database = {
           },
         ]
       }
+      book_balance: {
+        Row: {
+          book_balance: number
+          check_number: string
+          created_at: string | null
+          created_by: string
+          debit: number
+          id: string
+          reason: string | null
+          transaction_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          book_balance: number
+          check_number: string
+          created_at?: string | null
+          created_by: string
+          debit: number
+          id?: string
+          reason?: string | null
+          transaction_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          book_balance?: number
+          check_number?: string
+          created_at?: string | null
+          created_by?: string
+          debit?: number
+          id?: string
+          reason?: string | null
+          transaction_date?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contributions: {
         Row: {
           amount: number
@@ -1132,6 +1168,7 @@ export type Database = {
           name: string
           phone: string
           profile_picture_url: string | null
+          status: string
           status_message: string | null
           total_contributions: number
           total_penalties: number
@@ -1146,6 +1183,7 @@ export type Database = {
           name: string
           phone: string
           profile_picture_url?: string | null
+          status?: string
           status_message?: string | null
           total_contributions?: number
           total_penalties?: number
@@ -1160,6 +1198,7 @@ export type Database = {
           name?: string
           phone?: string
           profile_picture_url?: string | null
+          status?: string
           status_message?: string | null
           total_contributions?: number
           total_penalties?: number
@@ -1727,6 +1766,7 @@ export type Database = {
           expires_at: string | null
           id: string
           new_password_hash: string | null
+          reason: string | null
           reset_at: string | null
           reset_by: string | null
           reset_token: string
@@ -1737,6 +1777,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           new_password_hash?: string | null
+          reason?: string | null
           reset_at?: string | null
           reset_by?: string | null
           reset_token: string
@@ -1747,6 +1788,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           new_password_hash?: string | null
+          reason?: string | null
           reset_at?: string | null
           reset_by?: string | null
           reset_token?: string
@@ -2635,6 +2677,10 @@ export type Database = {
         }
         Returns: string
       }
+      admin_reset_password: {
+        Args: { new_password: string; target_user_id: string }
+        Returns: Json
+      }
       assign_user_role: {
         Args: {
           role_param: Database["public"]["Enums"]["app_role"]
@@ -2642,6 +2688,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_member_safe: { Args: { target_member_id: string }; Returns: Json }
       generate_memo_reference: { Args: never; Returns: string }
       get_members_with_roles: {
         Args: never
@@ -2673,6 +2720,10 @@ export type Database = {
           table_name: string
         }
         Returns: undefined
+      }
+      update_member_status: {
+        Args: { new_status: string; target_member_id: string }
+        Returns: Json
       }
     }
     Enums: {
