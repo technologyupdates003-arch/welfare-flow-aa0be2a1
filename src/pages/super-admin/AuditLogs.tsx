@@ -210,12 +210,17 @@ export default function AuditLogs() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="access" className="space-y-6">
+        <Tabs defaultValue="live" className="space-y-6">
           <TabsList className="bg-card border border-border">
+            <TabsTrigger value="live" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-foreground">
+              <Radio className="h-4 w-4 mr-2" />
+              Live Sessions
+            </TabsTrigger>
             <TabsTrigger value="access" className="data-[state=active]:bg-purple-600 data-[state=active]:text-foreground">
               <Eye className="h-4 w-4 mr-2" />
               Access Logs
             </TabsTrigger>
+
             <TabsTrigger value="system" className="data-[state=active]:bg-purple-600 data-[state=active]:text-foreground">
               <Activity className="h-4 w-4 mr-2" />
               System Logs
