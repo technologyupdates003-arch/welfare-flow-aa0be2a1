@@ -9,13 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3, Users, AlertTriangle, Lock, MessageSquare, Activity,
   Eye, RefreshCw, Search, Download, Filter, Loader2, TrendingUp,
-  UserCheck, Calendar, Mail, Phone, MapPin, CreditCard
+  UserCheck, Calendar, Mail, Phone, MapPin, CreditCard, Radio
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useOnlineMembers } from "@/hooks/useOnlineMembers";
 
 export default function SuperAdminDashboard() {
+  const { onlineCount, onlineMemberCount } = useOnlineMembers();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
+
 
   // Get all members with additional details for super admin
   const { data: members = [], isLoading: membersLoading, error: membersError } = useQuery({
@@ -139,14 +142,22 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Stats Cards Row â€” glassmorphism */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
           {[
+            { label: "Live Online Now", value: onlineCount.toLocaleString(), icon: Radio, sub: `${onlineMemberCount} members online`, accent: "from-success/40 to-success/5", live: true },
             { label: "Total Members", value: members.length.toLocaleString(), icon: Users, sub: `${activeMembers} active`, accent: "from-primary/30 to-primary-glow/10" },
             { label: "Active Members", value: activeMembers.toLocaleString(), icon: UserCheck, sub: `${recentMembers} new this month`, accent: "from-success/30 to-success/5" },
             { label: "Contributions", value: `KES ${totalContributions.toLocaleString()}`, icon: TrendingUp, sub: `${contributions.length} txns`, accent: "from-primary/30 to-primary-glow/10" },
             { label: "System Health", value: errorCount === 0 ? "Healthy" : `${errorCount} Issues`, icon: Activity, sub: `${memberAccessLogs.length} access logs`, accent: "from-secondary/30 to-secondary/5" },
           ].map((s, i) => (
+
             <Card key={i} className="glass border-white/40 overflow-hidden relative group hover:shadow-glass-lg transition-all">
+              {(s as any).live && (
+                <span className="absolute top-3 right-3 flex h-2.5 w-2.5 z-10">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+                </span>
+              )}
               <div className={`absolute inset-0 bg-gradient-to-br ${s.accent} opacity-60 pointer-events-none`} />
               <CardContent className="relative p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-2">
