@@ -9,13 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3, Users, AlertTriangle, Lock, MessageSquare, Activity,
   Eye, RefreshCw, Search, Download, Filter, Loader2, TrendingUp,
-  UserCheck, Calendar, Mail, Phone, MapPin, CreditCard
+  UserCheck, Calendar, Mail, Phone, MapPin, CreditCard, Radio
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useOnlineMembers } from "@/hooks/useOnlineMembers";
 
 export default function SuperAdminDashboard() {
+  const { onlineCount, onlineMemberCount } = useOnlineMembers();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
+
 
   // Get all members with additional details for super admin
   const { data: members = [], isLoading: membersLoading, error: membersError } = useQuery({
