@@ -131,8 +131,30 @@ export default function AuditLogs() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+          <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 border-0 text-foreground relative overflow-hidden">
+            <span className="absolute top-3 right-3 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white/70 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+            </span>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-medium text-emerald-100 flex items-center gap-1">
+                    <Radio className="h-3.5 w-3.5" /> Live Online Now
+                  </CardTitle>
+                  <div className="text-3xl font-bold mt-2">
+                    {presenceLoading ? "…" : onlineCount}
+                  </div>
+                  <p className="text-[11px] text-emerald-100/90 mt-1">{onlineMemberCount} members</p>
+                </div>
+                <Wifi className="h-8 w-8 text-foreground/70" />
+              </div>
+            </CardHeader>
+          </Card>
+
           <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-0 text-foreground">
+
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
