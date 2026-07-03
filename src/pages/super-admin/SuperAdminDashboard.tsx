@@ -142,13 +142,15 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Stats Cards Row â€” glassmorphism */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
           {[
+            { label: "Live Online Now", value: onlineCount.toLocaleString(), icon: Radio, sub: `${onlineMemberCount} members online`, accent: "from-success/40 to-success/5", live: true },
             { label: "Total Members", value: members.length.toLocaleString(), icon: Users, sub: `${activeMembers} active`, accent: "from-primary/30 to-primary-glow/10" },
             { label: "Active Members", value: activeMembers.toLocaleString(), icon: UserCheck, sub: `${recentMembers} new this month`, accent: "from-success/30 to-success/5" },
             { label: "Contributions", value: `KES ${totalContributions.toLocaleString()}`, icon: TrendingUp, sub: `${contributions.length} txns`, accent: "from-primary/30 to-primary-glow/10" },
             { label: "System Health", value: errorCount === 0 ? "Healthy" : `${errorCount} Issues`, icon: Activity, sub: `${memberAccessLogs.length} access logs`, accent: "from-secondary/30 to-secondary/5" },
           ].map((s, i) => (
+
             <Card key={i} className="glass border-white/40 overflow-hidden relative group hover:shadow-glass-lg transition-all">
               <div className={`absolute inset-0 bg-gradient-to-br ${s.accent} opacity-60 pointer-events-none`} />
               <CardContent className="relative p-4 sm:p-5">
