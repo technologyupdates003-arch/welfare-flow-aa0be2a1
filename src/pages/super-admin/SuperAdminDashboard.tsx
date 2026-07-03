@@ -152,6 +152,12 @@ export default function SuperAdminDashboard() {
           ].map((s, i) => (
 
             <Card key={i} className="glass border-white/40 overflow-hidden relative group hover:shadow-glass-lg transition-all">
+              {(s as any).live && (
+                <span className="absolute top-3 right-3 flex h-2.5 w-2.5 z-10">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+                </span>
+              )}
               <div className={`absolute inset-0 bg-gradient-to-br ${s.accent} opacity-60 pointer-events-none`} />
               <CardContent className="relative p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-2">
