@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,44 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Database, Eye, Download, Search, Filter, Loader2, Calendar,
-  User, Activity, Shield, MessageSquare, Lock
+  User, Activity, Shield, MessageSquare, Lock, Radio, Wifi, Clock
 } from "lucide-react";
+import { useOnlineMembers } from "@/hooks/useOnlineMembers";
+
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 export default function AuditLogs() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const { online, onlineCount, onlineMemberCount, loading: presenceLoading } = useOnlineMembers();
+
+  // Realtime: refresh logs the moment new rows arrive
+  useEffect(() => {
+    const channel = supabase
+      .channel("audit-logs-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "audit_logs" }, () =>
+        queryClient.invalidateQueries({ queryKey: ["audit-logs-full"] })
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "member_access_logs" }, () =>
+        queryClient.invalidateQueries({ queryKey: ["member-access-logs-full"] })
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "system_logs" }, () =>
+        queryClient.invalidateQueries({ queryKey: ["system-logs-audit"] })
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Get audit logs
   const { data: auditLogs = [], isLoading } = useQuery({
