@@ -238,11 +238,20 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
   const { data: presenceData } = useQuery({
     queryKey: ["presence"],
     queryFn: async () => {
-      const { data } = await supabase.from("user_presence").select("user_id, is_online");
-      return new Map((data || []).map((p: any) => [p.user_id, p.is_online]));
+      const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("user_presence")
+        .select("user_id, is_online, last_seen");
+      return new Map(
+        (data || []).map((p: any) => [
+          p.user_id,
+          !!p.is_online && !!p.last_seen && p.last_seen >= cutoff,
+        ]),
+      );
     },
     refetchInterval: 10000,
   });
+
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-[#F4F6FA] to-[#ECEEF3]">
