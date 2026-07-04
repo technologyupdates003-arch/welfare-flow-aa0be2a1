@@ -151,6 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Subscribe to real-time role changes
       subscribeToRoleChanges(newSession.user.id);
+
+      // Register this device for background push notifications (no-op until
+      // Firebase is configured). Deferred so it never blocks sign-in.
+      import("@/lib/firebasePush")
+        .then((m) => m.initPushNotifications())
+        .catch(() => {});
     } else {
       setRole(null);
       setRoles([]);
