@@ -237,7 +237,7 @@ export default function MemberDashboard() {
               KES {unpaidAmount.toLocaleString()}
             </p>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {unpaidContributions.length} Month{unpaidContributions.length !== 1 ? 's' : ''} Pending
+              {monthsPending} Month{monthsPending !== 1 ? 's' : ''} Pending
             </p>
           </CardContent>
         </Card>
