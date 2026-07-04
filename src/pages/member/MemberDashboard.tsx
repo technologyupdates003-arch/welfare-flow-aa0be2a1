@@ -131,22 +131,28 @@ export default function MemberDashboard() {
   });
 
   const currentYear = new Date().getFullYear();
-  // All-time total paid contributions (so imported statements from any year are reflected)
-  const totalPaidAllTime = contributions
-    ?.filter(c => c.status === "paid")
-    .reduce((s, c) => s + Number(c.amount), 0) || 0;
+
+  // Systematic contribution calculation: total paid ÷ 300, counted from the
+  // group start month. This correctly handles lump-sum payments that cover
+  // several months at once, so members always see their true position.
+  const summary = computeContributionSummary(contributions, {
+    monthly: Number(settings?.monthly_contribution_amount) || MONTHLY_CONTRIBUTION,
+  });
+
+  const totalPaidAllTime = summary.totalPaid;
   const totalPaidThisYear = contributions
-    ?.filter(c => c.status === "paid" && c.year === currentYear)
+    ?.filter(c => (c.status === "paid" || c.paid_date) && c.year === currentYear)
     .reduce((s, c) => s + Number(c.amount), 0) || 0;
-  
-  const unpaidContributions = contributions?.filter(c => c.status !== "paid") || [];
-  const unpaidAmount = unpaidContributions.reduce((s, c) => s + Number(c.amount), 0);
+
+  const unpaidAmount = summary.pendingAmount;
+  const monthsPending = summary.monthsPending;
   const unpaidPenalties = penalties?.filter(p => !p.is_paid).reduce((s, p) => s + Number(p.amount), 0) || 0;
   const overdueAmount = unpaidPenalties + unpaidAmount;
 
-  // Get next due date
-  const nextUnpaid = unpaidContributions[0];
-  const nextDueDate = nextUnpaid ? new Date(nextUnpaid.due_date) : null;
+  // Next due date: first day of the month after the last covered month.
+  const nextDueDate = summary.upToDate
+    ? null
+    : new Date(summary.startYear, summary.startMonth - 1 + summary.monthsCovered, Number(settings?.contribution_due_day) || 15);
   const daysUntilDue = nextDueDate ? Math.ceil((nextDueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
 
   const getInitials = (name: string) => {
