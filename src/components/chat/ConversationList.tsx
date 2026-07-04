@@ -113,8 +113,19 @@ export default function ConversationList({ activeId, onSelect, onNewChat, onGrou
   const { data: presenceData } = useQuery({
     queryKey: ["presence"],
     queryFn: async () => {
-      const { data } = await supabase.from("user_presence").select("user_id, is_online");
-      return new Map((data || []).map((p: any) => [p.user_id, p.is_online]));
+      // Only treat users seen within the last 2 minutes as online. The stored
+      // is_online flag goes stale (browsers don't always fire on close), so we
+      // rely on last_seen freshness for an accurate live count.
+      const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("user_presence")
+        .select("user_id, is_online, last_seen");
+      return new Map(
+        (data || []).map((p: any) => [
+          p.user_id,
+          !!p.is_online && !!p.last_seen && p.last_seen >= cutoff,
+        ]),
+      );
     },
     refetchInterval: 10000,
   });
@@ -127,6 +138,7 @@ export default function ConversationList({ activeId, onSelect, onNewChat, onGrou
   }) || [];
 
   const onlineCount = presenceData ? Array.from(presenceData.values()).filter(Boolean).length : 0;
+
 
   return (
     <div className="flex flex-col h-full conversation-list-container">

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { computeContributionSummary, MONTHLY_CONTRIBUTION } from "@/lib/contributions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -60,17 +61,21 @@ export default function MemberDetail() {
   });
 
   const currentYear = new Date().getFullYear();
+  const summary = computeContributionSummary(contributions, {
+    monthly: Number(settings?.monthly_contribution_amount) || MONTHLY_CONTRIBUTION,
+  });
   const totalPaidThisYear = contributions
-    ?.filter(c => c.status === "paid" && c.year === currentYear)
+    ?.filter(c => (c.status === "paid" || c.paid_date) && c.year === currentYear)
     .reduce((s, c) => s + Number(c.amount), 0) || 0;
-  
-  const unpaidContributions = contributions?.filter(c => c.status !== "paid") || [];
-  const unpaidAmount = unpaidContributions.reduce((s, c) => s + Number(c.amount), 0);
+
+  const unpaidAmount = summary.pendingAmount;
+  const monthsPending = summary.monthsPending;
   const unpaidPenalties = penalties?.filter(p => !p.is_paid).reduce((s, p) => s + Number(p.amount), 0) || 0;
   const overdueAmount = unpaidPenalties + unpaidAmount;
 
-  const nextUnpaid = unpaidContributions[0];
-  const nextDueDate = nextUnpaid ? new Date(nextUnpaid.due_date) : null;
+  const nextDueDate = summary.upToDate
+    ? null
+    : new Date(summary.startYear, summary.startMonth - 1 + summary.monthsCovered, Number(settings?.contribution_due_day) || 15);
   const daysUntilDue = nextDueDate ? Math.ceil((nextDueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
 
   const getInitials = (name: string) => {
@@ -180,7 +185,7 @@ export default function MemberDetail() {
               KES {unpaidAmount.toLocaleString()}
             </p>
             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-              {unpaidContributions.length} Month{unpaidContributions.length !== 1 ? 's' : ''} Pending
+              {monthsPending} Month{monthsPending !== 1 ? 's' : ''} Pending
             </p>
           </CardContent>
         </Card>
