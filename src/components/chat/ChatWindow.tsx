@@ -170,16 +170,27 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
 
   const sendMessage = useMutation({
     mutationFn: async () => {
-      const { data: member } = await supabase.from("members").select("id").eq("user_id", user!.id).maybeSingle();
+      const { data: member } = await supabase.from("members").select("id, name").eq("user_id", user!.id).maybeSingle();
+      const text = message;
       const { error } = await supabase.from("messages").insert({
         user_id: user!.id,
         member_id: member?.id || null,
-        content: message,
+        content: text,
         conversation_id: isGroup ? null : conversationId,
         reply_to_id: replyTo?.id || null,
         status: "sent",
       });
       if (error) throw error;
+
+      // Notify recipients on their phones (background push with sound).
+      const senderName = member?.name || "New message";
+      const preview = text.length > 120 ? text.slice(0, 117) + "…" : text;
+      const { sendPush } = await import("@/lib/firebasePush");
+      if (isGroup) {
+        sendPush({ toAll: true, excludeUserId: user!.id, title: `${senderName} · Welfare Chat`, body: preview, data: { url: "/" } });
+      } else if (conversationId) {
+        sendPush({ conversationId, excludeUserId: user!.id, title: senderName, body: preview, data: { url: "/" } });
+      }
     },
     onSuccess: () => {
       setMessage("");
@@ -187,6 +198,7 @@ export default function ChatWindow({ conversationId, darkMode = false }: ChatWin
       queryClient.invalidateQueries({ queryKey });
     },
   });
+
 
   const deleteMessage = useMutation({
     mutationFn: async (messageId: string) => {
