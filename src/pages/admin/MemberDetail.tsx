@@ -185,7 +185,7 @@ export default function MemberDetail() {
               KES {unpaidAmount.toLocaleString()}
             </p>
             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-              {unpaidContributions.length} Month{unpaidContributions.length !== 1 ? 's' : ''} Pending
+              {monthsPending} Month{monthsPending !== 1 ? 's' : ''} Pending
             </p>
           </CardContent>
         </Card>
