@@ -2850,11 +2850,13 @@ export type Database = {
     Views: {
       member_executive_roles: {
         Row: {
+          created_at: string | null
           id: string | null
           is_active: boolean | null
           member_id: string | null
           member_name: string | null
           role_name: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Relationships: []
