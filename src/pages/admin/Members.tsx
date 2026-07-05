@@ -513,9 +513,12 @@ export default function Members() {
                               size="icon" 
                               title="Suspend Member"
                               className="text-yellow-600 hover:text-yellow-700"
-                              onClick={() => {
-                                if (confirm(`Suspend ${m.name}?`)) suspendMember.mutate(m.id);
-                              }}
+                              onClick={() => askConfirm({
+                                title: `Suspend ${m.name}?`,
+                                description: "A suspended member keeps their record but is temporarily blocked from using the app until reactivated.",
+                                actionLabel: "Suspend",
+                                onConfirm: () => suspendMember.mutate(m.id),
+                              })}
                             >
                               <Ban className="h-4 w-4" />
                             </Button>
@@ -524,9 +527,12 @@ export default function Members() {
                               size="icon" 
                               title="Deactivate Member"
                               className="text-orange-600 hover:text-orange-700"
-                              onClick={() => {
-                                if (confirm(`Deactivate ${m.name}?`)) deactivateMember.mutate(m.id);
-                              }}
+                              onClick={() => askConfirm({
+                                title: `Deactivate ${m.name}?`,
+                                description: "A deactivated member is removed from active lists and cannot log in until reactivated. Their data is preserved.",
+                                actionLabel: "Deactivate",
+                                onConfirm: () => deactivateMember.mutate(m.id),
+                              })}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -539,17 +545,24 @@ export default function Members() {
                             size="icon" 
                             title="Activate Member"
                             className="text-green-600 hover:text-green-700"
-                            onClick={() => {
-                              if (confirm(`Activate ${m.name}?`)) activateMember.mutate(m.id);
-                            }}
+                            onClick={() => askConfirm({
+                              title: `Activate ${m.name}?`,
+                              description: "This restores the member's access so they can use the app again.",
+                              actionLabel: "Activate",
+                              onConfirm: () => activateMember.mutate(m.id),
+                            })}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                         )}
                         
-                        <Button variant="ghost" size="icon" className="text-destructive" title="Delete Member" onClick={() => { 
-                          if (confirm(`Delete ${m.name}?`)) deleteMember.mutate(m.id); 
-                        }}>
+                        <Button variant="ghost" size="icon" className="text-destructive" title="Delete Member" onClick={() => askConfirm({
+                          title: `Delete ${m.name}?`,
+                          description: "This permanently removes the member and all their records. This cannot be undone.",
+                          actionLabel: "Delete",
+                          destructive: true,
+                          onConfirm: () => deleteMember.mutate(m.id),
+                        })}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
