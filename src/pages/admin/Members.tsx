@@ -30,6 +30,12 @@ export default function Members() {
   const [form, setForm] = useState({ name: "", phone: "", member_id: "", role: "" });
   const [editForm, setEditForm] = useState({ name: "", phone: "", member_id: "", role: "" });
   const [beneficiaryForm, setBeneficiaryForm] = useState({ name: "", relationship: "", phone: "", id_number: "" });
+  // In-app confirmation dialog (replaces browser confirm popups)
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean; title: string; description: string; actionLabel: string; destructive?: boolean; onConfirm: () => void;
+  }>({ open: false, title: "", description: "", actionLabel: "Confirm", onConfirm: () => {} });
+  const askConfirm = (opts: { title: string; description: string; actionLabel: string; destructive?: boolean; onConfirm: () => void }) =>
+    setConfirmState({ open: true, ...opts });
 
   const { data: members, isLoading } = useQuery({
     queryKey: ["members", search],
