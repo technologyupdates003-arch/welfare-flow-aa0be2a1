@@ -660,11 +660,13 @@ export default function Members() {
                         <TableCell>{b.phone || "—"}</TableCell>
                         <TableCell>{b.id_number || "—"}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
-                            if (confirm(`Remove ${b.name} as beneficiary?`)) {
-                              deleteBeneficiary.mutate(b.id);
-                            }
-                          }}>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => askConfirm({
+                            title: `Remove ${b.name} as beneficiary?`,
+                            description: "This removes the beneficiary from this member's records.",
+                            actionLabel: "Remove",
+                            destructive: true,
+                            onConfirm: () => deleteBeneficiary.mutate(b.id),
+                          })}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
