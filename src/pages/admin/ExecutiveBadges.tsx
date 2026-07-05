@@ -141,16 +141,16 @@ export default function ExecutiveBadges() {
     setUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `badge-${Date.now()}.${fileExt}`;
+      const fileName = `badges/badge-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("badges")
+        .from("profile-images")
         .upload(fileName, file, { cacheControl: "3600", upsert: false });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("badges")
+        .from("profile-images")
         .getPublicUrl(fileName);
 
       setFormData((prev) => ({

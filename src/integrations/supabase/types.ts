@@ -91,6 +91,13 @@ export type Database = {
             foreignKeyName: "audit_logs_target_member_id_fkey"
             columns: ["target_member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -212,6 +219,13 @@ export type Database = {
             foreignKeyName: "bank_transactions_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -249,6 +263,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "beneficiaries_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
           {
             foreignKeyName: "beneficiaries_member_id_fkey"
             columns: ["member_id"]
@@ -317,6 +338,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "beneficiaries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beneficiary_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "beneficiary_requests_member_id_fkey"
@@ -404,6 +432,13 @@ export type Database = {
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "contributions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
           {
             foreignKeyName: "contributions_member_id_fkey"
             columns: ["member_id"]
@@ -541,6 +576,13 @@ export type Database = {
             foreignKeyName: "documents_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "documents_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -632,6 +674,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "donation_campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_payment_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "donation_payment_records_member_id_fkey"
@@ -809,10 +858,50 @@ export type Database = {
             foreignKeyName: "events_related_member_id_fkey"
             columns: ["related_member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "events_related_member_id_fkey"
+            columns: ["related_member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
+      }
+      executive_badges: {
+        Row: {
+          badge_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          role_name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          badge_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          role_name: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          badge_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          role_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       expenses: {
         Row: {
@@ -888,6 +977,13 @@ export type Database = {
           withdrawal_table?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_recipient_member_id_fkey"
+            columns: ["recipient_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
           {
             foreignKeyName: "expenses_recipient_member_id_fkey"
             columns: ["recipient_member_id"]
@@ -1100,6 +1196,13 @@ export type Database = {
             foreignKeyName: "member_access_logs_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_access_logs_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -1236,6 +1339,13 @@ export type Database = {
           seen_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "memo_recipients_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
           {
             foreignKeyName: "memo_recipients_member_id_fkey"
             columns: ["member_id"]
@@ -1412,6 +1522,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "conversations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "messages_member_id_fkey"
@@ -1835,6 +1952,13 @@ export type Database = {
             foreignKeyName: "payments_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "payments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -1903,6 +2027,13 @@ export type Database = {
             foreignKeyName: "payouts_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "payouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -1943,6 +2074,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contributions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "penalties_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "penalties_member_id_fkey"
@@ -1994,6 +2132,13 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "penalty_payment_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
           {
             foreignKeyName: "penalty_payment_records_member_id_fkey"
             columns: ["member_id"]
@@ -2057,6 +2202,13 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "penalty_payments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_executive_roles"
+            referencedColumns: ["member_id"]
+          },
           {
             foreignKeyName: "penalty_payments_member_id_fkey"
             columns: ["member_id"]
@@ -2696,7 +2848,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      member_executive_roles: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          member_id: string | null
+          member_name: string | null
+          role_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_member_with_universal_password: {

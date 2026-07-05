@@ -15,6 +15,7 @@ import { Plus, Search, Loader2, Trash2, Edit, Users, Shield, Eye, Ban, XCircle }
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Members() {
   const { user } = useAuth();
@@ -29,6 +30,12 @@ export default function Members() {
   const [form, setForm] = useState({ name: "", phone: "", member_id: "", role: "" });
   const [editForm, setEditForm] = useState({ name: "", phone: "", member_id: "", role: "" });
   const [beneficiaryForm, setBeneficiaryForm] = useState({ name: "", relationship: "", phone: "", id_number: "" });
+  // In-app confirmation dialog (replaces browser confirm popups)
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean; title: string; description: string; actionLabel: string; destructive?: boolean; onConfirm: () => void;
+  }>({ open: false, title: "", description: "", actionLabel: "Confirm", onConfirm: () => {} });
+  const askConfirm = (opts: { title: string; description: string; actionLabel: string; destructive?: boolean; onConfirm: () => void }) =>
+    setConfirmState({ open: true, ...opts });
 
   const { data: members, isLoading } = useQuery({
     queryKey: ["members", search],
@@ -506,9 +513,12 @@ export default function Members() {
                               size="icon" 
                               title="Suspend Member"
                               className="text-yellow-600 hover:text-yellow-700"
-                              onClick={() => {
-                                if (confirm(`Suspend ${m.name}?`)) suspendMember.mutate(m.id);
-                              }}
+                              onClick={() => askConfirm({
+                                title: `Suspend ${m.name}?`,
+                                description: "A suspended member keeps their record but is temporarily blocked from using the app until reactivated.",
+                                actionLabel: "Suspend",
+                                onConfirm: () => suspendMember.mutate(m.id),
+                              })}
                             >
                               <Ban className="h-4 w-4" />
                             </Button>
@@ -517,9 +527,12 @@ export default function Members() {
                               size="icon" 
                               title="Deactivate Member"
                               className="text-orange-600 hover:text-orange-700"
-                              onClick={() => {
-                                if (confirm(`Deactivate ${m.name}?`)) deactivateMember.mutate(m.id);
-                              }}
+                              onClick={() => askConfirm({
+                                title: `Deactivate ${m.name}?`,
+                                description: "A deactivated member is removed from active lists and cannot log in until reactivated. Their data is preserved.",
+                                actionLabel: "Deactivate",
+                                onConfirm: () => deactivateMember.mutate(m.id),
+                              })}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -532,17 +545,24 @@ export default function Members() {
                             size="icon" 
                             title="Activate Member"
                             className="text-green-600 hover:text-green-700"
-                            onClick={() => {
-                              if (confirm(`Activate ${m.name}?`)) activateMember.mutate(m.id);
-                            }}
+                            onClick={() => askConfirm({
+                              title: `Activate ${m.name}?`,
+                              description: "This restores the member's access so they can use the app again.",
+                              actionLabel: "Activate",
+                              onConfirm: () => activateMember.mutate(m.id),
+                            })}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                         )}
                         
-                        <Button variant="ghost" size="icon" className="text-destructive" title="Delete Member" onClick={() => { 
-                          if (confirm(`Delete ${m.name}?`)) deleteMember.mutate(m.id); 
-                        }}>
+                        <Button variant="ghost" size="icon" className="text-destructive" title="Delete Member" onClick={() => askConfirm({
+                          title: `Delete ${m.name}?`,
+                          description: "This permanently removes the member and all their records. This cannot be undone.",
+                          actionLabel: "Delete",
+                          destructive: true,
+                          onConfirm: () => deleteMember.mutate(m.id),
+                        })}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -640,11 +660,13 @@ export default function Members() {
                         <TableCell>{b.phone || "—"}</TableCell>
                         <TableCell>{b.id_number || "—"}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
-                            if (confirm(`Remove ${b.name} as beneficiary?`)) {
-                              deleteBeneficiary.mutate(b.id);
-                            }
-                          }}>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => askConfirm({
+                            title: `Remove ${b.name} as beneficiary?`,
+                            description: "This removes the beneficiary from this member's records.",
+                            actionLabel: "Remove",
+                            destructive: true,
+                            onConfirm: () => deleteBeneficiary.mutate(b.id),
+                          })}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -757,6 +779,25 @@ export default function Members() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* In-app confirmation dialog for member status actions */}
+      <AlertDialog open={confirmState.open} onOpenChange={(open) => setConfirmState((s) => ({ ...s, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmState.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmState.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmState.destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
+              onClick={() => { confirmState.onConfirm(); setConfirmState((s) => ({ ...s, open: false })); }}
+            >
+              {confirmState.actionLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
