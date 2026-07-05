@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useImpersonate } from "@/lib/impersonate-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -10,6 +11,8 @@ import { toast } from "sonner";
 
 export default function MemberDownloads() {
   const { user, memberId } = useAuth();
+  const { impersonatedMemberId, isImpersonating } = useImpersonate();
+  const effectiveMemberId = isImpersonating ? impersonatedMemberId : memberId;
   const [showConstitution, setShowConstitution] = useState(false);
   const [showStatement, setShowStatement] = useState(false);
   const [showMinute, setShowMinute] = useState(false);
@@ -19,17 +22,17 @@ export default function MemberDownloads() {
   const [selectedMemo, setSelectedMemo] = useState<any>(null);
 
   const { data: memos = [], refetch: refetchMemos } = useQuery({
-    queryKey: ["my-memos", memberId],
+    queryKey: ["my-memos", effectiveMemberId],
     queryFn: async () => {
-      if (!memberId) return [];
+      if (!effectiveMemberId) return [];
       const { data } = await supabase
         .from("memo_recipients")
         .select("id, seen_at, downloaded_at, memos(*)")
-        .eq("member_id", memberId)
+        .eq("member_id", effectiveMemberId)
         .order("created_at", { ascending: false });
       return (data || []).filter((r: any) => r.memos && r.memos.status === "sent");
     },
-    enabled: !!memberId,
+    enabled: !!effectiveMemberId,
   });
 
   const { data: orgSettings } = useQuery({
@@ -142,12 +145,12 @@ export default function MemberDownloads() {
   });
 
   const { data: contributions } = useQuery({
-    queryKey: ["my-contributions-statement", memberId],
+    queryKey: ["my-contributions-statement", effectiveMemberId],
     queryFn: async () => {
-      const { data } = await supabase.from("contributions").select("*").eq("member_id", memberId!).order("year", { ascending: false }).order("month", { ascending: false });
+      const { data } = await supabase.from("contributions").select("*").eq("member_id", effectiveMemberId!).order("year", { ascending: false }).order("month", { ascending: false });
       return data || [];
     },
-    enabled: !!memberId,
+    enabled: !!effectiveMemberId,
   });
 
   const { data: publishedMinutes = [] } = useQuery({

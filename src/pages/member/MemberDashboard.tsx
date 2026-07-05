@@ -1,6 +1,8 @@
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -16,20 +18,23 @@ import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, Clock, AlertTriangle, Calendar, 
   Building2, Copy, CreditCard, User,
-  CheckCircle, ChevronRight
+  CheckCircle, ChevronRight, Award
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
-export default function MemberDashboard() {
+export default function MemberDashboard({ impersonateMode = false }: { impersonateMode?: boolean } = {}) {
   const { memberId, roles } = useAuth();
+  const location = useLocation();
+  const { memberId: paramMemberId } = useParams<{ memberId?: string }>();
+  const { toast } = useToast();
+  
+  // Check if we're in an impersonate URL path
+  const isImpersonating = location.pathname.includes('/view-as-member');
+  const effectiveMemberId = isImpersonating && paramMemberId ? paramMemberId : memberId;
+
   const [payOpen, setPayOpen] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [payPhone, setPayPhone] = useState("");
   const [paying, setPaying] = useState(false);
-
-  // Debug logging
-  console.log("[MemberDashboard] Current memberId:", memberId);
 
   // Check if user has a role (not just a regular member)
   const hasRole = useMemo(() => {
@@ -39,7 +44,7 @@ export default function MemberDashboard() {
   const handlePayNow = async () => {
     const amt = Number(payAmount);
     if (!amt || amt <= 0) {
-      toast.error("Enter a valid amount");
+      toast({ variant: "destructive", title: "Error", description: "Enter a valid amount" });
       return;
     }
     setPaying(true);
@@ -49,16 +54,16 @@ export default function MemberDashboard() {
       });
       if (error) throw error;
       if ((data as any)?.setup_required) {
-        toast.error((data as any).error || "Bank STK Push not configured yet");
+        toast({ variant: "destructive", title: "Error", description: (data as any).error || "Bank STK Push not configured yet" });
       } else if ((data as any)?.ok) {
-        toast.success((data as any).message || "Check your phone for the M-Pesa prompt");
+        toast({ title: "Success", description: (data as any).message || "Check your phone for the M-Pesa prompt" });
         setPayOpen(false);
         setPayAmount("");
       } else {
-        toast.error((data as any)?.message || "Failed to initiate payment");
+        toast({ variant: "destructive", title: "Error", description: (data as any)?.message || "Failed to initiate payment" });
       }
     } catch (e: any) {
-      toast.error(e?.message || "Payment failed");
+      toast({ variant: "destructive", title: "Error", description: e?.message || "Payment failed" });
     } finally {
       setPaying(false);
     }
@@ -68,7 +73,7 @@ export default function MemberDashboard() {
     queryKey: ["my-member", memberId],
     queryFn: async () => {
       if (!memberId) return null;
-      const { data } = await supabase.from("members").select("*").eq("id", memberId).single();
+      const { data } = await supabase.from("members").select("*").eq("id", effectiveMemberId).single();
       return data;
     },
     enabled: !!memberId,
@@ -85,7 +90,7 @@ export default function MemberDashboard() {
       const { data } = await supabase
         .from("contributions")
         .select("*")
-        .eq("member_id", memberId)
+        .eq("member_id", effectiveMemberId)
         .order("year", { ascending: false })
         .order("month", { ascending: false });
       console.log("[MemberDashboard] Contributions fetched:", data?.length || 0, "records", data);
@@ -98,10 +103,61 @@ export default function MemberDashboard() {
     queryKey: ["my-penalties", memberId],
     queryFn: async () => {
       if (!memberId) return [];
-      const { data } = await supabase.from("penalties").select("*").eq("member_id", memberId).order("created_at", { ascending: false });
+      const { data } = await supabase.from("penalties").select("*").eq("member_id", effectiveMemberId).order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!memberId,
+  });
+
+  const { data: memberRoles = [] } = useQuery({
+    queryKey: ["member-executive-roles", memberId],
+    queryFn: async () => {
+      if (!memberId) return [];
+      try {
+        const { data: rolesData, error } = await supabase
+          .from("member_executive_roles")
+          .select("*")
+          .eq("member_id", effectiveMemberId)
+          .eq("is_active", true);
+        
+        if (error) {
+          // Table doesn't exist yet - gracefully handle
+          console.warn("[MemberDashboard] member_executive_roles table not found:", error.message);
+          return [];
+        }
+
+        if (!rolesData) return [];
+
+        // Fetch badges and enrich the roles data
+        const { data: badgesData } = await supabase
+          .from("executive_badges")
+          .select("role_name, badge_url");
+
+        const badgeMap = Object.fromEntries(
+          (badgesData || []).map((b: any) => [b.role_name, b.badge_url])
+        );
+
+        return rolesData.map((role: any) => ({
+          ...role,
+          badge_url: badgeMap[role.role_name] || role.badge_url,
+        }));
+      } catch (err) {
+        console.warn("[MemberDashboard] Error fetching executive roles:", err);
+        return [];
+      }
+    },
+    enabled: !!memberId,
+  });
+
+  const { data: executiveBadges = [] } = useQuery({
+    queryKey: ["executive-badges"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("executive_badges")
+        .select("*")
+        .order("role_name");
+      return data || [];
+    },
   });
 
   const { data: latestNews = [] } = useQuery({
@@ -168,7 +224,7 @@ export default function MemberDashboard() {
   const copyBankDetails = () => {
     const details = `Bank: ${(settings as any)?.bank_name || 'Co-operative Bank'}\nPaybill: ${(settings as any)?.paybill_number || '400200'}\nAccount: ${(settings as any)?.account_number || '40088588'}`;
     navigator.clipboard.writeText(details);
-    toast.success("Bank details copied!");
+    toast({ title: "Success", description: "Bank details copied!" });
   };
 
   const memberSince = member?.created_at ? new Date(member.created_at).getFullYear() : new Date().getFullYear();
@@ -278,6 +334,120 @@ export default function MemberDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Executive Roles Section */}
+      {memberRoles.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Award className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">My Executive Roles</h3>
+            <Badge variant="outline" className="ml-auto">{memberRoles.length}</Badge>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {memberRoles.map((role: any) => {
+              const badge = executiveBadges.find(b => b.role_name === role.role_name);
+              const roleLabel = {
+                chairperson: "Chairperson",
+                vice_chairperson: "Vice Chairperson",
+                secretary: "Secretary",
+                vice_secretary: "Vice Secretary",
+              }[role.role_name] || role.role_name;
+
+              return (
+                <Card 
+                  key={role.id} 
+                  className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                  onClick={() => window.location.href = `/member/executive/${role.role_name}`}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <Badge variant="default" className="mb-2">
+                          <Award className="h-3 w-3 mr-1" />
+                          {roleLabel}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground">Click to view dashboard</p>
+                      </div>
+                    </div>
+
+                    {badge?.badge_url && (
+                      <div className="flex justify-center py-2">
+                        <img
+                          src={badge.badge_url}
+                          alt={roleLabel}
+                          className="h-16 w-16 object-contain"
+                        />
+                      </div>
+                    )}
+
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/member/executive/${role.role_name}`;
+                      }}
+                    >
+                      View Dashboard
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Executive Roles Section */}
+      {memberRoles.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Award className="h-4 w-4 text-primary" />
+              Your Executive Roles
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {memberRoles.map((role: any) => (
+              <Link
+                key={role.id}
+                to={`/member/executive/${role.role_name}`}
+                className="group"
+              >
+                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 hover:shadow-lg hover:border-primary/40 transition-all cursor-pointer h-full">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {role.badge_url ? (
+                        <img
+                          src={role.badge_url}
+                          alt={role.role_name}
+                          className="h-16 w-16 rounded-lg object-contain bg-white/50 p-2 group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-lg bg-primary/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                          <Award className="h-8 w-8 text-primary" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <Badge className="mb-2">Executive</Badge>
+                        <p className="font-semibold text-sm capitalize">
+                          {role.role_name.replace(/_/g, " ")}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          View your dashboard
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Latest News */}
       {latestNews.length > 0 && (

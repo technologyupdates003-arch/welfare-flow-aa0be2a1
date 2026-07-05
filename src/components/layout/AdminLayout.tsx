@@ -71,6 +71,7 @@ const getNavItems = (role: string) => {
         { to: "/admin/beneficiary-requests", icon: UserCheck, label: "Beneficiary Requests" },
         { to: "/admin/notifications", icon: Bell, label: "Notifications" },
         { to: "/admin/signatures", icon: FileSignature, label: "Office Signatures" },
+        { to: "/admin/executive-badges", icon: Award, label: "Executive Badges" },
         { to: "/admin/settings", icon: Settings, label: "Settings" },
       ];
     

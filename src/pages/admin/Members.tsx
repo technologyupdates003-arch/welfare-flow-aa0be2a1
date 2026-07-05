@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Loader2, Trash2, Edit, Users, Shield, Eye } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, Edit, Users, Shield, Eye, Ban, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -232,6 +232,51 @@ export default function Members() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const suspendMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      const { error } = await supabase
+        .from("members")
+        .update({ status: "suspended" })
+        .eq("id", memberId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Member suspended");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deactivateMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      const { error } = await supabase
+        .from("members")
+        .update({ status: "deactivated" })
+        .eq("id", memberId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Member deactivated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const activateMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      const { error } = await supabase
+        .from("members")
+        .update({ status: "active" })
+        .eq("id", memberId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Member activated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const assignRole = useMutation({
     mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
       const { data: member } = await supabase
@@ -419,14 +464,19 @@ export default function Members() {
                       KES {Number(m.total_penalties).toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={m.is_active ? "default" : "secondary"}>
-                        {m.is_active ? "Active" : "Inactive"}
+                      <Badge variant={m.status === "active" ? "default" : m.status === "suspended" ? "secondary" : "destructive"}>
+                        {m.status === "active" ? "Active" : m.status === "suspended" ? "Suspended" : "Deactivated"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Link to={`/admin/members/${m.id}`}>
-                          <Button variant="ghost" size="icon" title="View Member">
+                          <Button variant="ghost" size="icon" title="View Member Details">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link to={`/admin/members/${m.id}/view-as-member`}>
+                          <Button variant="outline" size="icon" title="View as Member (Full Dashboard)">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -447,6 +497,49 @@ export default function Members() {
                         <Button variant="ghost" size="icon" title="Assign Role" onClick={() => handleAssignRole(m)}>
                           <Shield className="h-4 w-4" />
                         </Button>
+                        
+                        {/* Status Action Buttons */}
+                        {m.status === "active" && (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Suspend Member"
+                              className="text-yellow-600 hover:text-yellow-700"
+                              onClick={() => {
+                                if (confirm(`Suspend ${m.name}?`)) suspendMember.mutate(m.id);
+                              }}
+                            >
+                              <Ban className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              title="Deactivate Member"
+                              className="text-orange-600 hover:text-orange-700"
+                              onClick={() => {
+                                if (confirm(`Deactivate ${m.name}?`)) deactivateMember.mutate(m.id);
+                              }}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        
+                        {(m.status === "suspended" || m.status === "deactivated") && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Activate Member"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => {
+                              if (confirm(`Activate ${m.name}?`)) activateMember.mutate(m.id);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
                         <Button variant="ghost" size="icon" className="text-destructive" title="Delete Member" onClick={() => { 
                           if (confirm(`Delete ${m.name}?`)) deleteMember.mutate(m.id); 
                         }}>

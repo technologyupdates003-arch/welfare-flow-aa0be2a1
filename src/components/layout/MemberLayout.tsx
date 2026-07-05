@@ -6,29 +6,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, Newspaper, Bell, LogOut, Calendar, Download, User, Users, 
-  Menu, X, FileText, Shield, AlertCircle, TrendingUp
+  Menu, X, FileText, Shield, AlertCircle, TrendingUp, ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FloatingChatBubble from "@/components/chat/FloatingChatBubble";
 import NewsPopup from "@/components/NewsPopup";
 import EventPopup from "@/components/EventPopup";
 
-const getMemberNavItems = (role: string | null) => {
+const getMemberNavItems = (role: string | null, pathname: string) => {
+  // Check if we're in an impersonate view
+  const isImpersonating = pathname.includes('/view-as-member');
+  const memberId = isImpersonating ? pathname.split('/')[3] : null;
+  const basePrefix = isImpersonating && memberId ? `/admin/members/${memberId}/view-as-member` : "/member";
+  
   const memberItems = [
-    { to: "/member", icon: LayoutDashboard, label: "Home" },
-    { to: "/member/events", icon: Calendar, label: "Events" },
-    { to: "/member/documents", icon: FileText, label: "Documents" },
-    { to: "/member/beneficiaries", icon: Users, label: "Beneficiaries" },
-    { to: "/member/downloads", icon: Download, label: "Downloads" },
-    // Only show withdrawal receipts for users with roles (not plain members)
-    ...(role && role !== "member" ? [{ to: "/member/withdrawal-receipts", icon: FileText, label: "Withdrawal Receipts" }] : []),
-    { to: "/member/pay-penalty", icon: AlertCircle, label: "Pay Penalty" },
-    { to: "/member/donate", icon: TrendingUp, label: "Contribute" },
-    { to: "/member/notifications", icon: Bell, label: "Alerts", showBadge: true },
-    { to: "/member/profile", icon: User, label: "Profile" },
+    { to: `${basePrefix}`, icon: LayoutDashboard, label: "Home" },
+    { to: `${basePrefix}/events`, icon: Calendar, label: "Events" },
+    { to: `${basePrefix}/documents`, icon: FileText, label: "Documents" },
+    { to: `${basePrefix}/beneficiaries`, icon: Users, label: "Beneficiaries" },
+    { to: `${basePrefix}/downloads`, icon: Download, label: "Downloads" },
+    ...(role && role !== "member" ? [{ to: `${basePrefix}/withdrawal-receipts`, icon: FileText, label: "Withdrawal Receipts" }] : []),
+    { to: `${basePrefix}/pay-penalty`, icon: AlertCircle, label: "Pay Penalty" },
+    { to: `${basePrefix}/donate`, icon: TrendingUp, label: "Contribute" },
+    { to: `${basePrefix}/notifications`, icon: Bell, label: "Alerts", showBadge: true },
+    { to: `${basePrefix}/profile`, icon: User, label: "Profile" },
   ];
 
-  // Add role dashboard link if user has a role
   if (role && role !== "member") {
     const rolePath = role === "admin" ? "/admin" : `/${role.replace("_", "-")}`;
     const roleLabel = role === "admin" ? "Admin Dashboard" : 
@@ -47,12 +50,22 @@ const getMemberNavItems = (role: string | null) => {
   return memberItems;
 };
 
-export default function MemberLayout({ children }: { children: ReactNode }) {
+export default function MemberLayout({ 
+  children,
+  impersonateMode = false,
+  impersonatedMemberId,
+  onBackToAdmin
+}: { 
+  children: ReactNode,
+  impersonateMode?: boolean,
+  impersonatedMemberId?: string | null,
+  onBackToAdmin?: () => void
+}) {
   const { user, signOut, role } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const navItems = getMemberNavItems(role);
+  const navItems = getMemberNavItems(role, location.pathname);
 
   const { data: unreadNotifications = 0 } = useQuery({
     queryKey: ["unread-notification-count", user?.id],
@@ -103,20 +116,26 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
   });
 
   const navItemsWithBadges = navItems.map((item: any) => {
-    if (item.to === "/member/events") {
+    const isImpersonating = location.pathname.includes('/view-as-member');
+    const memberId = isImpersonating ? location.pathname.split('/')[3] : null;
+    const basePrefix = isImpersonating && memberId ? `/admin/members/${memberId}/view-as-member` : "/member";
+    
+    if (item.to === `${basePrefix}/events`) {
       return { ...item, showBadge: unseenEventCount > 0, badgeCount: unseenEventCount };
     }
 
-    if (item.to === "/member/news") {
+    if (item.to === `${basePrefix}/news`) {
       return { ...item, showBadge: unreadNewsCount > 0, badgeCount: unreadNewsCount };
     }
 
-    if (item.to === "/member/notifications") {
+    if (item.to === `${basePrefix}/notifications`) {
       return { ...item, showBadge: unreadNotifications > 0, badgeCount: unreadNotifications };
     }
 
     return item;
   });
+
+  const isImpersonating = location.pathname.includes('/view-as-member');
 
   return (
     <div className="flex min-h-screen">
@@ -190,9 +209,25 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
+          {isImpersonating && onBackToAdmin && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onBackToAdmin}
+              className="mr-auto"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
+          )}
           <h2 className="text-lg font-display font-semibold truncate">
             {navItems.find(n => n.to === location.pathname)?.label || "Dashboard"}
           </h2>
+          {isImpersonating && (
+            <span className="ml-auto text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
+              Admin View
+            </span>
+          )}
         </header>
         <div className="flex-1 p-4 lg:p-6 overflow-auto pb-20 lg:pb-6">
           {children}
@@ -236,4 +271,3 @@ export default function MemberLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useImpersonate } from "@/lib/impersonate-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ const capitalizeNames = (name: string): string => {
 
 export default function MemberBeneficiaries() {
   const { memberId } = useAuth();
+  const { impersonatedMemberId, isImpersonating } = useImpersonate();
+  const effectiveMemberId = isImpersonating ? impersonatedMemberId : memberId;
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -38,35 +41,38 @@ export default function MemberBeneficiaries() {
   const [removeForm, setRemoveForm] = useState({ reason: "" });
 
   const { data: beneficiaries, isLoading } = useQuery({
-    queryKey: ["beneficiaries", memberId],
+    queryKey: ["beneficiaries", effectiveMemberId],
     queryFn: async () => {
       const { data } = await supabase
         .from("beneficiaries")
         .select("*")
-        .eq("member_id", memberId!)
+        .eq("member_id", effectiveMemberId!)
         .order("created_at");
       return data || [];
     },
-    enabled: !!memberId,
+    enabled: !!effectiveMemberId,
   });
 
   const { data: requests, isLoading: requestsLoading } = useQuery({
-    queryKey: ["beneficiary-requests", memberId],
+    queryKey: ["beneficiary-requests", effectiveMemberId],
     queryFn: async () => {
       const { data } = await supabase
         .from("beneficiary_requests")
         .select("*")
-        .eq("member_id", memberId!)
+        .eq("member_id", effectiveMemberId!)
         .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!memberId,
+    enabled: !!effectiveMemberId,
   });
 
   const submitAddRequest = useMutation({
     mutationFn: async () => {
+      if (isImpersonating) {
+        throw new Error("Cannot add beneficiaries while viewing as admin");
+      }
       const { error } = await supabase.from("beneficiary_requests").insert({
-        member_id: memberId!,
+        member_id: effectiveMemberId!,
         request_type: "add",
         beneficiary_name: addForm.name,
         beneficiary_relationship: addForm.relationship,
@@ -88,8 +94,11 @@ export default function MemberBeneficiaries() {
 
   const submitRemoveRequest = useMutation({
     mutationFn: async () => {
+      if (isImpersonating) {
+        throw new Error("Cannot remove beneficiaries while viewing as admin");
+      }
       const { error } = await supabase.from("beneficiary_requests").insert({
-        member_id: memberId!,
+        member_id: effectiveMemberId!,
         request_type: "remove",
         beneficiary_id: selectedBeneficiary.id,
         reason: removeForm.reason,
@@ -347,8 +356,13 @@ export default function MemberBeneficiaries() {
                       </div>
                     )}
                   </div>
+                  {isImpersonating && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800 mt-4">
+                      <strong>Read-Only Mode:</strong> You cannot add or remove beneficiaries while viewing as admin.
+                    </div>
+                  )}
                   <div className="flex justify-center pt-4">
-                    <Button onClick={() => setAddDialogOpen(true)}>
+                    <Button onClick={() => setAddDialogOpen(true)} disabled={isImpersonating}>
                       <UserPlus className="h-4 w-4 mr-2" /> Request to Add Beneficiary
                     </Button>
                   </div>

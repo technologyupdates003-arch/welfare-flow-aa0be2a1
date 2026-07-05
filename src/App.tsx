@@ -14,6 +14,7 @@ import OfficeLayout from "@/components/layout/OfficeLayout";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import Members from "@/pages/admin/Members";
 import MemberDetail from "@/pages/admin/MemberDetail";
+import MemberDetailAsImpersonate from "@/pages/admin/MemberDetailAsImpersonate";
 import Contributions from "@/pages/admin/Contributions";
 import ExcelImport from "@/pages/admin/ExcelImport";
 import BeneficiaryImport from "@/pages/admin/BeneficiaryImport";
@@ -88,6 +89,8 @@ import AccessControl from "@/pages/super-admin/AccessControl";
 import SystemMonitoring from "@/pages/super-admin/SystemMonitoring";
 import RegistrationSettings from "@/pages/admin/RegistrationSettings";
 import RegistrationManagement from "@/pages/admin/RegistrationManagement";
+import ExecutiveBadges from "@/pages/admin/ExecutiveBadges";
+import ExecutiveDashboard from "@/pages/member/ExecutiveDashboard";
 import RegistrationApiDocs from "@/pages/admin/RegistrationApiDocs";
 import NotFound from "@/pages/NotFound";
 
@@ -126,6 +129,22 @@ function AppRoutes() {
         <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
         <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
         <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberLayout impersonateMode={true}><MemberDashboard /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/dashboard" element={<MemberLayout impersonateMode={true}><MemberDashboard /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/events" element={<MemberLayout impersonateMode={true}><MemberEvents /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/documents" element={<MemberLayout impersonateMode={true}><MemberDocuments /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/downloads" element={<MemberLayout impersonateMode={true}><MemberDownloads /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/withdrawal-receipts" element={<MemberLayout impersonateMode={true}><WithdrawalReceipts /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/news" element={<MemberLayout impersonateMode={true}><MemberNews /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/beneficiaries" element={<MemberLayout impersonateMode={true}><MemberBeneficiaries /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/notifications" element={<MemberLayout impersonateMode={true}><MemberNotifications /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/profile" element={<MemberLayout impersonateMode={true}><MemberProfile /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/pay-penalty" element={<MemberLayout impersonateMode={true}><PayPenalty /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/donate" element={<MemberLayout impersonateMode={true}><Donate /></MemberLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member/executive/:roleName" element={<MemberLayout impersonateMode={true}><ExecutiveDashboard /></MemberLayout>} />
+        
         <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
         <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
         <Route path="/admin/beneficiary-import" element={<AdminLayout><BeneficiaryImport /></AdminLayout>} />
@@ -151,6 +170,7 @@ function AppRoutes() {
         <Route path="/admin/registration-settings" element={<AdminLayout><RegistrationSettings /></AdminLayout>} />
         <Route path="/admin/registration-management" element={<AdminLayout><RegistrationManagement /></AdminLayout>} />
         <Route path="/admin/registration-api-docs" element={<AdminLayout><RegistrationApiDocs /></AdminLayout>} />
+        <Route path="/admin/executive-badges" element={<AdminLayout><ExecutiveBadges /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
@@ -175,6 +195,7 @@ function AppRoutes() {
         
         {/* Member routes */}
         <Route path="/member" element={<MemberLayout><MemberDashboard /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         <Route path="/member/events" element={<MemberLayout><MemberEvents /></MemberLayout>} />
         <Route path="/member/documents" element={<MemberLayout><MemberDocuments /></MemberLayout>} />
         <Route path="/member/downloads" element={<MemberLayout><MemberDownloads /></MemberLayout>} />
@@ -185,6 +206,7 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
@@ -208,6 +230,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -261,6 +284,7 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/super-admin" replace />} />
       </Routes>
     );
@@ -272,6 +296,7 @@ function AppRoutes() {
         <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
         <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
         <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
         <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
         <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
         <Route path="/admin/beneficiaries" element={<AdminLayout><Beneficiaries /></AdminLayout>} />
@@ -295,6 +320,7 @@ function AppRoutes() {
         <Route path="/admin/registration-settings" element={<AdminLayout><RegistrationSettings /></AdminLayout>} />
         <Route path="/admin/registration-management" element={<AdminLayout><RegistrationManagement /></AdminLayout>} />
         <Route path="/admin/registration-api-docs" element={<AdminLayout><RegistrationApiDocs /></AdminLayout>} />
+        <Route path="/admin/executive-badges" element={<AdminLayout><ExecutiveBadges /></AdminLayout>} />
         
         {/* Treasurer Routes - Accessible by admin */}
         <Route path="/treasurer" element={<TreasurerLayout><TreasurerDashboard /></TreasurerLayout>} />
@@ -343,6 +369,7 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     );
@@ -367,12 +394,14 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -421,12 +450,14 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -480,12 +511,14 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -535,12 +568,14 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -589,12 +624,14 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         {/* Admin routes if user has admin role */}
         {roles.includes("admin") && (
           <>
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
+        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -663,6 +700,7 @@ function AppRoutes() {
         <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
         <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
         <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
         <Route path="*" element={<Navigate to="/treasurer" replace />} />
       </Routes>
     );
@@ -682,6 +720,7 @@ function AppRoutes() {
       <Route path="/member/profile" element={<MemberLayout><MemberProfile /></MemberLayout>} />
       <Route path="/member/pay-penalty" element={<MemberLayout><PayPenalty /></MemberLayout>} />
       <Route path="/member/donate" element={<MemberLayout><Donate /></MemberLayout>} />
+        <Route path="/member/executive/:roleName" element={<MemberLayout><ExecutiveDashboard /></MemberLayout>} />
       <Route path="*" element={<Navigate to="/member" replace />} />
     </Routes>
   );
