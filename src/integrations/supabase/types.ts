@@ -2295,6 +2295,36 @@ export type Database = {
           },
         ]
       }
+      role_badges: {
+        Row: {
+          badge_url: string | null
+          color: string | null
+          created_at: string
+          id: string
+          label: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          badge_url?: string | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          badge_url?: string | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       signatory_signatures: {
         Row: {
           created_at: string
