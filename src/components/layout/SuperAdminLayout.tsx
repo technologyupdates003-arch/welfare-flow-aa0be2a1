@@ -9,7 +9,7 @@ import {
 import { 
   LogOut, Menu, X, Users, Wrench, Shield, 
   LayoutDashboard, Calendar, FileText, Newspaper, 
-  Bell, Settings, Database, Key, Eye, Lock, ChevronDown
+  Bell, Settings, Database, Key, Eye, Lock, ChevronDown, Clock
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
