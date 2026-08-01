@@ -28,71 +28,94 @@ export default function AuditLogs() {
   const [filterType, setFilterType] = useState("all");
   const { online, onlineCount, onlineMemberCount, loading: presenceLoading } = useOnlineMembers();
 
-  // Realtime: refresh logs the moment new rows arrive
+  // Realtime: refresh logs when new rows arrive, debounced so a burst of
+  // inserts (hundreds of logins at once) causes a single refetch, not hundreds.
   useEffect(() => {
+    const timers: Record<string, ReturnType<typeof setTimeout> | undefined> = {};
+    const bump = (key: string) => {
+      if (timers[key]) clearTimeout(timers[key]);
+      timers[key] = setTimeout(
+        () => queryClient.invalidateQueries({ queryKey: [key] }),
+        3000
+      );
+    };
     const channel = supabase
       .channel("audit-logs-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "audit_logs" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["audit-logs-full"] })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, () =>
+        bump("audit-logs-full")
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "member_access_logs" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["member-access-logs-full"] })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "member_access_logs" }, () =>
+        bump("member-access-logs-full")
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "system_logs" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["system-logs-audit"] })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "system_logs" }, () =>
+        bump("system-logs-audit")
       )
       .subscribe();
     return () => {
+      Object.values(timers).forEach((t) => t && clearTimeout(t));
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
 
+
+  // Only ever load a recent, bounded window of logs. Tables can hold millions
+  // of rows — we never select without a time filter AND a row limit.
+  const sinceIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const PAGE_SIZE = 100;
+
   // Get audit logs
   const { data: auditLogs = [], isLoading } = useQuery({
-    queryKey: ["audit-logs-full"],
+    queryKey: ["audit-logs-full", sinceIso.slice(0, 10)],
     queryFn: async () => {
       const { data } = await supabase
         .from("audit_logs")
         .select("*")
+        .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(PAGE_SIZE);
       return data || [];
     },
-    refetchInterval: 30000,
+    staleTime: 20000,
+    refetchInterval: 60000,
   });
 
   // Get member access logs
   const { data: memberAccessLogs = [] } = useQuery({
-    queryKey: ["member-access-logs-full"],
+    queryKey: ["member-access-logs-full", sinceIso.slice(0, 10)],
     queryFn: async () => {
       const { data } = await supabase
         .from("member_access_logs")
         .select("*")
+        .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(PAGE_SIZE);
       return data || [];
     },
-    refetchInterval: 30000,
+    staleTime: 20000,
+    refetchInterval: 60000,
   });
 
   // Get system logs
   const { data: systemLogs = [] } = useQuery({
-    queryKey: ["system-logs-audit"],
+    queryKey: ["system-logs-audit", sinceIso.slice(0, 10)],
     queryFn: async () => {
       const { data } = await supabase
         .from("system_logs")
         .select("*")
+        .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(PAGE_SIZE);
       return data || [];
     },
-    refetchInterval: 30000,
+    staleTime: 20000,
+    refetchInterval: 60000,
   });
 
   const filteredAccessLogs = memberAccessLogs.filter(log =>
     log.access_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     log.reason?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const exportLogs = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
@@ -158,7 +181,7 @@ export default function AuditLogs() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm font-medium text-blue-100">Total Access Logs</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-100">Access Logs (30d)</CardTitle>
                   <div className="text-3xl font-bold mt-2">{memberAccessLogs.length}</div>
                 </div>
                 <Eye className="h-8 w-8 text-foreground/70" />
@@ -170,7 +193,7 @@ export default function AuditLogs() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm font-medium text-green-100">System Logs</CardTitle>
+                  <CardTitle className="text-sm font-medium text-green-100">System Logs (30d)</CardTitle>
                   <div className="text-3xl font-bold mt-2">{systemLogs.length}</div>
                 </div>
                 <Activity className="h-8 w-8 text-foreground/70" />
@@ -182,7 +205,7 @@ export default function AuditLogs() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm font-medium text-orange-100">Audit Entries</CardTitle>
+                  <CardTitle className="text-sm font-medium text-orange-100">Audit Entries (30d)</CardTitle>
                   <div className="text-3xl font-bold mt-2">{auditLogs.length}</div>
                 </div>
                 <Shield className="h-8 w-8 text-foreground/70" />
