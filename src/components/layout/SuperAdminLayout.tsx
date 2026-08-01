@@ -9,7 +9,7 @@ import {
 import { 
   LogOut, Menu, X, Users, Wrench, Shield, 
   LayoutDashboard, Calendar, FileText, Newspaper, 
-  Bell, Settings, Database, Key, Eye, Lock, ChevronDown
+  Bell, Settings, Database, Key, Eye, Lock, ChevronDown, Clock
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ const getSuperAdminNavItems = () => {
     { to: "/super-admin", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/super-admin/members", icon: Users, label: "Member Management" },
     { to: "/super-admin/troubleshooting", icon: Wrench, label: "System Troubleshooting" },
+    { to: "/super-admin/login-activity", icon: Clock, label: "Login Activity" },
     { to: "/super-admin/audit", icon: Database, label: "Audit Logs" },
     { to: "/super-admin/security", icon: Shield, label: "Security Settings" },
     { to: "/super-admin/passwords", icon: Key, label: "Password Management" },

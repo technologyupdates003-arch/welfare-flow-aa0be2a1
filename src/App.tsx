@@ -83,6 +83,7 @@ import OperationalWallet from "@/pages/treasurer/OperationalWallet";
 import WalletReports from "@/pages/treasurer/WalletReports";
 import SystemTroubleshooting from "@/pages/super-admin/SystemTroubleshooting";
 import AuditLogs from "@/pages/super-admin/AuditLogs";
+import LoginActivity from "@/pages/super-admin/LoginActivity";
 import SecuritySettings from "@/pages/super-admin/SecuritySettings";
 import PasswordManagement from "@/pages/super-admin/PasswordManagement";
 import AccessControl from "@/pages/super-admin/AccessControl";
@@ -119,6 +120,7 @@ function AppRoutes() {
         <Route path="/super-admin/members" element={<SuperAdminLayout><SuperAdminDashboard /></SuperAdminLayout>} />
         <Route path="/super-admin/member/:memberId" element={<SuperAdminLayout><SuperAdminMemberDetail /></SuperAdminLayout>} />
         <Route path="/super-admin/troubleshooting" element={<SuperAdminLayout><SystemTroubleshooting /></SuperAdminLayout>} />
+        <Route path="/super-admin/login-activity" element={<SuperAdminLayout><LoginActivity /></SuperAdminLayout>} />
         <Route path="/super-admin/audit" element={<SuperAdminLayout><AuditLogs /></SuperAdminLayout>} />
         <Route path="/super-admin/security" element={<SuperAdminLayout><SecuritySettings /></SuperAdminLayout>} />
         <Route path="/super-admin/passwords" element={<SuperAdminLayout><PasswordManagement /></SuperAdminLayout>} />
@@ -219,6 +221,7 @@ function AppRoutes() {
         <Route path="/super-admin/members" element={<SuperAdminLayout><SuperAdminDashboard /></SuperAdminLayout>} />
         <Route path="/super-admin/member/:memberId" element={<SuperAdminLayout><SuperAdminMemberDetail /></SuperAdminLayout>} />
         <Route path="/super-admin/troubleshooting" element={<SuperAdminLayout><SystemTroubleshooting /></SuperAdminLayout>} />
+        <Route path="/super-admin/login-activity" element={<SuperAdminLayout><LoginActivity /></SuperAdminLayout>} />
         <Route path="/super-admin/audit" element={<SuperAdminLayout><AuditLogs /></SuperAdminLayout>} />
         <Route path="/super-admin/security" element={<SuperAdminLayout><SecuritySettings /></SuperAdminLayout>} />
         <Route path="/super-admin/passwords" element={<SuperAdminLayout><PasswordManagement /></SuperAdminLayout>} />
@@ -350,7 +353,8 @@ function AppRoutes() {
             <Route path="/super-admin/members" element={<SuperAdminLayout><SuperAdminDashboard /></SuperAdminLayout>} />
             <Route path="/super-admin/member/:memberId" element={<SuperAdminLayout><SuperAdminMemberDetail /></SuperAdminLayout>} />
             <Route path="/super-admin/troubleshooting" element={<SuperAdminLayout><SystemTroubleshooting /></SuperAdminLayout>} />
-            <Route path="/super-admin/audit" element={<SuperAdminLayout><AuditLogs /></SuperAdminLayout>} />
+            <Route path="/super-admin/login-activity" element={<SuperAdminLayout><LoginActivity /></SuperAdminLayout>} />
+        <Route path="/super-admin/audit" element={<SuperAdminLayout><AuditLogs /></SuperAdminLayout>} />
             <Route path="/super-admin/security" element={<SuperAdminLayout><SecuritySettings /></SuperAdminLayout>} />
             <Route path="/super-admin/passwords" element={<SuperAdminLayout><PasswordManagement /></SuperAdminLayout>} />
             <Route path="/super-admin/access" element={<SuperAdminLayout><AccessControl /></SuperAdminLayout>} />
