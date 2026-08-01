@@ -47,52 +47,64 @@ export default function AuditLogs() {
     };
   }, [queryClient]);
 
+  // Only ever load a recent, bounded window of logs. Tables can hold millions
+  // of rows — we never select without a time filter AND a row limit.
+  const sinceIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const PAGE_SIZE = 100;
+
   // Get audit logs
   const { data: auditLogs = [], isLoading } = useQuery({
-    queryKey: ["audit-logs-full"],
+    queryKey: ["audit-logs-full", sinceIso.slice(0, 10)],
     queryFn: async () => {
       const { data } = await supabase
         .from("audit_logs")
         .select("*")
+        .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(PAGE_SIZE);
       return data || [];
     },
-    refetchInterval: 30000,
+    staleTime: 20000,
+    refetchInterval: 60000,
   });
 
   // Get member access logs
   const { data: memberAccessLogs = [] } = useQuery({
-    queryKey: ["member-access-logs-full"],
+    queryKey: ["member-access-logs-full", sinceIso.slice(0, 10)],
     queryFn: async () => {
       const { data } = await supabase
         .from("member_access_logs")
         .select("*")
+        .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(PAGE_SIZE);
       return data || [];
     },
-    refetchInterval: 30000,
+    staleTime: 20000,
+    refetchInterval: 60000,
   });
 
   // Get system logs
   const { data: systemLogs = [] } = useQuery({
-    queryKey: ["system-logs-audit"],
+    queryKey: ["system-logs-audit", sinceIso.slice(0, 10)],
     queryFn: async () => {
       const { data } = await supabase
         .from("system_logs")
         .select("*")
+        .gte("created_at", sinceIso)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(PAGE_SIZE);
       return data || [];
     },
-    refetchInterval: 30000,
+    staleTime: 20000,
+    refetchInterval: 60000,
   });
 
   const filteredAccessLogs = memberAccessLogs.filter(log =>
     log.access_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     log.reason?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const exportLogs = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
