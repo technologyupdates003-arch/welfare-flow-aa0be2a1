@@ -28,24 +28,35 @@ export default function AuditLogs() {
   const [filterType, setFilterType] = useState("all");
   const { online, onlineCount, onlineMemberCount, loading: presenceLoading } = useOnlineMembers();
 
-  // Realtime: refresh logs the moment new rows arrive
+  // Realtime: refresh logs when new rows arrive, debounced so a burst of
+  // inserts (hundreds of logins at once) causes a single refetch, not hundreds.
   useEffect(() => {
+    const timers: Record<string, ReturnType<typeof setTimeout> | undefined> = {};
+    const bump = (key: string) => {
+      if (timers[key]) clearTimeout(timers[key]);
+      timers[key] = setTimeout(
+        () => queryClient.invalidateQueries({ queryKey: [key] }),
+        3000
+      );
+    };
     const channel = supabase
       .channel("audit-logs-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "audit_logs" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["audit-logs-full"] })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, () =>
+        bump("audit-logs-full")
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "member_access_logs" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["member-access-logs-full"] })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "member_access_logs" }, () =>
+        bump("member-access-logs-full")
       )
-      .on("postgres_changes", { event: "*", schema: "public", table: "system_logs" }, () =>
-        queryClient.invalidateQueries({ queryKey: ["system-logs-audit"] })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "system_logs" }, () =>
+        bump("system-logs-audit")
       )
       .subscribe();
     return () => {
+      Object.values(timers).forEach((t) => t && clearTimeout(t));
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
 
   // Only ever load a recent, bounded window of logs. Tables can hold millions
   // of rows — we never select without a time filter AND a row limit.
