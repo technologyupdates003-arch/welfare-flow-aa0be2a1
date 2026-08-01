@@ -2884,6 +2884,20 @@ export type Database = {
       }
       delete_member_safe: { Args: { target_member_id: string }; Returns: Json }
       generate_memo_reference: { Args: never; Returns: string }
+      get_member_login_activity: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: {
+          created_at: string
+          email: string
+          is_active: boolean
+          last_sign_in_at: string
+          member_id: string
+          name: string
+          phone: string
+          total_count: number
+          user_id: string
+        }[]
+      }
       get_members_with_roles: {
         Args: never
         Returns: {
