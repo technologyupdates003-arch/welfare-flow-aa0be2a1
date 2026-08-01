@@ -21,6 +21,7 @@ const getSuperAdminNavItems = () => {
     { to: "/super-admin", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/super-admin/members", icon: Users, label: "Member Management" },
     { to: "/super-admin/troubleshooting", icon: Wrench, label: "System Troubleshooting" },
+    { to: "/super-admin/login-activity", icon: Clock, label: "Login Activity" },
     { to: "/super-admin/audit", icon: Database, label: "Audit Logs" },
     { to: "/super-admin/security", icon: Shield, label: "Security Settings" },
     { to: "/super-admin/passwords", icon: Key, label: "Password Management" },
