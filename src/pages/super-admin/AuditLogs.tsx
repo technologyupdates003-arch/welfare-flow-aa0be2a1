@@ -181,7 +181,7 @@ export default function AuditLogs() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm font-medium text-blue-100">Total Access Logs</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-100">Access Logs (30d)</CardTitle>
                   <div className="text-3xl font-bold mt-2">{memberAccessLogs.length}</div>
                 </div>
                 <Eye className="h-8 w-8 text-foreground/70" />
@@ -193,7 +193,7 @@ export default function AuditLogs() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm font-medium text-green-100">System Logs</CardTitle>
+                  <CardTitle className="text-sm font-medium text-green-100">System Logs (30d)</CardTitle>
                   <div className="text-3xl font-bold mt-2">{systemLogs.length}</div>
                 </div>
                 <Activity className="h-8 w-8 text-foreground/70" />
@@ -205,7 +205,7 @@ export default function AuditLogs() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm font-medium text-orange-100">Audit Entries</CardTitle>
+                  <CardTitle className="text-sm font-medium text-orange-100">Audit Entries (30d)</CardTitle>
                   <div className="text-3xl font-bold mt-2">{auditLogs.length}</div>
                 </div>
                 <Shield className="h-8 w-8 text-foreground/70" />
