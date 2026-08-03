@@ -25,14 +25,14 @@ const getMemberNavItems = (role: string | null, pathname: string) => {
     { to: `${basePrefix}/documents`, icon: FileText, label: "Documents" },
     { to: `${basePrefix}/beneficiaries`, icon: Users, label: "Beneficiaries" },
     { to: `${basePrefix}/downloads`, icon: Download, label: "Downloads" },
-    ...(role && role !== "member" ? [{ to: `${basePrefix}/withdrawal-receipts`, icon: FileText, label: "Withdrawal Receipts" }] : []),
+    ...(!isImpersonating && role && role !== "member" ? [{ to: `${basePrefix}/withdrawal-receipts`, icon: FileText, label: "Withdrawal Receipts" }] : []),
     { to: `${basePrefix}/pay-penalty`, icon: AlertCircle, label: "Pay Penalty" },
     { to: `${basePrefix}/donate`, icon: TrendingUp, label: "Contribute" },
     { to: `${basePrefix}/notifications`, icon: Bell, label: "Alerts", showBadge: true },
     { to: `${basePrefix}/profile`, icon: User, label: "Profile" },
   ];
 
-  if (role && role !== "member") {
+  if (!isImpersonating && role && role !== "member") {
     const rolePath = role === "admin" ? "/admin" : `/${role.replace("_", "-")}`;
     const roleLabel = role === "admin" ? "Admin Dashboard" : 
                      role === "secretary" ? "Secretary Dashboard" :

@@ -15,7 +15,6 @@ import OfficeLayout from "@/components/layout/OfficeLayout";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import Members from "@/pages/admin/Members";
 import MemberDetail from "@/pages/admin/MemberDetail";
-import MemberDetailAsImpersonate from "@/pages/admin/MemberDetailAsImpersonate";
 import Contributions from "@/pages/admin/Contributions";
 import ExcelImport from "@/pages/admin/ExcelImport";
 import BeneficiaryImport from "@/pages/admin/BeneficiaryImport";
