@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useEffectiveIdentity } from "@/lib/impersonate-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,18 +16,22 @@ import { format } from "date-fns";
 
 export default function MemberDocuments() {
   const { user } = useAuth();
+  const { userId: effectiveUserId, memberId: effectiveMemberId, isImpersonating } = useEffectiveIdentity();
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState("id_photo");
   const [notes, setNotes] = useState("");
 
   const { data: member } = useQuery({
-    queryKey: ["my-member", user?.id],
+    queryKey: ["my-member", effectiveMemberId, effectiveUserId],
     queryFn: async () => {
-      const { data } = await supabase.from("members").select("id").eq("user_id", user!.id).single();
+      const query = supabase.from("members").select("id");
+      const { data } = effectiveMemberId
+        ? await query.eq("id", effectiveMemberId).maybeSingle()
+        : await query.eq("user_id", effectiveUserId!).maybeSingle();
       return data;
     },
-    enabled: !!user,
+    enabled: !!(effectiveMemberId || effectiveUserId),
   });
 
   const { data: documents, isLoading } = useQuery({
@@ -45,9 +50,10 @@ export default function MemberDocuments() {
 
   const uploadDoc = useMutation({
     mutationFn: async () => {
+      if (isImpersonating) throw new Error("Read-only: you are viewing this member as an admin");
       if (!file || !member) throw new Error("No file selected");
       const ext = file.name.split(".").pop();
-      const path = `${user!.id}/${Date.now()}.${ext}`;
+      const path = `${effectiveUserId || user!.id}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("documents").upload(path, file);
       if (uploadError) throw uploadError;
       const { error } = await supabase.from("documents").insert({
@@ -55,7 +61,7 @@ export default function MemberDocuments() {
         file_name: file.name,
         file_type: fileType,
         file_url: path,
-        uploaded_by: user!.id,
+        uploaded_by: effectiveUserId || user!.id,
         notes: notes || null,
       });
       if (error) throw error;

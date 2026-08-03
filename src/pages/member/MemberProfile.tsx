@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useEffectiveIdentity } from "@/lib/impersonate-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 
 export default function MemberProfile() {
   const { user } = useAuth();
+  const { userId: effectiveUserId, memberId: effectiveMemberId, isImpersonating } = useEffectiveIdentity();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -19,12 +21,15 @@ export default function MemberProfile() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const { data: member, isLoading } = useQuery({
-    queryKey: ["my-profile", user?.id],
+    queryKey: ["my-profile", effectiveMemberId, effectiveUserId],
     queryFn: async () => {
-      const { data } = await supabase.from("members").select("*").eq("user_id", user!.id).maybeSingle();
+      const query = supabase.from("members").select("*");
+      const { data } = effectiveMemberId
+        ? await query.eq("id", effectiveMemberId).maybeSingle()
+        : await query.eq("user_id", effectiveUserId!).maybeSingle();
       return data;
     },
-    enabled: !!user,
+    enabled: !!(effectiveMemberId || effectiveUserId),
   });
 
   const [name, setName] = useState("");
@@ -41,6 +46,7 @@ export default function MemberProfile() {
 
   const changePassword = useMutation({
     mutationFn: async () => {
+      if (isImpersonating) throw new Error("Read-only: you are viewing this member as an admin");
       if (newPassword !== confirmPassword) throw new Error("Passwords don't match");
       if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
       const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -57,6 +63,7 @@ export default function MemberProfile() {
 
   const updateProfile = useMutation({
     mutationFn: async () => {
+      if (isImpersonating) throw new Error("Read-only: you are viewing this member as an admin");
       const { error } = await supabase.from("members").update({ name, status_message: statusMsg }).eq("user_id", user!.id);
       if (error) throw error;
     },
@@ -69,6 +76,7 @@ export default function MemberProfile() {
 
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (isImpersonating) { toast.error("Read-only: you are viewing this member as an admin"); return; }
     if (!file || !member) return;
     setUploading(true);
     const ext = file.name.split(".").pop();

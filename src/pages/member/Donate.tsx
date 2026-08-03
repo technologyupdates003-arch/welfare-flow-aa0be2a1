@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { useEffectiveIdentity } from "@/lib/impersonate-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from "@/components/ui/card";
@@ -79,11 +80,10 @@ export default function Donate() {
   useEffect(() => {
     const fetchMember = async () => {
       if (!user) return;
-      const { data: memberData, error } = await supabase
-        .from("members")
-        .select("id, phone, name")
-        .eq("user_id", user.id)
-        .single();
+      const memberQuery = supabase.from("members").select("id, phone, name");
+      const { data: memberData, error } = effectiveMemberId
+        ? await memberQuery.eq("id", effectiveMemberId).single()
+        : await memberQuery.eq("user_id", user.id).single();
 
       if (error) {
         toast.error("Unable to load your member profile");

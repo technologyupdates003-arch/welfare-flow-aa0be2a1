@@ -1,25 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useEffectiveIdentity } from "@/lib/impersonate-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 
 export default function MemberNotifications() {
   const { user } = useAuth();
+  const { userId: effectiveUserId } = useEffectiveIdentity();
   const queryClient = useQueryClient();
 
   const { data: notifications } = useQuery({
-    queryKey: ["my-notifications"],
+    queryKey: ["my-notifications", effectiveUserId],
     queryFn: async () => {
       const { data } = await supabase
         .from("notifications")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", effectiveUserId!)
         .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!effectiveUserId,
   });
 
   const markRead = useMutation({

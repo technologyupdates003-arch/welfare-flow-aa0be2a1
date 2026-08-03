@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { useEffectiveIdentity } from '@/lib/impersonate-context';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,11 +47,10 @@ export default function PayPenalty() {
         setLoading(true);
 
         // Get member info
-        const { data: memberData, error: memberError } = await supabase
-          .from('members')
-          .select('id, phone, name')
-          .eq('user_id', user.id)
-          .single();
+        const memberQuery = supabase.from('members').select('id, phone, name');
+        const { data: memberData, error: memberError } = effectiveMemberId
+          ? await memberQuery.eq('id', effectiveMemberId).single()
+          : await memberQuery.eq('user_id', user.id).single();
 
         if (memberError) throw memberError;
 
