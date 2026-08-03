@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { impersonateRoutes } from "@/routes/impersonate-routes";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -131,21 +132,8 @@ function AppRoutes() {
         <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
         <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
         <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
         
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberLayout impersonateMode={true}><MemberDashboard /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/dashboard" element={<MemberLayout impersonateMode={true}><MemberDashboard /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/events" element={<MemberLayout impersonateMode={true}><MemberEvents /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/documents" element={<MemberLayout impersonateMode={true}><MemberDocuments /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/downloads" element={<MemberLayout impersonateMode={true}><MemberDownloads /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/withdrawal-receipts" element={<MemberLayout impersonateMode={true}><WithdrawalReceipts /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/news" element={<MemberLayout impersonateMode={true}><MemberNews /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/beneficiaries" element={<MemberLayout impersonateMode={true}><MemberBeneficiaries /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/notifications" element={<MemberLayout impersonateMode={true}><MemberNotifications /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/profile" element={<MemberLayout impersonateMode={true}><MemberProfile /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/pay-penalty" element={<MemberLayout impersonateMode={true}><PayPenalty /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/donate" element={<MemberLayout impersonateMode={true}><Donate /></MemberLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member/executive/:roleName" element={<MemberLayout impersonateMode={true}><ExecutiveDashboard /></MemberLayout>} />
         
         <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
         <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
@@ -233,7 +221,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -299,7 +287,7 @@ function AppRoutes() {
         <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
         <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
         <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
         <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
         <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
         <Route path="/admin/beneficiaries" element={<AdminLayout><Beneficiaries /></AdminLayout>} />
@@ -405,7 +393,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -461,7 +449,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -522,7 +510,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -579,7 +567,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
@@ -635,7 +623,7 @@ function AppRoutes() {
             <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
             <Route path="/admin/members" element={<AdminLayout><Members /></AdminLayout>} />
             <Route path="/admin/members/:memberId" element={<AdminLayout><MemberDetail /></AdminLayout>} />
-        <Route path="/admin/members/:memberId/view-as-member" element={<MemberDetailAsImpersonate />} />
+        {impersonateRoutes}
             <Route path="/admin/contributions" element={<AdminLayout><Contributions /></AdminLayout>} />
             <Route path="/admin/import" element={<AdminLayout><ExcelImport /></AdminLayout>} />
             <Route path="/admin/payments" element={<AdminLayout><Payments /></AdminLayout>} />
