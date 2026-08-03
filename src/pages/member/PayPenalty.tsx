@@ -27,6 +27,7 @@ interface Member {
 
 export default function PayPenalty() {
   const { user } = useAuth();
+  const { memberId: effectiveMemberId, isImpersonating } = useEffectiveIdentity();
   const [member, setMember] = useState<Member | null>(null);
   const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ export default function PayPenalty() {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, effectiveMemberId]);
 
   // Calculate total amount
   const totalAmount = penalties

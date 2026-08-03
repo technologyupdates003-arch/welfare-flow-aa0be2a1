@@ -33,6 +33,7 @@ interface Member {
 
 export default function Donate() {
   const { user } = useAuth();
+  const { memberId: effectiveMemberId, isImpersonating } = useEffectiveIdentity();
   const [member, setMember] = useState<Member | null>(null);
   const [campaigns, setCampaigns] = useState<DonationCampaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
@@ -95,7 +96,7 @@ export default function Donate() {
     };
 
     fetchMember();
-  }, [user]);
+  }, [user, effectiveMemberId]);
 
   // Load how much this member has already contributed to the selected drive
   const loadProgress = useCallback(async () => {
