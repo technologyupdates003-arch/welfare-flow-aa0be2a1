@@ -29,7 +29,7 @@ export async function sendTalksasaSms(
   opts?: { scheduleTime?: string },
 ): Promise<TalksasaResult> {
   const token = Deno.env.get("TALKSASA_API_TOKEN");
-  const senderId = Deno.env.get("TALKSASA_SENDER_ID") || "TALKSASA";
+  const senderId = Deno.env.get("TALKSASA_SENDER_ID") || "KHCWWELFARE";
 
   if (!token) {
     return {
