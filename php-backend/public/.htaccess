@@ -1,0 +1,20 @@
+RewriteEngine On
+
+# Route everything through the front controller
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Pass the Authorization header through to PHP (required for JWT auth)
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# Never serve the environment file
+<FilesMatch "^\.env">
+  Require all denied
+</FilesMatch>
