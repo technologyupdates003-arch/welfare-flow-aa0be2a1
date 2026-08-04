@@ -115,7 +115,7 @@ try {
 
     throw new HttpException(404, 'not_found', 'Unknown endpoint: /' . implode('/', $segments));
 } catch (HttpException $e) {
-    Response::error($e->status, $e->code, $e->getMessage());
+    Response::error($e->status, $e->errorCode, $e->getMessage());
 } catch (Throwable $e) {
     error_log('[khcww-api] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     Response::error(
