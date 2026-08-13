@@ -8,10 +8,19 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import {
+  COOP_STK_URL,
+  collectionAccount,
+  coopConfigured,
+  coopMessage,
+  coopPost,
+  coopSuccess,
+  messageReference,
+} from "../_shared/coop.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const DARAJA_BASE = Deno.env.get("MPESA_BASE_URL") ?? "https://sandbox.safaricom.co.ke";
+
 
 interface RegistrationRequest {
   full_name: string;
@@ -43,24 +52,6 @@ function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-async function getDarajaToken(): Promise<string | null> {
-  const key = Deno.env.get("MPESA_CONSUMER_KEY");
-  const secret = Deno.env.get("MPESA_CONSUMER_SECRET");
-  if (!key || !secret) return null;
-
-  const auth = btoa(`${key}:${secret}`);
-  try {
-    const res = await fetch(`${DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials`, {
-      method: "GET",
-      headers: { Authorization: `Basic ${auth}` },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.access_token ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // GET /register/config
 async function getRegistrationConfig(supabase: any) {
@@ -218,71 +209,54 @@ async function initiatePayment(supabase: any, payload: PaymentInitRequest): Prom
   const config = await getRegistrationConfig(supabase);
   const amount = config.registration_fee;
 
-  // Get Daraja token
-  const token = await getDarajaToken();
-  if (!token) {
+  if (!coopConfigured()) {
     return new Response(
       JSON.stringify({ success: false, error: "Payment service unavailable" }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  // Prepare STK Push
+  // Registration fees go into the MAIN contributions account
   const phone = normalizePhone(payload.phone_number);
-  const SHORTCODE = Deno.env.get("MPESA_SHORTCODE") ?? "174379";
-  const PASSKEY = Deno.env.get("MPESA_PASSKEY") ?? "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919";
-  const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/member-registration-callback`;
-
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[^0-9]/g, "")
-    .slice(0, 14);
-  const password = btoa(`${SHORTCODE}${PASSKEY}${timestamp}`);
+  const bankAccount = collectionAccount("contribution");
+  const msgRef = messageReference("REG");
 
   const stkPayload = {
-    BusinessShortCode: SHORTCODE,
-    Password: password,
-    Timestamp: timestamp,
-    TransactionType: "CustomerPayBillOnline",
+    MessageReference: msgRef,
+    CallBackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/member-registration-callback`,
+    MobileNumber: phone,
     Amount: Math.round(amount),
-    PartyA: phone,
-    PartyB: SHORTCODE,
-    PhoneNumber: phone,
-    CallBackURL: callbackUrl,
     AccountReference: `REG-${registration.id.slice(0, 8)}`,
-    TransactionDesc: "Member Registration Fee",
+    TransactionDescription: "Member Registration Fee",
+    BankAccountNumber: bankAccount,
+    Currency: "KES",
+    Narration: "KHCWW member registration fee",
   };
 
   try {
-    const res = await fetch(`${DARAJA_BASE}/mpesa/stkpush/v1/processrequest`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(stkPayload),
-    });
-
-    const stkData = await res.json().catch(() => ({}));
-    const success = res.ok && stkData?.ResponseCode === "0";
+    const { ok, status, data: stkData } = await coopPost(COOP_STK_URL, stkPayload);
+    const success = ok && coopSuccess(stkData);
+    const checkoutId =
+      stkData?.CheckoutRequestID ?? stkData?.TransactionID ?? msgRef;
 
     if (!success) {
-      console.error("STK Push error:", stkData);
+      console.error("Co-op STK Push error:", stkData);
       return new Response(
         JSON.stringify({
           success: false,
-          error: stkData?.errorMessage || stkData?.ResponseDescription || "Failed to initiate payment",
+          error: coopMessage(stkData) || `Failed to initiate payment (${status})`,
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     // Record payment attempt
     const { error: feeError } = await supabase.from("registration_fees").insert({
       registration_id: payload.registration_id,
       amount,
       phone_number: phone,
-      mpesa_checkout_request_id: stkData?.CheckoutRequestID,
+      mpesa_checkout_request_id: checkoutId,
       status: "pending",
     });
 
@@ -297,7 +271,7 @@ async function initiatePayment(supabase: any, payload: PaymentInitRequest): Prom
     return new Response(
       JSON.stringify({
         success: true,
-        checkout_request_id: stkData?.CheckoutRequestID,
+        checkout_request_id: checkoutId,
         message: `Payment prompt sent to ${phone}. Enter your M-Pesa PIN.`,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

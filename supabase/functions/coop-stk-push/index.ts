@@ -1,8 +1,24 @@
-// Safaricom Daraja SANDBOX STK Push (Lipa Na M-Pesa Online).
-// Used for both penalty and donation member contributions in test mode.
-// Required secrets: MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET
-// Sandbox public defaults are used for shortcode/passkey when not overridden.
+// Co-operative Bank STK Push (collection / C2B).
+//
+// Money is collected into TWO bank accounts:
+//   - COOP_MAIN_ACCOUNT       -> monthly contributions
+//   - COOP_COLLECTION_ACCOUNT -> penalties, fund drives, operational top-ups
+//
+// Secrets: COOP_CONSUMER_KEY, COOP_CONSUMER_SECRET, COOP_MAIN_ACCOUNT,
+//          COOP_COLLECTION_ACCOUNT
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  COOP_STK_URL,
+  callbackUrl,
+  collectionAccount,
+  coopConfigured,
+  coopMessage,
+  coopPost,
+  coopSuccess,
+  messageReference,
+  normalizePhone,
+  type WalletKind,
+} from "../_shared/coop.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,46 +26,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const DARAJA_BASE =
-  Deno.env.get("MPESA_BASE_URL") ?? "https://sandbox.safaricom.co.ke";
-// Safaricom public sandbox defaults
-const SANDBOX_SHORTCODE = "174379";
-const SANDBOX_PASSKEY =
-  "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919";
-
-function normalizePhone(p: string): string {
-  const digits = (p || "").replace(/\D/g, "");
-  if (digits.startsWith("254")) return digits;
-  if (digits.startsWith("0")) return "254" + digits.slice(1);
-  if (digits.startsWith("7") || digits.startsWith("1")) return "254" + digits;
-  return digits;
-}
-
-function timestamp(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    d.getFullYear().toString() +
-    pad(d.getMonth() + 1) +
-    pad(d.getDate()) +
-    pad(d.getHours()) +
-    pad(d.getMinutes()) +
-    pad(d.getSeconds())
-  );
-}
-
-async function getToken(key: string, secret: string): Promise<string> {
-  const auth = btoa(`${key}:${secret}`);
-  const res = await fetch(
-    `${DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
-    { method: "GET", headers: { Authorization: `Basic ${auth}` } },
-  );
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Daraja token failed (${res.status}): ${t}`);
-  }
-  const data = await res.json();
-  return data.access_token;
+function resolveKind(input?: string): WalletKind {
+  const v = (input || "").toLowerCase();
+  if (v.startsWith("pen")) return "penalty";
+  if (v.startsWith("don") || v.startsWith("fund")) return "donation";
+  if (v.startsWith("op")) return "operational";
+  return "contribution";
 }
 
 Deno.serve(async (req) => {
@@ -62,7 +44,16 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { member_id, amount, phone: overridePhone, reference, wallet_type } = body || {};
+    const {
+      member_id,
+      amount,
+      phone: overridePhone,
+      reference,
+      wallet_type,
+      paymentType,
+      accountReference,
+      transactionDesc,
+    } = body || {};
 
     if (!member_id || !amount || Number(amount) <= 0) {
       return new Response(
@@ -91,87 +82,91 @@ Deno.serve(async (req) => {
       );
     }
 
-    const KEY = Deno.env.get("MPESA_CONSUMER_KEY");
-    const SECRET = Deno.env.get("MPESA_CONSUMER_SECRET");
-    if (!KEY || !SECRET) {
+    if (!coopConfigured()) {
       return new Response(
         JSON.stringify({
           setup_required: true,
           error:
-            "M-Pesa sandbox not configured. Add MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in backend secrets.",
+            "Co-op Bank not configured. Add COOP_CONSUMER_KEY and COOP_CONSUMER_SECRET in backend secrets.",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const SHORTCODE = Deno.env.get("MPESA_STK_SHORTCODE") ?? SANDBOX_SHORTCODE;
-    const PASSKEY = Deno.env.get("MPESA_STK_PASSKEY") ?? SANDBOX_PASSKEY;
+    const kind = resolveKind(paymentType || wallet_type);
+    const bankAccount = collectionAccount(kind);
+    if (!bankAccount) {
+      return new Response(
+        JSON.stringify({
+          setup_required: true,
+          error:
+            "Collection bank account not configured. Add COOP_MAIN_ACCOUNT and COOP_COLLECTION_ACCOUNT.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    const token = await getToken(KEY, SECRET);
-    const ts = timestamp();
-    const password = btoa(`${SHORTCODE}${PASSKEY}${ts}`);
+    const msgRef = messageReference("STK");
     const txnRef =
       reference ||
-      `WLF-${(wallet_type || "PEN").toString().slice(0, 3).toUpperCase()}-${
+      `KHCWW-${kind.slice(0, 3).toUpperCase()}-${
         member.member_id || member.id.slice(0, 8)
       }-${Date.now()}`;
-    const callbackUrl =
-      Deno.env.get("MPESA_STK_CALLBACK_URL") ??
-      `${Deno.env.get("SUPABASE_URL")}/functions/v1/coop-stk-callback`;
 
-    const stkRes = await fetch(`${DARAJA_BASE}/mpesa/stkpush/v1/processrequest`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        BusinessShortCode: SHORTCODE,
-        Password: password,
-        Timestamp: ts,
-        TransactionType: "CustomerPayBillOnline",
-        Amount: Math.round(Number(amount)),
-        PartyA: phone,
-        PartyB: SHORTCODE,
-        PhoneNumber: phone,
-        CallBackURL: callbackUrl,
-        AccountReference: (member.member_id || member.id.slice(0, 8)).toString().slice(0, 12),
-        TransactionDesc: `Welfare ${wallet_type || "contribution"}`.slice(0, 13),
-      }),
-    });
+    const payload = {
+      MessageReference: msgRef,
+      CallBackUrl: callbackUrl("coop-stk-callback"),
+      MobileNumber: phone,
+      Amount: Math.round(Number(amount)),
+      AccountReference: String(
+        accountReference || member.member_id || member.id.slice(0, 8),
+      ).slice(0, 20),
+      TransactionDescription: String(
+        transactionDesc || `KHCWW ${kind} payment`,
+      ).slice(0, 50),
+      // Destination Co-op Bank account that receives the funds
+      BankAccountNumber: bankAccount,
+      Currency: "KES",
+      Narration: `KHCWW ${kind} - ${member.name}`.slice(0, 60),
+    };
 
-    const stkData = await stkRes.json().catch(() => ({}));
-    const ok = stkRes.ok && stkData?.ResponseCode === "0";
+    const { ok, status, data } = await coopPost(COOP_STK_URL, payload);
+    const success = ok && coopSuccess(data);
+    const checkoutId =
+      data?.CheckoutRequestID ?? data?.TransactionID ?? data?.MessageReference ?? msgRef;
 
     await supabase.from("payments").insert({
       member_id: member.id,
       amount: Number(amount),
       transaction_ref: txnRef,
-      raw_message: `Daraja STK push (${wallet_type || "penalty"}) to ${phone}: ${stkData?.ResponseDescription || stkData?.errorMessage || "sent"}`,
+      raw_message:
+        `Co-op Bank STK push (${kind}) to ${phone} into a/c ${bankAccount}: ` +
+        (success ? "sent" : coopMessage(data) || `HTTP ${status}`),
       matched: false,
-      source: `mpesa_stk_${wallet_type || "penalty"}`,
+      source: `coop_stk_${kind}`,
       received_at: new Date().toISOString(),
     });
 
     return new Response(
       JSON.stringify({
-        ok,
-        message: ok
+        ok: success,
+        message: success
           ? "Payment prompt sent to your phone. Enter your M-Pesa PIN to complete."
-          : stkData?.errorMessage || stkData?.ResponseDescription || "Failed to initiate payment",
+          : coopMessage(data),
         bank: {
-          CheckoutRequestID: stkData?.CheckoutRequestID,
-          MerchantRequestID: stkData?.MerchantRequestID,
-          ResponseCode: stkData?.ResponseCode,
-          ResponseDescription: stkData?.ResponseDescription,
+          CheckoutRequestID: checkoutId,
+          MessageReference: msgRef,
+          ResponseCode: data?.MessageCode ?? data?.ResponseCode,
+          ResponseDescription: coopMessage(data),
         },
         reference: txnRef,
-        ResponseCode: stkData?.ResponseCode,
-        ResponseDescription: stkData?.ResponseDescription,
-        sandbox: true,
+        checkoutRequestId: checkoutId,
+        account: bankAccount,
+        walletType: kind,
+        provider: "coop-bank",
       }),
       {
-        status: ok ? 200 : 400,
+        status: success ? 200 : 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );

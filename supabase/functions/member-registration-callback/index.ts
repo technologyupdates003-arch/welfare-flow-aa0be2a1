@@ -46,9 +46,41 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    const callback: STKCallback = await req.json();
-    const { Body } = callback;
-    const { stkCallback } = Body;
+    const raw: any = await req.json();
+
+    // Accept both the legacy nested STK shape and the flat Co-op Bank shape.
+    const flat: any = raw?.Body?.stkCallback ?? raw?.Data ?? raw ?? {};
+    const coopCode = String(
+      flat.MessageCode ?? flat.ResponseCode ?? flat.StatusCode ?? "",
+    ).trim();
+    const stkCallback = {
+      MerchantRequestID: flat.MerchantRequestID ?? flat.MessageReference ?? "",
+      CheckoutRequestID:
+        flat.CheckoutRequestID ?? flat.MessageReference ?? flat.TransactionID ?? "",
+      ResultCode:
+        flat.ResultCode !== undefined
+          ? Number(flat.ResultCode)
+          : ["0", "00", "000"].includes(coopCode)
+            ? 0
+            : 1,
+      ResultDesc:
+        flat.ResultDesc ??
+        flat.MessageDescription ??
+        flat.ResponseDescription ??
+        "",
+      CallbackMetadata:
+        flat.CallbackMetadata ?? {
+          Item: [
+            { Name: "Amount", Value: flat.Amount },
+            {
+              Name: "MpesaReceiptNumber",
+              Value: flat.TransactionReference ?? flat.TransactionID ?? null,
+            },
+            { Name: "PhoneNumber", Value: flat.MobileNumber ?? flat.MSISDN },
+          ],
+        },
+    };
+
 
     console.log("Registration payment callback received:", {
       CheckoutRequestID: stkCallback.CheckoutRequestID,
