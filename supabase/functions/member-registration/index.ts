@@ -256,7 +256,7 @@ async function initiatePayment(supabase: any, payload: PaymentInitRequest): Prom
       registration_id: payload.registration_id,
       amount,
       phone_number: phone,
-      mpesa_checkout_request_id: stkData?.CheckoutRequestID,
+      mpesa_checkout_request_id: checkoutId,
       status: "pending",
     });
 
@@ -271,7 +271,7 @@ async function initiatePayment(supabase: any, payload: PaymentInitRequest): Prom
     return new Response(
       JSON.stringify({
         success: true,
-        checkout_request_id: stkData?.CheckoutRequestID,
+        checkout_request_id: checkoutId,
         message: `Payment prompt sent to ${phone}. Enter your M-Pesa PIN.`,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
