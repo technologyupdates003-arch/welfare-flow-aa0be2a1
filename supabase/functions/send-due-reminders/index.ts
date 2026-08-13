@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
         const phone = normalizePhone(m.phone);
         if (!phone) continue;
 
-        const message = `Hi ${m.name}, your welfare contribution of KES ${Number(c.amount).toLocaleString()} ${label} (${date}). Please pay on time to avoid penalties. Thank you.`;
+        const message = `Hi ${m.name}, your welfare contribution of KES ${Number(c.amount).toLocaleString()} ${label} (${date}). Please pay on time to avoid penalties. Thank you. If you have already paid, kindly ignore this message.`;
 
         try {
           const res = await sendTalksasaSms([phone], message);
