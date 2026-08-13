@@ -1,10 +1,21 @@
 // Operational wallet top-up handler
 // Supports:
-// 1. STK push C2B (M-Pesa payment)
+// 1. STK push C2B via Co-operative Bank
 // 2. Manual ledger top-up (admin entry)
 // Writes to wallet_transactions for unified ledger
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  COOP_STK_URL,
+  callbackUrl as coopCallbackUrl,
+  collectionAccount,
+  coopConfigured,
+  coopMessage,
+  coopPost,
+  coopSuccess,
+  messageReference,
+  normalizePhone,
+} from "../_shared/coop.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,30 +36,7 @@ interface TopUpRequest {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const DARAJA_BASE =
-  Deno.env.get("MPESA_BASE_URL") ?? "https://sandbox.safaricom.co.ke";
 
-function normalizePhone(p: string): string {
-  const digits = (p || "").replace(/\D/g, "");
-  if (digits.startsWith("254")) return digits;
-  if (digits.startsWith("0")) return "254" + digits.slice(1);
-  if (digits.startsWith("7") || digits.startsWith("1")) return "254" + digits;
-  return digits;
-}
-
-async function getDarajaToken(): Promise<string | null> {
-  const key = Deno.env.get("MPESA_CONSUMER_KEY");
-  const secret = Deno.env.get("MPESA_CONSUMER_SECRET");
-  if (!key || !secret) return null;
-  const auth = btoa(`${key}:${secret}`);
-  const res = await fetch(
-    `${DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
-    { method: "GET", headers: { Authorization: `Basic ${auth}` } }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.access_token ?? null;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -84,56 +72,45 @@ Deno.serve(async (req) => {
       }
 
       const phone = normalizePhone(phone_number);
-      const token = await getDarajaToken();
 
-      if (!token) {
+      if (!coopConfigured()) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: "M-Pesa not configured (MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET)",
+            error: "Co-op Bank not configured (COOP_CONSUMER_KEY / COOP_CONSUMER_SECRET)",
           }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Use the SAME sandbox credentials as the penalty/donation wallet (coop-stk-push)
-      const SHORTCODE = Deno.env.get("MPESA_STK_SHORTCODE") ?? "174379";
-      const PASSKEY = Deno.env.get("MPESA_STK_PASSKEY") ?? "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919";
-      const callbackUrl =
-        Deno.env.get("MPESA_C2B_CALLBACK_URL") ??
-        `${SUPABASE_URL}/functions/v1/sms-webhook`;
+      const bankAccount = collectionAccount("operational");
+      if (!bankAccount) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Collection account not configured (COOP_COLLECTION_ACCOUNT)",
+          }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[^0-9]/g, "")
-        .slice(0, 14);
-      const password = btoa(`${SHORTCODE}${PASSKEY}${timestamp}`);
-
+      const msgRef = messageReference("OPTOP");
       const payload = {
-        BusinessShortCode: SHORTCODE,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
+        MessageReference: msgRef,
+        CallBackUrl: coopCallbackUrl("coop-stk-callback"),
+        MobileNumber: phone,
         Amount: Math.round(Number(amount)),
-        PartyA: phone,
-        PartyB: SHORTCODE,
-        PhoneNumber: phone,
-        CallBackURL: callbackUrl,
-        AccountReference: reference ?? `OP-${Date.now()}`,
-        TransactionDesc: notes ?? "Operational wallet top-up",
+        AccountReference: (reference ?? `OP-${Date.now()}`).slice(0, 20),
+        TransactionDescription: (notes ?? "Operational wallet top-up").slice(0, 50),
+        BankAccountNumber: bankAccount,
+        Currency: "KES",
+        Narration: (notes ?? "KHCWW operational top-up").slice(0, 60),
       };
 
-      const res = await fetch(`${DARAJA_BASE}/mpesa/stkpush/v1/processrequest`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const bankResponse = await res.json().catch(() => ({}));
-      const success = res.ok && bankResponse?.ResponseCode === "0";
+      const { ok, status, data: bankResponse } = await coopPost(COOP_STK_URL, payload);
+      const success = ok && coopSuccess(bankResponse);
+      const checkoutId =
+        bankResponse?.CheckoutRequestID ?? bankResponse?.TransactionID ?? msgRef;
 
       // Record payment attempt
       const { data: paymentRecord } = await supabase
@@ -143,9 +120,9 @@ Deno.serve(async (req) => {
           amount,
           source: "stk_push",
           status: success ? "pending" : "failed",
-          mpesa_transaction_id: bankResponse?.CheckoutRequestID,
+          mpesa_transaction_id: checkoutId,
           payment_ref: reference ?? `OP-${Date.now()}`,
-          notes: notes ?? "STK push initiated",
+          notes: notes ?? "Co-op Bank STK push initiated",
           created_by,
         })
         .select()
@@ -156,15 +133,18 @@ Deno.serve(async (req) => {
           success,
           message: success
             ? `STK push sent to ${phone}`
-            : bankResponse?.errorMessage || `Daraja API ${res.status}`,
+            : coopMessage(bankResponse) || `Co-op API ${status}`,
           paymentRecord,
           bank: bankResponse,
+          account: bankAccount,
+          provider: "coop-bank",
         }),
         {
           status: success ? 200 : 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+
     } else if (type === "manual") {
       // Manual ledger top-up (admin entry)
       // Record payment
