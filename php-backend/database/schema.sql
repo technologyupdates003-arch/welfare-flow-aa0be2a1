@@ -963,7 +963,7 @@ CREATE TABLE IF NOT EXISTS `system_logs` (
 
 CREATE TABLE IF NOT EXISTS `unmatched_payments` (
   `id` CHAR(36) NOT NULL,
-  `payment_id` CHAR(36) NOT NULL,
+  `payment_id` CHAR(36) DEFAULT NULL,
   `raw_message` TEXT DEFAULT NULL,
   `extracted_phone` TEXT DEFAULT NULL,
   `extracted_amount` DECIMAL(14,2) DEFAULT NULL,
