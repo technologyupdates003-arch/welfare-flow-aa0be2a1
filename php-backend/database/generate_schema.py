@@ -179,6 +179,9 @@ CREATE TABLE IF NOT EXISTS storage_objects (
         lines = []
         keys = []
         for col, ctype, nn, default in cols:
+            rule = FK_RULES.get(col)
+            if rule and rule[1] == "SET NULL" and (name, col) not in FK_SKIP:
+                nn = False  # SET NULL FK requires a nullable column
             sqltype = FORCE_VARCHAR.get((name, col), TYPE_MAP[ctype])
             line = "  `%s` %s%s%s" % (col, sqltype, " NOT NULL" if nn else " DEFAULT NULL" if default is None else "", sql_default(col, ctype, default))
             lines.append(line)
