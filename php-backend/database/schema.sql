@@ -492,7 +492,7 @@ CREATE TABLE IF NOT EXISTS `members` (
   `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `profile_picture_url` TEXT DEFAULT NULL,
-  `status_message` TEXT DEFAULT ('Hey),
+  `status_message` TEXT DEFAULT ('Hey there! I am using Welfare App'),
   `status` TEXT NOT NULL DEFAULT ('active'),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_members_phone` (`phone`),
@@ -769,7 +769,7 @@ CREATE TABLE IF NOT EXISTS `penalties` (
   `member_id` CHAR(36) NOT NULL,
   `contribution_id` CHAR(36) DEFAULT NULL,
   `amount` DECIMAL(14,2) NOT NULL,
-  `reason` TEXT NOT NULL DEFAULT ('Late),
+  `reason` TEXT NOT NULL DEFAULT ('Late payment'),
   `is_paid` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
@@ -963,7 +963,7 @@ CREATE TABLE IF NOT EXISTS `system_logs` (
 
 CREATE TABLE IF NOT EXISTS `unmatched_payments` (
   `id` CHAR(36) NOT NULL,
-  `payment_id` CHAR(36) NOT NULL,
+  `payment_id` CHAR(36) DEFAULT NULL,
   `raw_message` TEXT DEFAULT NULL,
   `extracted_phone` TEXT DEFAULT NULL,
   `extracted_amount` DECIMAL(14,2) DEFAULT NULL,
@@ -1025,7 +1025,7 @@ CREATE TABLE IF NOT EXISTS `wallet_transactions` (
 
 CREATE TABLE IF NOT EXISTS `welfare_settings` (
   `id` CHAR(36) NOT NULL,
-  `name` TEXT NOT NULL DEFAULT ('Welfare),
+  `name` TEXT NOT NULL DEFAULT ('Welfare Group'),
   `monthly_contribution_amount` DECIMAL(14,2) NOT NULL DEFAULT 500,
   `contribution_due_day` INT NOT NULL DEFAULT 5,
   `penalty_amount` DECIMAL(14,2) NOT NULL DEFAULT 100,

@@ -3,6 +3,7 @@
 
 Usage: python3 generate_schema.py schema.spec > schema.sql
 """
+import re
 import sys
 
 TYPE_MAP = {
@@ -92,13 +93,14 @@ def parse(path):
         name, cols = raw.split("|", 1)
         parsed = []
         for chunk in cols.split(", "):
+            m = re.search(r"\sD=('(?:[^']|'')*'|\S+)", chunk)
+            default = None
+            if m:
+                default = m.group(1)
+                chunk = chunk[: m.start()] + chunk[m.end():]
             parts = chunk.split(" ")
             col, ctype = parts[0], parts[1]
             nn = "NN" in parts
-            default = None
-            for p in parts:
-                if p.startswith("D="):
-                    default = p[2:]
             parsed.append((col, ctype, nn, default))
         tables.append((name, parsed))
     return tables
@@ -177,6 +179,9 @@ CREATE TABLE IF NOT EXISTS storage_objects (
         lines = []
         keys = []
         for col, ctype, nn, default in cols:
+            rule = FK_RULES.get(col)
+            if rule and rule[1] == "SET NULL" and (name, col) not in FK_SKIP:
+                nn = False  # SET NULL FK requires a nullable column
             sqltype = FORCE_VARCHAR.get((name, col), TYPE_MAP[ctype])
             line = "  `%s` %s%s%s" % (col, sqltype, " NOT NULL" if nn else " DEFAULT NULL" if default is None else "", sql_default(col, ctype, default))
             lines.append(line)
