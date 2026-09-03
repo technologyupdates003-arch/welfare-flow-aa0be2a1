@@ -3,6 +3,7 @@
 
 Usage: python3 generate_schema.py schema.spec > schema.sql
 """
+import re
 import sys
 
 TYPE_MAP = {
