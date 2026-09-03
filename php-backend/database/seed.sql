@@ -5,7 +5,7 @@ SET @mid = '22222222-2222-4222-8222-222222222222';
 
 INSERT IGNORE INTO auth_users (id, email, phone, encrypted_password, raw_user_meta_data)
 VALUES (@uid, '254700000000@welfare.local', '+254700000000',
-        '$2y$10$e0NR2z7YQ9Yk0Jm3n1sZ0uQ8Kz5R7l0d1cV0nUq2sT3wX4yZ5aB6C',
+        '$2y$10$M6gNLngumS6p7a4BkoXyJ.R.5Z1iZ7wWh/t7q1KPAfBEzBUWdeERe',
         '{"name":"Laban Panda Khisa"}');
 
 INSERT IGNORE INTO user_roles (id, user_id, role, is_active)
@@ -22,7 +22,3 @@ INSERT IGNORE INTO penalty_wallet (id) VALUES ('77777777-7777-4777-8777-77777777
 INSERT IGNORE INTO donation_wallet (id) VALUES ('88888888-8888-4888-8888-888888888888');
 INSERT IGNORE INTO operational_wallet (id) VALUES ('99999999-9999-4999-8999-999999999999');
 
--- IMPORTANT: the seeded password hash above is a placeholder.
--- Generate a real one on the server and update it:
---   php -r "echo password_hash('Member2026', PASSWORD_BCRYPT);"
---   UPDATE auth_users SET encrypted_password = '<paste hash>' WHERE email = '254700000000@welfare.local';
