@@ -93,13 +93,14 @@ def parse(path):
         name, cols = raw.split("|", 1)
         parsed = []
         for chunk in cols.split(", "):
+            m = re.search(r"\sD=('(?:[^']|'')*'|\S+)", chunk)
+            default = None
+            if m:
+                default = m.group(1)
+                chunk = chunk[: m.start()] + chunk[m.end():]
             parts = chunk.split(" ")
             col, ctype = parts[0], parts[1]
             nn = "NN" in parts
-            default = None
-            for p in parts:
-                if p.startswith("D="):
-                    default = p[2:]
             parsed.append((col, ctype, nn, default))
         tables.append((name, parsed))
     return tables
