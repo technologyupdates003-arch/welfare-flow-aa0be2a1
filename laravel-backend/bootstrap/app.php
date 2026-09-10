@@ -20,7 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
-        $middleware->statefulApi(false);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (ApiException $e) {
