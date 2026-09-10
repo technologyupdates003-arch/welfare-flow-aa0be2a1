@@ -1,0 +1,9 @@
+# public_html/api/.htaccess - routes every /api request into Laravel's public/index.php
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/api/public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ public/index.php [L,QSA]
+
+# Block direct access to framework folders
+RedirectMatch 403 ^/api/(app|bootstrap|config|database|routes|resources|storage|vendor|tests)/
+RedirectMatch 403 ^/api/\.env

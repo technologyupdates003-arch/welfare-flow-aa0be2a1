@@ -1,0 +1,28 @@
+# KHCWW Welfare - public_html/.htaccess
+# React SPA at the domain root, Laravel API served from /api
+
+RewriteEngine On
+
+# Force HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# API -> Laravel front controller (public_html/api/public/index.php)
+RewriteRule ^api/?$ api/public/index.php [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^api/(.*)$ api/public/index.php [L,QSA]
+
+# SPA fallback for everything else
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# Never serve backend internals
+RewriteRule ^api/(app|bootstrap|config|database|routes|resources|storage|vendor|tests)/ - [F,L]
+<FilesMatch "^\.env|composer\.(json|lock)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
