@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Exceptions\ApiException;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB as Conn;
 use Throwable;
 
 /** Thin array-shaped helper over the Laravel database connection. */
@@ -20,7 +20,7 @@ final class Db
         try {
             return array_map(
                 static fn ($row) => (array) $row,
-                DB::select($sql, array_values($params))
+                Conn::select($sql, array_values($params))
             );
         } catch (Throwable $e) {
             throw self::wrap($e);
@@ -46,7 +46,7 @@ final class Db
     public static function run(string $sql, array $params = []): int
     {
         try {
-            return DB::affectingStatement($sql, array_values($params));
+            return Conn::affectingStatement($sql, array_values($params));
         } catch (Throwable $e) {
             throw self::wrap($e);
         }
@@ -54,7 +54,7 @@ final class Db
 
     public static function transaction(callable $fn): mixed
     {
-        return DB::transaction(static fn () => $fn());
+        return Conn::transaction(static fn () => $fn());
     }
 
     public static function tableExists(string $table): bool
