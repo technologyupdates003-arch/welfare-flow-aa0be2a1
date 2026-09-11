@@ -61,7 +61,7 @@ code=$(curl -s -o /tmp/lb-body -w '%{http_code}' -X POST "$B/storage/v1/object/d
 code=$(curl -s -o /tmp/lb-body -w '%{http_code}' "$B/storage/v1/object/documents/test/hello.txt" -H "Authorization: Bearer $TOKEN"); chk storage-download 200 "$code" "$(cat /tmp/lb-body)"
 code=$(curl -s -o /tmp/lb-body -w '%{http_code}' -X DELETE "$B/storage/v1/object/documents/test/hello.txt" -H "Authorization: Bearer $TOKEN"); chk storage-delete 200 "$code" "$(cat /tmp/lb-body)"
 
-code=$(req POST /auth/v1/logout '' "$TOKEN"); chk logout 200 "$code" "$(cat /tmp/lb-body)"
+code=$(req POST /auth/v1/logout '' "$TOKEN"); chk logout 204 "$code" "$(cat /tmp/lb-body)"
 code=$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$B/rest/v1/members" -H 'Origin: http://x' -H 'Access-Control-Request-Method: GET'); chk cors-preflight 204 "$code" ""
 
 echo "-------- PASS=$pass FAIL=$fail"
