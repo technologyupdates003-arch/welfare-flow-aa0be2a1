@@ -20,9 +20,16 @@ final class Hooks
                 $row[$col] = $now;
             }
         }
+        // Default the authoring/ownership columns to the signed-in user.
+        foreach (['author_id', 'created_by', 'uploaded_by', 'sender_id'] as $col) {
+            if (in_array($col, $columns, true) && empty($row[$col]) && $identity->userId !== null) {
+                $row[$col] = $identity->userId;
+            }
+        }
         if ($table === 'memos' && empty($row['reference_number'])) {
             $row['reference_number'] = self::memoReference();
         }
+
         if ($table === 'wallet_transactions') {
             $row = self::walletTransaction($row);
         }
