@@ -21,7 +21,7 @@ final class Hooks
             }
         }
         // Default the authoring/ownership columns to the signed-in user.
-        foreach (['author_id', 'created_by', 'user_id', 'uploaded_by', 'sender_id'] as $col) {
+        foreach (['author_id', 'created_by', 'uploaded_by', 'sender_id'] as $col) {
             if (in_array($col, $columns, true) && empty($row[$col]) && $identity->userId !== null) {
                 $row[$col] = $identity->userId;
             }
