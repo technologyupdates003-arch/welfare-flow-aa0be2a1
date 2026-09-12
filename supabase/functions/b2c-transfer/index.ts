@@ -9,7 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  COOP_FT_URL,
+  COOP_B2C_URL,
   callbackUrl,
   coopConfigured,
   coopMessage,
@@ -20,6 +20,7 @@ import {
   payoutAccount,
   type WalletKind,
 } from "../_shared/coop.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
