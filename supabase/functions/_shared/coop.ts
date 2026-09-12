@@ -1,45 +1,85 @@
-// Shared Co-operative Bank (Open Banking / Developer Portal) client.
+// Shared Co-operative Bank Open API client (PRODUCTION).
 //
-// All collections (STK push) and all payouts (funds transfer / B2C) in this
-// system go through Co-op Bank. Safaricom Daraja is no longer used.
+// Live gateway: https://openapi.co-opbank.co.ke
+// All collections (STK push) and all payouts (A2M / IFT / Pesalink) go
+// through Co-op Bank. Safaricom Daraja is no longer used.
 //
-// Required secrets:
-//   COOP_CONSUMER_KEY          - Consumer Key from the Co-op developer portal app
+// Secrets:
+//   COOP_CONSUMER_KEY          - Consumer Key of the Co-op Open API app
 //   COOP_CONSUMER_SECRET       - Consumer Secret
+//   COOP_USER_ID               - UserId issued by the bank (e.g. KirinyagaHealthCare)
+//   COOP_OPERATOR_CODE         - OperatorCode for STK (e.g. KIRINYAGA)
 //   COOP_MAIN_ACCOUNT          - Bank account for MONTHLY CONTRIBUTIONS
 //   COOP_COLLECTION_ACCOUNT    - Bank account for PENALTIES / FUND DRIVES / OPERATIONAL
-//   COOP_PAYOUT_ACCOUNT        - (optional) account debited for payouts; defaults per wallet
-//
-// Optional overrides (only if the bank gives you different paths / a sandbox):
-//   COOP_BASE_URL, COOP_TOKEN_URL, COOP_STK_URL, COOP_STK_STATUS_URL,
-//   COOP_FT_URL, COOP_BALANCE_URL, COOP_CALLBACK_BASE
+//   COOP_PAYOUT_ACCOUNT        - (optional) account debited for payouts
+//   COOP_BASE_URL              - (optional) gateway override
+//   COOP_CALLBACK_BASE         - (optional) public callback base URL
 
-export const COOP_BASE =
-  Deno.env.get("COOP_BASE_URL") ?? "https://developer.co-opbank.co.ke:8243";
+export const COOP_BASE = (
+  Deno.env.get("COOP_BASE_URL") ?? "https://openapi.co-opbank.co.ke"
+).replace(/\/$/, "");
 
-export const COOP_TOKEN_URL =
-  Deno.env.get("COOP_TOKEN_URL") ?? `${COOP_BASE}/token`;
+export const COOP_TOKEN_URL = Deno.env.get("COOP_TOKEN_URL") ?? `${COOP_BASE}/token`;
 
-/** Co-op Bank "Mpesa STK Push" (collection) endpoint. */
-export const COOP_STK_URL =
-  Deno.env.get("COOP_STK_URL") ?? `${COOP_BASE}/Mpesa/STKPush/1.0.0/StkPush`;
+/** STK Push (collection). */
+export const COOP_STK_URL = Deno.env.get("COOP_STK_URL") ?? `${COOP_BASE}/FT/stk/1.0.0`;
 
-/** Co-op Bank STK status / query endpoint. */
+/** STK transaction status. */
 export const COOP_STK_STATUS_URL =
-  Deno.env.get("COOP_STK_STATUS_URL") ??
-  `${COOP_BASE}/Mpesa/STKPush/1.0.0/StkPushQuery`;
+  Deno.env.get("COOP_STK_STATUS_URL") ?? `${COOP_BASE}/Enquiry/STK/1.0.0/`;
 
-/** Co-op Bank Funds Transfer (Account -> M-Pesa / bank) endpoint. */
-export const COOP_FT_URL =
-  Deno.env.get("COOP_FT_URL") ??
-  `${COOP_BASE}/FundsTransfer/DisburseFunds/1.0.0/DisburseFunds`;
+/** Account -> M-Pesa payout (B2C). */
+export const COOP_B2C_URL =
+  Deno.env.get("COOP_B2C_URL") ??
+  `${COOP_BASE}/FundsTransfer/External/A2M/Mpesa_v2/2.0.0`;
 
-/** Co-op Bank account balance enquiry endpoint. */
+/** Backwards-compatible alias used by older code. */
+export const COOP_FT_URL = COOP_B2C_URL;
+
+/** Internal Co-op account to Co-op account transfer. */
+export const COOP_IFT_URL =
+  Deno.env.get("COOP_IFT_URL") ??
+  `${COOP_BASE}/FundsTransfer/Internal/A2A_v3/3.0.0`;
+
+/** Pesalink (account in another bank). */
+export const COOP_PESALINK_URL =
+  Deno.env.get("COOP_PESALINK_URL") ??
+  `${COOP_BASE}/FundsTransfer/External/PesaLinkBulk_v1/1.0.0/`;
+
+/** Pesalink account-name validation. */
+export const COOP_PESALINK_VALIDATE_URL =
+  Deno.env.get("COOP_PESALINK_VALIDATE_URL") ??
+  `${COOP_BASE}/Enquiry/Validation/IPSL/1.0.0/`;
+
+/** Generic transaction status (transfers). */
+export const COOP_TXN_STATUS_URL =
+  Deno.env.get("COOP_TXN_STATUS_URL") ??
+  `${COOP_BASE}/Enquiry/TransactionStatus_V3/3.0.0/`;
+
+/** Account balance. */
 export const COOP_BALANCE_URL =
   Deno.env.get("COOP_BALANCE_URL") ??
-  `${COOP_BASE}/Enquiry/AccountBalance/1.0.0/Account`;
+  `${COOP_BASE}/Enquiry/AccountBalance_v2/2.0.0/`;
+
+/** Mini statement (last few transactions). */
+export const COOP_MINISTATEMENT_URL =
+  Deno.env.get("COOP_MINISTATEMENT_URL") ??
+  `${COOP_BASE}/Enquiry/MiniStatement/Account_v2/2.0.0/`;
+
+/** Full statement between two dates (paginated). */
+export const COOP_STATEMENT_URL =
+  Deno.env.get("COOP_STATEMENT_URL") ??
+  `${COOP_BASE}/Enquiry/AccountFullStatementPaginated/1.0.0/`;
 
 export type WalletKind = "contribution" | "penalty" | "donation" | "operational";
+
+export function coopUserId(): string {
+  return Deno.env.get("COOP_USER_ID") ?? "KirinyagaHealthCare";
+}
+
+export function coopOperatorCode(): string {
+  return Deno.env.get("COOP_OPERATOR_CODE") ?? "KIRINYAGA";
+}
 
 /**
  * Which bank account collects money for a given purpose.
@@ -76,14 +116,25 @@ export function messageReference(prefix = "KHCWW"): string {
   return `${prefix}${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(0, 30);
 }
 
+/** Bank expects `2026-08-24T09:22:25.420Z` style timestamps. */
+export function coopDateTime(d: Date = new Date()): string {
+  return d.toISOString();
+}
+
 export function coopConfigured(): boolean {
   return Boolean(
     Deno.env.get("COOP_CONSUMER_KEY") && Deno.env.get("COOP_CONSUMER_SECRET"),
   );
 }
 
-/** OAuth2 client-credentials token from the Co-op developer portal. */
+let cachedToken: { value: string; expiresAt: number } | null = null;
+
+/** OAuth2 client-credentials token (cached until shortly before expiry). */
 export async function getCoopToken(): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.value;
+  }
+
   const key = Deno.env.get("COOP_CONSUMER_KEY");
   const secret = Deno.env.get("COOP_CONSUMER_SECRET");
   if (!key || !secret) {
@@ -91,6 +142,7 @@ export async function getCoopToken(): Promise<string> {
       "Co-op Bank not configured. Add COOP_CONSUMER_KEY and COOP_CONSUMER_SECRET.",
     );
   }
+
   const res = await fetch(COOP_TOKEN_URL, {
     method: "POST",
     headers: {
@@ -104,7 +156,12 @@ export async function getCoopToken(): Promise<string> {
   }
   const data = await res.json();
   if (!data.access_token) throw new Error("Co-op token response had no access_token");
-  return data.access_token as string;
+
+  cachedToken = {
+    value: data.access_token as string,
+    expiresAt: Date.now() + (Number(data.expires_in ?? 3600) * 1000),
+  };
+  return cachedToken.value;
 }
 
 export async function coopPost(
@@ -120,19 +177,31 @@ export async function coopPost(
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let data: any = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { MessageDescription: text };
+  }
   return { ok: res.ok, status: res.status, data };
 }
 
-/**
- * Co-op APIs signal success with MessageCode / ResponseCode "0" (some
- * endpoints return "000" or numeric 0). Treat all of those as success.
- */
+/** Success codes returned by the Co-op gateway. */
 export function coopSuccess(data: any): boolean {
   const code = String(
     data?.MessageCode ?? data?.ResponseCode ?? data?.StatusCode ?? "",
   ).trim();
   return code === "0" || code === "00" || code === "000";
+}
+
+/**
+ * Still waiting on the customer / bank. 1037 = "No response from user"
+ * (customer has not entered the M-Pesa PIN yet).
+ */
+export function coopPending(data: any): boolean {
+  const code = String(data?.MessageCode ?? data?.ResponseCode ?? "").trim();
+  return ["1037", "1032", "1", "1001", "9999"].includes(code);
 }
 
 export function coopMessage(data: any): string {
@@ -143,4 +212,54 @@ export function coopMessage(data: any): string {
     data?.message ??
     "Unknown response from Co-op Bank"
   );
+}
+
+/** Query the status of an STK push by its MessageReference. */
+export async function coopStkStatus(messageRef: string) {
+  return await coopPost(COOP_STK_STATUS_URL, {
+    MessageReference: messageRef,
+    UserId: coopUserId(),
+  });
+}
+
+/** Query the status of a funds transfer by its MessageReference. */
+export async function coopTransactionStatus(messageRef: string) {
+  return await coopPost(COOP_TXN_STATUS_URL, {
+    MessageReference: messageRef,
+    UserId: coopUserId(),
+  });
+}
+
+/** Account balance enquiry. */
+export async function coopAccountBalance(accountNumber: string) {
+  return await coopPost(COOP_BALANCE_URL, {
+    MessageReference: messageReference("BAL"),
+    UserId: coopUserId(),
+    AccountNumber: accountNumber,
+  });
+}
+
+/** Mini statement enquiry. */
+export async function coopMiniStatement(accountNumber: string) {
+  return await coopPost(COOP_MINISTATEMENT_URL, {
+    MessageReference: messageReference("MST"),
+    UserId: coopUserId(),
+    AccountNumber: accountNumber,
+  });
+}
+
+/** Full statement between two ISO dates (YYYY-MM-DD). */
+export async function coopFullStatement(
+  accountNumber: string,
+  startDate: string,
+  endDate: string,
+) {
+  return await coopPost(COOP_STATEMENT_URL, {
+    MessageReference: messageReference("STM"),
+    UserId: coopUserId(),
+    ISO2CountryCode: "KE",
+    AccountNumber: accountNumber,
+    StartDate: startDate,
+    EndDate: endDate,
+  });
 }
