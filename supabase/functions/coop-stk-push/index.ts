@@ -113,27 +113,36 @@ Deno.serve(async (req) => {
         member.member_id || member.id.slice(0, 8)
       }-${Date.now()}`;
 
+    // Live Co-op Bank STK Push payload (FT/stk/1.0.0)
     const payload = {
       MessageReference: msgRef,
       CallBackUrl: callbackUrl("coop-stk-callback"),
+      OperatorCode: coopOperatorCode(),
+      TransactionCurrency: "KES",
       MobileNumber: phone,
-      Amount: Math.round(Number(amount)),
-      AccountReference: String(
-        accountReference || member.member_id || member.id.slice(0, 8),
-      ).slice(0, 20),
-      TransactionDescription: String(
-        transactionDesc || `KHCWW ${kind} payment`,
-      ).slice(0, 50),
-      // Destination Co-op Bank account that receives the funds
-      BankAccountNumber: bankAccount,
-      Currency: "KES",
       Narration: `KHCWW ${kind} - ${member.name}`.slice(0, 60),
+      Amount: Math.round(Number(amount)),
+      MessageDateTime: coopDateTime(),
+      OtherDetails: [
+        {
+          Name: "AccountReference",
+          Value: String(
+            accountReference || member.member_id || member.id.slice(0, 8),
+          ).slice(0, 20),
+        },
+        {
+          Name: "Description",
+          Value: String(transactionDesc || `KHCWW ${kind} payment`).slice(0, 50),
+        },
+        { Name: "CollectionAccount", Value: bankAccount },
+      ],
     };
 
     const { ok, status, data } = await coopPost(COOP_STK_URL, payload);
     const success = ok && coopSuccess(data);
-    const checkoutId =
-      data?.CheckoutRequestID ?? data?.TransactionID ?? data?.MessageReference ?? msgRef;
+    // The bank tracks STK by MessageReference — keep it as our checkout id.
+    const checkoutId = data?.MessageReference ?? msgRef;
+
 
     await supabase.from("payments").insert({
       member_id: member.id,
