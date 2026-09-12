@@ -131,31 +131,40 @@ Deno.serve(async (req) => {
       errorMessage =
         "Payout bank account not configured (COOP_PAYOUT_ACCOUNT / COOP_COLLECTION_ACCOUNT).";
     } else {
+      // Live Co-op Bank Account -> M-Pesa payout (A2M Mpesa_v2)
       const payload = {
         MessageReference: originatorRef,
+        ISO2CountryCode: "KE",
         CallBackUrl: callbackUrl("coop-transfer-callback"),
-        SourceAccount: sourceAccount,
-        Amount: Math.round(Number(amount)),
-        Currency: "KES",
-        // Destination: mobile money (M-Pesa) wallet
-        DestinationType: "MOBILE",
-        DestinationAccount: phone,
-        DestinationName: (recipientName || "KHCWW Member").slice(0, 60),
-        Narration: (reason || `KHCWW ${walletType} payout`).slice(0, 100),
-        Reference: withdrawalId,
+        Source: {
+          AccountNumber: sourceAccount,
+          Amount: String(Math.round(Number(amount))),
+          TransactionCurrency: "KES",
+          Narration: (reason || `KHCWW ${walletType} payout`).slice(0, 100),
+        },
+        Destinations: [
+          {
+            ReferenceNumber: `${originatorRef}_1`,
+            MobileNumber: phone,
+            Amount: String(Math.round(Number(amount))),
+            Narration: (reason || `KHCWW ${walletType} payout`).slice(0, 100),
+          },
+        ],
       };
 
-      const res = await coopPost(COOP_FT_URL, payload);
+      const res = await coopPost(COOP_B2C_URL, payload);
       bankResponse = res.data;
       success = res.ok && coopSuccess(res.data);
       bankReceipt =
         res.data?.TransactionReference ??
         res.data?.TransactionID ??
         res.data?.ThirdPartyTransactionID ??
-        null;
+        res.data?.MessageReference ??
+        originatorRef;
       bankCharge = Number(res.data?.Charge ?? res.data?.TransactionFee ?? 0) || 0;
       if (!success) errorMessage = coopMessage(res.data) || `Co-op API ${res.status}`;
     }
+
 
     const transactionId = bankReceipt ?? originatorRef;
 
