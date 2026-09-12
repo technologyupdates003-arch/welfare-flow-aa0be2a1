@@ -33,7 +33,9 @@ Deno.serve(async (req) => {
     const reference =
       p.Reference ?? p.MessageReference ?? p.OriginatorConversationID ?? null;
     const receipt =
-      p.TransactionReference ?? p.TransactionID ?? p.ThirdPartyTransactionID ?? null;
+      p.TransactionReference ?? p.TransactionID ?? p.ThirdPartyTransactionID ??
+      p.MessageReference ?? null;
+
     const ok = coopSuccess(p);
     const charge = Number(p.Charge ?? p.TransactionFee ?? 0) || 0;
 
