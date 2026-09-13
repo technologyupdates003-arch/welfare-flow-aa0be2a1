@@ -3,9 +3,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import {
+  coopFullStatement,
+  coopMiniStatement,
+  coopSuccess,
+  coopMessage,
+} from "../_shared/coop.ts";
 
-const COOP_TOKEN_URL = "https://developer.co-opbank.co.ke:8243/token";
-const COOP_TRANSACTIONS_URL = "https://developer.co-opbank.co.ke:8243/Enquiry/AccountTransactions/1.0.0/Account";
 
 interface CoopTransaction {
   TransactionDate: string;
