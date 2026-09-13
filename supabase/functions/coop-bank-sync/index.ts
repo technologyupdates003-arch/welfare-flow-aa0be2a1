@@ -3,9 +3,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import {
+  coopFullStatement,
+  coopMiniStatement,
+  coopSuccess,
+  coopMessage,
+} from "../_shared/coop.ts";
 
-const COOP_TOKEN_URL = "https://developer.co-opbank.co.ke:8243/token";
-const COOP_TRANSACTIONS_URL = "https://developer.co-opbank.co.ke:8243/Enquiry/AccountTransactions/1.0.0/Account";
 
 interface CoopTransaction {
   TransactionDate: string;
@@ -33,53 +37,33 @@ interface CoopResponse {
   Transactions: CoopTransaction[];
 }
 
-async function getCoopToken(consumerKey: string, consumerSecret: string): Promise<string> {
-  const credentials = btoa(`${consumerKey}:${consumerSecret}`);
-  
-  const response = await fetch(COOP_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
+/**
+ * Pull recent statement entries for an account. Uses the paginated full
+ * statement for a date window and falls back to the mini statement.
+ */
+async function fetchTransactions(
+  accountNumber: string,
+  days: number,
+): Promise<CoopResponse> {
+  const end = new Date();
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Token request failed: ${response.status} - ${text}`);
+  let res = await coopFullStatement(accountNumber, iso(start), iso(end));
+  if (!res.ok || !coopSuccess(res.data)) {
+    const mini = await coopMiniStatement(accountNumber);
+    if (mini.ok && coopSuccess(mini.data)) res = mini;
+  }
+  if (!res.ok && !coopSuccess(res.data)) {
+    throw new Error(`Statement fetch failed (${res.status}): ${coopMessage(res.data)}`);
   }
 
-  const data = await response.json();
-  if (!data.access_token) {
-    throw new Error("No access_token in response");
-  }
-  return data.access_token;
+  const d: any = res.data ?? {};
+  const transactions: CoopTransaction[] =
+    d.Transactions ?? d.Data?.Transactions ?? d.StatementEntries ?? [];
+  return { ...d, Transactions: transactions, MessageCode: "0" } as CoopResponse;
 }
 
-async function fetchTransactions(token: string, accountNumber: string, noOfTransactions: string): Promise<CoopResponse> {
-  const messageReference = crypto.randomUUID().replace(/-/g, "").substring(0, 20);
-
-  const response = await fetch(COOP_TRANSACTIONS_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      MessageReference: messageReference,
-      AccountNumber: accountNumber,
-      NoOfTransactions: noOfTransactions,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Transaction fetch failed: ${response.status} - ${text}`);
-  }
-
-  return await response.json();
-}
 
 function normalizePhone(phone: string): string | null {
   if (!phone) return null;
@@ -114,7 +98,10 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const consumerKey = Deno.env.get("COOP_CONSUMER_KEY");
     const consumerSecret = Deno.env.get("COOP_CONSUMER_SECRET");
-    const accountNumber = Deno.env.get("COOP_ACCOUNT_NUMBER") || "01134568843700";
+    let accountNumber =
+      Deno.env.get("COOP_MAIN_ACCOUNT") ||
+      Deno.env.get("COOP_ACCOUNT_NUMBER") ||
+      "01134568843700";
 
     if (!consumerKey || !consumerSecret) {
       return new Response(
@@ -130,30 +117,22 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Parse request body for optional params
-    let noOfTransactions = "50";
+    let days = 30;
     try {
       const body = await req.json();
-      if (body.noOfTransactions) noOfTransactions = String(body.noOfTransactions);
+      if (body.days) days = Number(body.days) || 30;
+      if (body.accountNumber) accountNumber = String(body.accountNumber);
     } catch {
       // No body, use defaults
     }
 
-    // Step 1: Get OAuth token
-    const token = await getCoopToken(consumerKey, consumerSecret);
+    // Fetch recent statement entries from the live Co-op Bank gateway
+    const txnResponse = await fetchTransactions(accountNumber, days);
 
-    // Step 2: Fetch recent transactions
-    const txnResponse = await fetchTransactions(token, accountNumber, noOfTransactions);
-
-    if (txnResponse.MessageCode !== "0") {
-      return new Response(
-        JSON.stringify({ error: "Bank API error", details: txnResponse.MessageDescription }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 3: Process only CREDIT transactions (money coming in)
+    // Process only CREDIT entries (money coming in)
     const credits = (txnResponse.Transactions || []).filter(
-      (t) => t.TransactionType === "C" && parseFloat(t.CreditAmount) > 0
+      (t) => parseFloat(t.CreditAmount ?? "0") > 0
+
     );
 
     // Step 4: Get all members for matching

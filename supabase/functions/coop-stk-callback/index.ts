@@ -64,12 +64,16 @@ Deno.serve(async (req) => {
       if (record.status === "verified") break;
 
       if (!paid) {
+        // MessageCode 1037 = "No response from user" -> still pending, the
+        // status poll decides the final outcome. Never mark it failed here.
+        if (coopPending(p)) break;
         await supabase
           .from(w.table)
           .update({ status: "failed", notes: coopMessage(p) })
           .eq("id", record.id);
         break;
       }
+
 
       await supabase
         .from(w.table)
