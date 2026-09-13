@@ -37,53 +37,33 @@ interface CoopResponse {
   Transactions: CoopTransaction[];
 }
 
-async function getCoopToken(consumerKey: string, consumerSecret: string): Promise<string> {
-  const credentials = btoa(`${consumerKey}:${consumerSecret}`);
-  
-  const response = await fetch(COOP_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
+/**
+ * Pull recent statement entries for an account. Uses the paginated full
+ * statement for a date window and falls back to the mini statement.
+ */
+async function fetchTransactions(
+  accountNumber: string,
+  days: number,
+): Promise<CoopResponse> {
+  const end = new Date();
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Token request failed: ${response.status} - ${text}`);
+  let res = await coopFullStatement(accountNumber, iso(start), iso(end));
+  if (!res.ok || !coopSuccess(res.data)) {
+    const mini = await coopMiniStatement(accountNumber);
+    if (mini.ok && coopSuccess(mini.data)) res = mini;
+  }
+  if (!res.ok && !coopSuccess(res.data)) {
+    throw new Error(`Statement fetch failed (${res.status}): ${coopMessage(res.data)}`);
   }
 
-  const data = await response.json();
-  if (!data.access_token) {
-    throw new Error("No access_token in response");
-  }
-  return data.access_token;
+  const d: any = res.data ?? {};
+  const transactions: CoopTransaction[] =
+    d.Transactions ?? d.Data?.Transactions ?? d.StatementEntries ?? [];
+  return { ...d, Transactions: transactions, MessageCode: "0" } as CoopResponse;
 }
 
-async function fetchTransactions(token: string, accountNumber: string, noOfTransactions: string): Promise<CoopResponse> {
-  const messageReference = crypto.randomUUID().replace(/-/g, "").substring(0, 20);
-
-  const response = await fetch(COOP_TRANSACTIONS_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      MessageReference: messageReference,
-      AccountNumber: accountNumber,
-      NoOfTransactions: noOfTransactions,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Transaction fetch failed: ${response.status} - ${text}`);
-  }
-
-  return await response.json();
-}
 
 function normalizePhone(phone: string): string | null {
   if (!phone) return null;
