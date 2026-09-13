@@ -98,7 +98,10 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const consumerKey = Deno.env.get("COOP_CONSUMER_KEY");
     const consumerSecret = Deno.env.get("COOP_CONSUMER_SECRET");
-    const accountNumber = Deno.env.get("COOP_ACCOUNT_NUMBER") || "01134568843700";
+    let accountNumber =
+      Deno.env.get("COOP_MAIN_ACCOUNT") ||
+      Deno.env.get("COOP_ACCOUNT_NUMBER") ||
+      "01134568843700";
 
     if (!consumerKey || !consumerSecret) {
       return new Response(
@@ -114,30 +117,22 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Parse request body for optional params
-    let noOfTransactions = "50";
+    let days = 30;
     try {
       const body = await req.json();
-      if (body.noOfTransactions) noOfTransactions = String(body.noOfTransactions);
+      if (body.days) days = Number(body.days) || 30;
+      if (body.accountNumber) accountNumber = String(body.accountNumber);
     } catch {
       // No body, use defaults
     }
 
-    // Step 1: Get OAuth token
-    const token = await getCoopToken(consumerKey, consumerSecret);
+    // Fetch recent statement entries from the live Co-op Bank gateway
+    const txnResponse = await fetchTransactions(accountNumber, days);
 
-    // Step 2: Fetch recent transactions
-    const txnResponse = await fetchTransactions(token, accountNumber, noOfTransactions);
-
-    if (txnResponse.MessageCode !== "0") {
-      return new Response(
-        JSON.stringify({ error: "Bank API error", details: txnResponse.MessageDescription }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 3: Process only CREDIT transactions (money coming in)
+    // Process only CREDIT entries (money coming in)
     const credits = (txnResponse.Transactions || []).filter(
-      (t) => t.TransactionType === "C" && parseFloat(t.CreditAmount) > 0
+      (t) => parseFloat(t.CreditAmount ?? "0") > 0
+
     );
 
     // Step 4: Get all members for matching
